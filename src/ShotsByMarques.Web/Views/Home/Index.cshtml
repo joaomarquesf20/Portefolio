@@ -1,0 +1,132 @@
+@model ShotsByMarques.Web.ViewModels.PortfolioViewModel
+@{
+    ViewData["Title"] = "Início";
+}
+
+<!-- HERO -->
+<section class="relative min-h-[92vh] flex items-center justify-center text-center overflow-hidden">
+    <div class="absolute inset-0 opacity-25">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+            <defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#101828"/><stop offset="1" stop-color="#0b0b0d"/></linearGradient></defs>
+            <rect width="1200" height="800" fill="url(#hg)"/>
+            <circle cx="850" cy="260" r="220" fill="rgba(217,164,65,0.07)"/>
+            <circle cx="300" cy="620" r="280" fill="rgba(255,255,255,0.03)"/>
+        </svg>
+    </div>
+    <div class="relative px-6 max-w-4xl mx-auto">
+        <p class="text-accent tracking-[0.3em] uppercase text-xs mb-6 fade-up">Shots By Marques · Fotografia Automóvel</p>
+        <h1 class="font-display text-5xl sm:text-8xl leading-tight fade-up">@SharedLocalizer["HomeName"]</h1>
+        <p class="mt-6 text-white/60 text-lg max-w-xl mx-auto fade-up">@SharedLocalizer["HeroSubtitle"]</p>
+        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 fade-up">
+            <a href="/portfolio" class="btn-primary">@SharedLocalizer["HeroCta"]</a>
+            <a href="/servicos" class="btn-outline">@SharedLocalizer["NavServices"]</a>
+        </div>
+    </div>
+</section>
+
+<!-- PORTFOLIO -->
+<section id="portfolio" class="max-w-7xl mx-auto px-4 sm:px-6 py-20">
+    <div class="text-center mb-12 fade-up">
+        <h2 class="font-display text-3xl sm:text-4xl">@SharedLocalizer["NavPortfolio"]</h2>
+        <p class="text-white/50 mt-2">@SharedLocalizer["PortfolioSubtitle"]</p>
+        <a href="/portfolio" class="btn-outline mt-8">@SharedLocalizer["LearnMore"] →</a>
+    </div>
+
+    @if (Model.Sessions.Any())
+    {
+        <div class="mb-14 fade-up">
+            <h3 class="font-display text-2xl mb-1">@SharedLocalizer["SessionsTitle"]</h3>
+            <div class="h-px w-16 bg-[color:var(--accent)] mb-8"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var gallery in Model.Sessions)
+                {
+                    <a href="/galeria/@gallery.Id" class="card group overflow-hidden fade-up">
+                        <div class="aspect-[4/3] overflow-hidden">
+                            <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        </div>
+                        <div class="p-5">
+                            <h4 class="font-display text-xl">@gallery.Title</h4>
+                            @if (!string.IsNullOrEmpty(gallery.Subtitle))
+                            {
+                                <p class="text-white/50 text-sm mt-1">@gallery.Subtitle</p>
+                            }
+                            <p class="text-white/50 text-sm mt-1">@gallery.Photos.Count @SharedLocalizer["PhotosCount"]</p>
+                            <span class="inline-block mt-4 text-accent text-sm font-medium">@SharedLocalizer["ViewGallery"] →</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.Events.Any())
+    {
+        <div class="fade-up">
+            <h3 class="font-display text-2xl mb-1">@SharedLocalizer["EventsTitle"]</h3>
+            <div class="h-px w-16 bg-[color:var(--accent)] mb-8"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var gallery in Model.Events)
+                {
+                    <a href="/galeria/@gallery.Id" class="card group overflow-hidden fade-up">
+                        <div class="aspect-[4/3] overflow-hidden">
+                            <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        </div>
+                        <div class="p-5">
+                            <h4 class="font-display text-xl">@gallery.Title</h4>
+                            @if (!string.IsNullOrEmpty(gallery.Subtitle))
+                            {
+                                <p class="text-white/50 text-sm mt-1">@gallery.Subtitle</p>
+                            }
+                            <p class="text-white/50 text-sm mt-1">@gallery.Photos.Count @SharedLocalizer["PhotosCount"]</p>
+                            <span class="inline-block mt-4 text-accent text-sm font-medium">@SharedLocalizer["ViewGallery"] →</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    @if (!Model.Sessions.Any() && !Model.Events.Any())
+    {
+        <p class="text-center text-white/50 py-10">Sem galerias publicadas.</p>
+    }
+</section>
+
+<!-- SERVICES -->
+<section id="servicos" class="bg-[color:var(--bg-soft)] border-y border-[color:var(--border)] py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="text-center mb-12 fade-up">
+            <h2 class="font-display text-3xl sm:text-4xl">@SharedLocalizer["NavServices"]</h2>
+            <p class="text-white/50 mt-2">@SharedLocalizer["ServicesSubtitle"]</p>
+            <a href="/servicos" class="btn-outline mt-8">@SharedLocalizer["LearnMore"] →</a>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div class="card p-7 fade-up">
+                <span class="text-accent text-xs tracking-[0.25em]">NR 01</span>
+                <h3 class="font-display text-2xl mt-2 uppercase">@SharedLocalizer["Nr01Title"]</h3>
+                <p class="text-white/50 text-sm mt-3">@SharedLocalizer["Nr01Desc"]</p>
+                <p class="text-accent font-semibold mt-5">@SharedLocalizer["Nr01Price"]</p>
+            </div>
+            <div class="card p-7 fade-up">
+                <span class="text-accent text-xs tracking-[0.25em]">NR 02</span>
+                <h3 class="font-display text-2xl mt-2 uppercase">@SharedLocalizer["Nr02Title"]</h3>
+                <p class="text-white/50 text-sm mt-3">@SharedLocalizer["Nr02Desc"]</p>
+                <p class="text-accent font-semibold mt-5">@SharedLocalizer["Nr02Price"]</p>
+            </div>
+            <div class="card p-7 fade-up">
+                <span class="text-accent text-xs tracking-[0.25em]">NR 03</span>
+                <h3 class="font-display text-2xl mt-2 uppercase">@SharedLocalizer["Nr03Title"]</h3>
+                <p class="text-white/50 text-sm mt-3">@SharedLocalizer["Nr03Desc"]</p>
+                <p class="text-accent font-semibold mt-5">@SharedLocalizer["Nr03Price"]</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contacto" class="max-w-3xl mx-auto px-6 py-24 text-center">
+    <h2 class="font-display text-4xl fade-up">@SharedLocalizer["ContactTitle"]</h2>
+    <p class="text-white/60 mt-4 fade-up">@SharedLocalizer["GetInTouch"]</p>
+    <a href="mailto:marquesphotography06@gmail.com" class="btn-primary mt-8 fade-up">@SharedLocalizer["ContactCta"]</a>
+    <p class="text-white/40 text-sm mt-6 fade-up">Instagram: <a href="https://www.instagram.com/shots.by.marques/" target="_blank" class="text-accent hover:underline">@@shots.by.marques</a></p>
+</section>

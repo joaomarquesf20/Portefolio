@@ -1,0 +1,81 @@
+@{
+    ViewData["Title"] = SharedLocalizer["Dashboard"];
+    var recentBookings = ViewData["RecentBookings"] as List<ShotsByMarques.Web.Models.Booking> ?? new();
+    var recentOrders = ViewData["RecentOrders"] as List<ShotsByMarques.Web.Models.Order> ?? new();
+}
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+    <h1 class="font-display text-4xl mb-10 fade-up">@SharedLocalizer["Dashboard"]</h1>
+
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
+        @{
+            (string Label, string Value, string Accent)[] stats =
+            {
+                (SharedLocalizer["Galleries"], ViewData["GalleryCount"]?.ToString() ?? "0", "text-sky-300"),
+                (SharedLocalizer["Photos"], ViewData["PhotoCount"]?.ToString() ?? "0", "text-violet-300"),
+                (SharedLocalizer["Bookings"] + " (pendentes)", ViewData["BookingCount"]?.ToString() ?? "0", "text-yellow-300"),
+                (SharedLocalizer["Orders"], ViewData["OrderCount"]?.ToString() ?? "0", "text-emerald-300"),
+                ("Receita", ((decimal)ViewData["Revenue"]!).ToString("C", new System.Globalization.CultureInfo("pt-PT")), "text-accent")
+            };
+        }
+        @foreach (var (label, value, accent) in stats)
+        {
+            <div class="card p-5 fade-up">
+                <p class="text-white/50 text-xs uppercase tracking-wide">@label</p>
+                <p class="font-display text-2xl mt-2 @accent">@value</p>
+            </div>
+        }
+    </div>
+
+    <div class="flex flex-wrap gap-4 mb-10">
+        <a href="/AdminGalleries" class="btn-outline !text-sm">@SharedLocalizer["Galleries"]</a>
+        <a href="/AdminBookings" class="btn-outline !text-sm">@SharedLocalizer["Bookings"]</a>
+        <a href="/AdminOrders" class="btn-outline !text-sm">@SharedLocalizer["Orders"]</a>
+        <a href="/AdminSessionTypes" class="btn-outline !text-sm">@SharedLocalizer["SessionTypes"]</a>
+        <a href="/AdminPhotoPacks" class="btn-outline !text-sm">@SharedLocalizer["PhotoPacks"]</a>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8">
+        <div class="fade-up">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-display text-2xl">@SharedLocalizer["Bookings"]</h2>
+                <a href="/AdminBookings" class="text-accent text-sm hover:underline">Ver tudo →</a>
+            </div>
+            <div class="space-y-3">
+                @foreach (var b in recentBookings)
+                {
+                    <div class="card p-4 flex justify-between items-center gap-3">
+                        <div>
+                            <p class="font-medium text-sm">@b.SessionType?.Name</p>
+                            <p class="text-white/40 text-xs mt-0.5">@b.ClientUser?.FullName · @b.Start.ToLocalTime().ToString("dd/MM HH:mm")</p>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded-full bg-yellow-500/15 text-yellow-300">@b.Status</span>
+                    </div>
+                }
+                @if (recentBookings.Count == 0) { <p class="text-white/40 text-sm">Sem marcações recentes.</p> }
+            </div>
+        </div>
+
+        <div class="fade-up">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-display text-2xl">@SharedLocalizer["Orders"]</h2>
+                <a href="/AdminOrders" class="text-accent text-sm hover:underline">Ver tudo →</a>
+            </div>
+            <div class="space-y-3">
+                @foreach (var o in recentOrders)
+                {
+                    <div class="card p-4 flex justify-between items-center gap-3">
+                        <div>
+                            <p class="font-medium text-sm">@o.OrderNumber</p>
+                            <p class="text-white/40 text-xs mt-0.5">@o.ClientUser?.FullName · @o.Items.Count fotos</p>
+                        </div>
+                        <span class="font-semibold text-sm @(o.Status == ShotsByMarques.Web.Models.OrderStatus.Paid ? "text-emerald-300" : "text-yellow-300")">
+                            @o.Total.ToString("C", new System.Globalization.CultureInfo("pt-PT"))
+                        </span>
+                    </div>
+                }
+                @if (recentOrders.Count == 0) { <p class="text-white/40 text-sm">Sem encomendas recentes.</p> }
+            </div>
+        </div>
+    </div>
+</section>

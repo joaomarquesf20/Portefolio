@@ -1,0 +1,102 @@
+@model ShotsByMarques.Web.ViewModels.DownloadsViewModel
+@{
+    ViewData["Title"] = SharedLocalizer["NavDownloads"];
+    var hasAnything = Model.Orders.Count > 0 || Model.SessionGalleries.Count > 0;
+}
+
+<section class="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+    <h1 class="font-display text-4xl mb-8 fade-up">@SharedLocalizer["DownloadsTitle"]</h1>
+
+    @if (!hasAnything)
+    {
+        <p class="text-white/60">@SharedLocalizer["DownloadsEmpty"]</p>
+        <a href="/portfolio" class="btn-outline mt-6 inline-block">@SharedLocalizer["GoHome"]</a>
+    }
+
+    @* ----- Session galleries: photos already paid with the session ----- *@
+    @if (Model.SessionGalleries.Count > 0)
+    {
+        <h2 class="font-display text-2xl mt-2 mb-6 fade-up">@SharedLocalizer["SessionPhotosTitle"]</h2>
+        <p class="text-white/50 text-sm mb-6 fade-up">@SharedLocalizer["SessionPhotosHint"]</p>
+
+        @foreach (var gallery in Model.SessionGalleries.Where(g => g.Photos.Count > 0))
+        {
+            <div class="card p-6 mb-6 fade-up">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div>
+                        <p class="font-semibold">@gallery.Title</p>
+                        <p class="text-white/40 text-xs mt-1">
+                            @SharedLocalizer["Session"]
+                            @if (gallery.Booking?.SessionType != null)
+                            {
+                                <text>· @gallery.Booking.SessionType.Name</text>
+                            }
+                        </p>
+                    </div>
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300">@SharedLocalizer["SessionIncluded"]</span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    @foreach (var photo in gallery.Photos.OrderBy(p => p.SortOrder))
+                    {
+                        <div class="relative rounded-lg overflow-hidden group">
+                            <img src="@photo.PreviewUrl()" alt="@photo.Title" class="w-full aspect-[3/2] object-cover" loading="lazy" />
+                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <form asp-controller="Downloads" asp-action="SessionPhoto" asp-route-photoId="@photo.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn-primary !py-2 !px-4 !text-xs">↓ @SharedLocalizer["Download"]</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    @* ----- Paid orders ----- *@
+    @if (Model.Orders.Count > 0)
+    {
+        <div class="space-y-8">
+            @foreach (var order in Model.Orders)
+            {
+                var isPaid = order.Status == ShotsByMarques.Web.Models.OrderStatus.Paid;
+                <div class="card p-6 fade-up">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <div>
+                            <p class="font-semibold">@SharedLocalizer["OrderNumber"]: <span class="text-accent">@order.OrderNumber</span></p>
+                            <p class="text-white/40 text-xs mt-1">@order.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            @if (isPaid)
+                            {
+                                <form asp-controller="Downloads" asp-action="OrderZip" asp-route-orderId="@order.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn-primary !py-2 !px-4 !text-xs">📦 @SharedLocalizer["DownloadAll"]</button>
+                                </form>
+                            }
+                            <span class="text-xs font-semibold px-3 py-1 rounded-full @(isPaid ? "bg-emerald-500/15 text-emerald-300" : "bg-yellow-500/15 text-yellow-300")">
+                                @(isPaid ? SharedLocalizer["OrderStatusPaid"] : SharedLocalizer["OrderStatusPending"])
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        @foreach (var item in order.Items)
+                        {
+                            <div class="relative rounded-lg overflow-hidden group">
+                                <img src="/Photos/Preview/@item.PhotoId" alt="@item.Title" class="w-full aspect-[3/2] object-cover" loading="lazy" />
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                    <form asp-controller="Downloads" asp-action="File" asp-route-orderItemId="@item.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn-primary !py-2 !px-4 !text-xs">↓ @SharedLocalizer["Download"]</button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>

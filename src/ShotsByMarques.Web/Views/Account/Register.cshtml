@@ -1,0 +1,57 @@
+@model ShotsByMarques.Web.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = SharedLocalizer["RegisterTitle"];
+}
+
+<section class="max-w-md mx-auto px-4 sm:px-6 py-16">
+    <h1 class="font-display text-4xl text-center mb-8 fade-up">@SharedLocalizer["RegisterTitle"]</h1>
+
+    <div class="card p-8 fade-up">
+        <form asp-action="Register" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm mb-4"></div>
+
+            <div class="grid grid-cols-2 gap-4 mb-5">
+                <div>
+                    <label asp-for="FirstName" class="block text-sm font-medium mb-2"></label>
+                    <input asp-for="FirstName" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+                    <span asp-validation-for="FirstName" class="text-red-400 text-xs"></span>
+                </div>
+                <div>
+                    <label asp-for="LastName" class="block text-sm font-medium mb-2"></label>
+                    <input asp-for="LastName" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+                    <span asp-validation-for="LastName" class="text-red-400 text-xs"></span>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <label asp-for="Email" class="block text-sm font-medium mb-2">@SharedLocalizer["Email"]</label>
+                <input asp-for="Email" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+                <span asp-validation-for="Email" class="text-red-400 text-xs"></span>
+            </div>
+
+            <div class="mb-5">
+                <label asp-for="Password" class="block text-sm font-medium mb-2"></label>
+                <input asp-for="Password" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+                <span asp-validation-for="Password" class="text-red-400 text-xs"></span>
+            </div>
+
+            <div class="mb-6">
+                <label asp-for="ConfirmPassword" class="block text-sm font-medium mb-2"></label>
+                <input asp-for="ConfirmPassword" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+                <span asp-validation-for="ConfirmPassword" class="text-red-400 text-xs"></span>
+            </div>
+
+            <button type="submit" class="btn-primary w-full text-center">@SharedLocalizer["NavRegister"]</button>
+        </form>
+
+        <p class="text-white/50 text-sm text-center mt-6">
+            Já tens conta?
+            <a asp-action="Login" class="text-accent font-medium hover:underline">@SharedLocalizer["NavLogin"]</a>
+        </p>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

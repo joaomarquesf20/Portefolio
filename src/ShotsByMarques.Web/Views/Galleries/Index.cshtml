@@ -1,0 +1,68 @@
+@model ShotsByMarques.Web.ViewModels.PortfolioViewModel
+@{
+    ViewData["Title"] = SharedLocalizer["NavPortfolio"];
+}
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+    <div class="text-center mb-14 fade-up">
+        <h1 class="font-display text-4xl sm:text-5xl">@SharedLocalizer["NavPortfolio"]</h1>
+        <p class="text-white/50 mt-3">@SharedLocalizer["PortfolioSubtitle"]</p>
+    </div>
+
+    @if (Model.Sessions.Any())
+    {
+        <div id="sessoes" class="mb-14 fade-up scroll-mt-24">
+            <h2 class="font-display text-2xl sm:text-3xl mb-1">@SharedLocalizer["SessionsTitle"]</h2>
+            <div class="h-px w-16 bg-[color:var(--accent)] mb-8"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var gallery in Model.Sessions)
+                {
+                    <a href="/galeria/@gallery.Id" class="card group overflow-hidden fade-up">
+                        <div class="aspect-[4/3] overflow-hidden">
+                            <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-display text-xl">@gallery.Title</h3>
+                            @if (!string.IsNullOrEmpty(gallery.Subtitle))
+                            {
+                                <p class="text-white/50 text-sm mt-1">@gallery.Subtitle</p>
+                            }
+                            <span class="inline-block mt-4 text-accent text-sm font-medium">@SharedLocalizer["ViewGallery"] →</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.Events.Any())
+    {
+        <div id="eventos" class="fade-up scroll-mt-24">
+            <h2 class="font-display text-2xl sm:text-3xl mb-1">@SharedLocalizer["EventsTitle"]</h2>
+            <div class="h-px w-16 bg-[color:var(--accent)] mb-8"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var gallery in Model.Events)
+                {
+                    <a href="/galeria/@gallery.Id" class="card group overflow-hidden fade-up">
+                        <div class="aspect-[4/3] overflow-hidden">
+                            <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-display text-xl">@gallery.Title</h3>
+                            @if (!string.IsNullOrEmpty(gallery.Subtitle))
+                            {
+                                <p class="text-white/50 text-sm mt-1">@gallery.Subtitle</p>
+                            }
+                            <span class="inline-block mt-4 text-accent text-sm font-medium">@SharedLocalizer["ViewGallery"] →</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    @if (!Model.Sessions.Any() && !Model.Events.Any())
+    {
+        <p class="text-center text-white/50 py-20">Sem galerias publicadas.</p>
+    }
+</section>

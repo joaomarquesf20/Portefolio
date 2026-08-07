@@ -1,0 +1,49 @@
+@model List<ShotsByMarques.Web.Models.PhotoPack>
+@{
+    ViewData["Title"] = SharedLocalizer["PhotoPacks"];
+}
+
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
+        <h1 class="font-display text-4xl fade-up">@SharedLocalizer["PhotoPacks"]</h1>
+        <a href="/AdminPhotoPacks/Create" class="btn-primary fade-up">+ @SharedLocalizer["NewPack"]</a>
+    </div>
+
+    <p class="text-white/40 text-sm mb-8">🎉 @SharedLocalizer["PhotoPacksHint"]</p>
+
+    <div class="space-y-4">
+        @foreach (var pack in Model)
+        {
+            <div class="card p-5 flex flex-wrap items-center gap-5 fade-up @(!pack.IsActive ? "opacity-60" : "")">
+                <div class="flex-1 min-w-[200px]">
+                    <p class="font-semibold">@pack.Name
+                        @if (!pack.IsActive)
+                        {
+                            <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">inativo</span>
+                        }
+                    </p>
+                    <p class="text-white/40 text-sm mt-0.5">@pack.MinPhotos+ fotos · ordem @pack.SortOrder</p>
+                </div>
+                <span class="text-emerald-300 font-semibold">−@pack.DiscountPercent.ToString("0.#")%</span>
+                <div class="flex items-center gap-3 text-sm">
+                    <a href="/AdminPhotoPacks/Edit/@pack.Id" class="text-white/60 hover:text-accent transition">@SharedLocalizer["Edit"]</a>
+                    <form asp-action="ToggleActive" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@pack.Id" />
+                        <button class="text-white/60 hover:text-accent transition">@(pack.IsActive ? SharedLocalizer["Deactivate"] : SharedLocalizer["Activate"])</button>
+                    </form>
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@pack.Id" />
+                        <button class="text-red-400 hover:text-red-300 transition">@SharedLocalizer["Delete"]</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <p class="text-white/40 py-16 text-center">Ainda não há packs.</p>
+    }
+</section>

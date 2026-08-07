@@ -1,0 +1,71 @@
+@model ShotsByMarques.Web.ViewModels.CheckoutIndexViewModel
+@{
+    ViewData["Title"] = SharedLocalizer["CheckoutTitle"];
+    var ids = string.Join(",", Model.Items.Select(i => i.PhotoId));
+}
+
+<section class="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+    <h1 class="font-display text-4xl mb-8 fade-up">@SharedLocalizer["CheckoutTitle"]</h1>
+
+    @if (!Model.StripeConfigured)
+    {
+        <div class="rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 px-5 py-4 text-sm mb-8">
+            ⚠️ @SharedLocalizer["StripeNotConfigured"]
+        </div>
+    }
+
+    @if (Model.Items.Count == 0)
+    {
+        <p class="text-white/60">@SharedLocalizer["CheckoutEmpty"]</p>
+        <a href="/portfolio" class="btn-outline mt-6 inline-block">@SharedLocalizer["GoHome"]</a>
+    }
+    else
+    {
+        <div class="space-y-4 mb-8">
+            @foreach (var item in Model.Items)
+            {
+                <div class="card p-4 flex items-center gap-4">
+                    <img src="@item.PreviewUrl" alt="@item.Title" class="w-20 h-14 object-cover rounded-lg" />
+                    <div class="flex-1">
+                        <p class="font-medium">@item.Title</p>
+                        <p class="text-white/40 text-xs">@item.GalleryTitle</p>
+                    </div>
+                    <span class="text-accent font-semibold">@item.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                </div>
+            }
+        </div>
+
+        <div class="card p-6 mb-8">
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-white/60">@SharedLocalizer["Subtotal"] (@Model.Items.Count)</span>
+                    <span>@Model.Subtotal.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                </div>
+                @if (Model.Discount > 0)
+                {
+                    <div class="flex justify-between text-sm">
+                        <span class="text-emerald-300">🎉 @Model.PackName</span>
+                        <span class="text-emerald-300">−@Model.Discount.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                    </div>
+                }
+                else if (Model.MinPackPhotos.HasValue)
+                {
+                    <p class="text-white/40 text-xs">@SharedLocalizer["PackHint"] @Model.MinPackPhotos+ @SharedLocalizer["PhotosCount"]</p>
+                }
+                <div class="border-t border-[color:var(--border)] pt-3 flex justify-between text-lg font-semibold">
+                    <span>@SharedLocalizer["Total"]</span>
+                    <span class="text-accent">@Model.Total.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                </div>
+            </div>
+            <p class="text-white/40 text-xs mt-2">@SharedLocalizer["HighRes"] · @SharedLocalizer["FreeDelivery"]</p>
+        </div>
+
+        <form asp-action="PlaceOrder" method="post" class="text-center">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ids" value="@ids" />
+            <button type="submit" class="btn-primary w-full sm:w-auto sm:px-12" @(Model.StripeConfigured ? "" : "disabled style=opacity:.4;pointer-events:none")>
+                @SharedLocalizer["PayNow"] — @Model.Total.ToString("C", new System.Globalization.CultureInfo("pt-PT"))
+            </button>
+        </form>
+    }
+</section>

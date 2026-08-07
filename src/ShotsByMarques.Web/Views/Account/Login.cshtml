@@ -1,0 +1,49 @@
+@model ShotsByMarques.Web.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = SharedLocalizer["LoginTitle"];
+}
+
+<section class="max-w-md mx-auto px-4 sm:px-6 py-16">
+    <h1 class="font-display text-4xl text-center mb-8 fade-up">@SharedLocalizer["LoginTitle"]</h1>
+
+    <div class="card p-8 fade-up">
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ReturnUrl" />
+            <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm mb-4"></div>
+
+            <div class="mb-5">
+                <label asp-for="Email" class="block text-sm font-medium mb-2">@SharedLocalizer["Email"]</label>
+                <input asp-for="Email" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+                <span asp-validation-for="Email" class="text-red-400 text-xs"></span>
+            </div>
+
+            <div class="mb-6">
+                <label asp-for="Password" class="block text-sm font-medium mb-2">@SharedLocalizer["Password"]</label>
+                <input asp-for="Password" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+                <span asp-validation-for="Password" class="text-red-400 text-xs"></span>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm text-white/60 mb-6">
+                <input asp-for="RememberMe" class="accent-[color:var(--accent)]" /> Lembrar-me
+            </label>
+
+            <button type="submit" class="btn-primary w-full text-center">@SharedLocalizer["NavLogin"]</button>
+        </form>
+
+        <p class="text-white/50 text-sm text-center mt-6">
+            Ainda não tens conta?
+            <a asp-action="Register" class="text-accent font-medium hover:underline">@SharedLocalizer["NavRegister"]</a>
+        </p>
+
+        <div class="mt-8 border-t border-[color:var(--border)] pt-5 text-xs text-white/40 leading-relaxed">
+            <p class="font-semibold text-white/60 mb-1">Contas de demonstração:</p>
+            <p>Admin: <span class="text-accent">admin@@shotsbymarques.pt</span> / Admin123!</p>
+            <p>Cliente: <span class="text-accent">cliente@@shotsbymarques.pt</span> / Cliente123!</p>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

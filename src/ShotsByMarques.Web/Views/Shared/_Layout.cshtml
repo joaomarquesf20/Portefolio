@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — Shots By Marques</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @if (ViewData["MetaRefresh"] is string refresh && !string.IsNullOrEmpty(refresh))
+    {
+        <meta http-equiv="refresh" content="@refresh" />
+    }
+</head>
+<body class="min-h-screen antialiased">
+    <nav class="nav-glass fixed top-0 inset-x-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <a href="/" class="font-display text-xl tracking-wide">Shots <span class="text-accent">By Marques</span></a>
+
+            <div class="hidden md:flex items-center gap-7 text-sm text-white/80">
+                <a href="/portfolio" class="hover:text-accent transition">@SharedLocalizer["NavPortfolio"]</a>
+                <a href="/servicos" class="hover:text-accent transition">@SharedLocalizer["NavServices"]</a>
+                <a href="/sessoes" class="hover:text-accent transition">@SharedLocalizer["NavSessions"]</a>
+                <a href="/#contacto" class="hover:text-accent transition">@SharedLocalizer["NavContact"]</a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <a href="/admin" class="hover:text-accent transition">@SharedLocalizer["NavDashboard"]</a>
+                }
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- language switcher -->
+                <form asp-controller="Culture" asp-action="Set" method="post" class="flex items-center gap-1 text-xs">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                    <button name="culture" value="pt-PT" class="px-1.5 py-0.5 rounded @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-accent text-black font-semibold" : "text-white/60 hover:text-white")">PT</button>
+                    <span class="text-white/25">|</span>
+                    <button name="culture" value="en-US" class="px-1.5 py-0.5 rounded @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-accent text-black font-semibold" : "text-white/60 hover:text-white")">EN</button>
+                </form>
+
+                <a href="/Checkout" class="relative text-white/80 hover:text-accent transition" title="@SharedLocalizer["NavCart"]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                    </svg>
+                    <span data-cart-badge class="cart-badge hidden">0</span>
+                </a>
+
+                @if (User.Identity!.IsAuthenticated)
+                {
+                    <div class="hidden md:flex items-center gap-3 text-sm">
+                        <a href="/as-minhas-marcacoes" class="text-white/80 hover:text-accent transition">@SharedLocalizer["NavMyBookings"]</a>
+                        <a href="/downloads" class="text-white/80 hover:text-accent transition">@SharedLocalizer["NavDownloads"]</a>
+                        <span class="text-white/40">|</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="inline" onsubmit="try{localStorage.removeItem('sbm_cart')}catch(e){}">
+                            @Html.AntiForgeryToken()
+                            <button class="text-white/80 hover:text-accent transition">@SharedLocalizer["NavLogout"] (@User.Identity.Name)</button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <div class="hidden md:flex items-center gap-3 text-sm">
+                        <a href="/Account/Login" class="text-white/80 hover:text-accent transition">@SharedLocalizer["NavLogin"]</a>
+                        <a href="/Account/Register" class="btn-primary !py-2 !px-4 !text-sm">@SharedLocalizer["NavRegister"]</a>
+                    </div>
+                }
+
+                <button id="menu-btn" class="md:hidden text-white/80">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden border-t border-[color:var(--border)] px-6 py-4 space-y-3 text-sm">
+            <a href="/portfolio" class="block hover:text-accent">@SharedLocalizer["NavPortfolio"]</a>
+            <a href="/servicos" class="block hover:text-accent">@SharedLocalizer["NavServices"]</a>
+            <a href="/sessoes" class="block hover:text-accent">@SharedLocalizer["NavSessions"]</a>
+            <a href="/#contacto" class="block hover:text-accent">@SharedLocalizer["NavContact"]</a>
+            @if (User.Identity!.IsAuthenticated)
+            {
+                <a href="/as-minhas-marcacoes" class="block hover:text-accent">@SharedLocalizer["NavMyBookings"]</a>
+                <a href="/downloads" class="block hover:text-accent">@SharedLocalizer["NavDownloads"]</a>
+            }
+            else
+            {
+                <a href="/Account/Login" class="block hover:text-accent">@SharedLocalizer["NavLogin"]</a>
+                <a href="/Account/Register" class="block hover:text-accent">@SharedLocalizer["NavRegister"]</a>
+            }
+        </div>
+    </nav>
+
+    <main class="pt-16">
+        @if (TempData["Success"] is not null)
+        {
+            <div class="max-w-3xl mx-auto mt-6 px-4">
+                <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 px-4 py-3 text-sm">@TempData["Success"]</div>
+            </div>
+        }
+        @if (TempData["Error"] is not null)
+        {
+            <div class="max-w-3xl mx-auto mt-6 px-4">
+                <div class="rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 px-4 py-3 text-sm">@TempData["Error"]</div>
+            </div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="border-t border-[color:var(--border)] mt-20">
+        <div class="max-w-7xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white/50">
+            <span class="font-display text-lg text-white/80">Shots <span class="text-accent">By Marques</span></span>
+            <span>© @DateTime.Now.Year Shots By Marques. @SharedLocalizer["FooterRights"]</span>
+            <span class="flex items-center gap-4">
+                <a href="https://www.instagram.com/shots.by.marques/" target="_blank" class="hover:text-accent transition">Instagram</a>
+                <a href="mailto:marquesphotography06@gmail.com" class="hover:text-accent transition">Email</a>
+            </span>
+        </div>
+    </footer>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox">
+        <button data-close-lightbox class="absolute top-5 right-6 text-white/70 hover:text-white text-3xl z-10">✕</button>
+        <button data-lb-zoom-out class="absolute bottom-6 left-1/2 -translate-x-[5.5rem] text-white/70 hover:text-white text-2xl w-11 h-11 rounded-full border border-white/20 bg-black/40 transition">−</button>
+        <button data-lb-zoom-reset class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 hover:text-white text-xl w-11 h-11 rounded-full border border-white/20 bg-black/40 transition">⤾</button>
+        <button data-lb-zoom-in class="absolute bottom-6 left-1/2 translate-x-[3.5rem] text-white/70 hover:text-white text-2xl w-11 h-11 rounded-full border border-white/20 bg-black/40 transition">+</button>
+        <button onclick="lbNav(-1)" class="absolute left-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl z-10">‹</button>
+        <div id="lb-stage" class="w-full h-full flex flex-col items-center justify-center overflow-hidden">
+            <img id="lightbox-img" alt="Foto" draggable="false" />
+        </div>
+        <div id="lightbox-title" class="absolute bottom-6 right-6 text-white/70 text-sm"></div>
+        <button onclick="lbNav(1)" class="absolute right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl z-10">›</button>
+    </div>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

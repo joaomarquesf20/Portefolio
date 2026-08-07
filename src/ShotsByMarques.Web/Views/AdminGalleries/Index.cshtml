@@ -1,0 +1,55 @@
+@model List<ShotsByMarques.Web.Models.Gallery>
+@{
+    ViewData["Title"] = SharedLocalizer["Galleries"];
+}
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
+        <h1 class="font-display text-4xl fade-up">@SharedLocalizer["Galleries"]</h1>
+        <a href="/AdminGalleries/Create" class="btn-primary fade-up">+ @SharedLocalizer["NewGallery"]</a>
+    </div>
+
+    <div class="space-y-4">
+        @foreach (var gallery in Model)
+        {
+            <div class="card p-5 flex flex-wrap items-center gap-5 fade-up">
+                <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-24 h-16 object-cover rounded-lg" />
+                <div class="flex-1 min-w-[200px]">
+                    <p class="font-semibold">@gallery.Title</p>
+                    <p class="text-white/40 text-sm">
+                        <span class="@(gallery.IsSession ? "text-accent" : "text-emerald-300")">@(gallery.IsSession ? "🚗 Sessão" : "📷 Evento")</span> ·
+                        @gallery.Photos.Count fotos ·
+                        @if (gallery.IsPrivate)
+                        {
+                            <span class="text-accent">🔒 privada — @gallery.Booking?.ClientUser?.FullName (@gallery.Booking?.ClientUser?.Email)</span>
+                        }
+                        else
+                        {
+                            @(gallery.IsPublished ? "publicada" : "privada")
+                        }
+                    </p>
+                </div>
+                <div class="flex items-center gap-3 text-sm">
+                    <a href="/galeria/@gallery.Id" target="_blank" class="text-white/60 hover:text-accent transition">Ver</a>
+                    <a href="/AdminGalleries/Photos/@gallery.Id" class="text-accent hover:underline">@SharedLocalizer["Photos"]</a>
+                    <a href="/AdminGalleries/Edit/@gallery.Id" class="text-white/60 hover:text-accent transition">@SharedLocalizer["Edit"]</a>
+                    <form asp-action="TogglePublish" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@gallery.Id" />
+                        <button class="text-white/60 hover:text-accent transition">@(gallery.IsPublished ? SharedLocalizer["Unpublish"] : SharedLocalizer["Publish"])</button>
+                    </form>
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@gallery.Id" />
+                        <button class="text-red-400 hover:text-red-300 transition">@SharedLocalizer["Delete"]</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <p class="text-white/40 py-16 text-center">Ainda não há galerias.</p>
+    }
+</section>

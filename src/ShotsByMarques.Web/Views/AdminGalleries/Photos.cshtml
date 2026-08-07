@@ -1,0 +1,113 @@
+@model ShotsByMarques.Web.Models.Gallery
+@{
+    ViewData["Title"] = Model.Title;
+    var samplePhotos = Model.Photos.Where(p => p.FilePath.StartsWith("/sample-photos/")).Count();
+}
+
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <a href="/AdminGalleries" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
+    <h1 class="font-display text-4xl mt-3 mb-8 fade-up">@Model.Title — @SharedLocalizer["Photos"]</h1>
+
+    @if (Model.IsPrivate && Model.Booking?.ClientUser != null)
+    {
+        <div class="rounded-xl border border-accent/40 bg-[color:var(--accent-soft)] px-5 py-4 text-sm mb-8 fade-up">
+            🔒 Galeria privada da sessão — visível apenas por <b>@Model.Booking.ClientUser.FullName</b> (@Model.Booking.ClientUser.Email).
+            A sessão já foi paga, por isso as fotos aqui carregadas ficam <b>incluídas (sem custo)</b> — o cliente descarrega-as sem marca de água em "Downloads".
+        </div>
+    }
+
+    @if (samplePhotos > 0)
+    {
+        <div class="card p-5 mb-6 flex flex-wrap items-center gap-4 fade-up">
+            <p class="flex-1 min-w-[200px] text-sm text-white/70">
+                Esta galeria ainda tem <b>@samplePhotos foto(s) de exemplo</b> (SVGs de demonstração).
+                Aparecem aos clientes até carregares as tuas fotos reais — os uploads novos removem-nas automaticamente.
+            </p>
+            <form asp-action="RemoveSamples" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn-outline !py-2 !px-4 !text-sm">🗑️ Remover fotos de exemplo</button>
+            </form>
+        </div>
+    }
+
+    <div class="card p-6 mb-10 fade-up">
+        <h2 class="font-semibold mb-4">@SharedLocalizer["UploadPhotos"]</h2>
+        <form asp-action="UploadPhotos" method="post" enctype="multipart/form-data" class="flex flex-wrap items-end gap-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="flex-1 min-w-[220px]">
+                <label class="block text-sm font-medium mb-2">Ficheiros (podes escolher vários)</label>
+                <input type="file" name="files" accept="image/*" multiple required
+                       class="w-full text-sm text-white/60" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">@SharedLocalizer["Price"] (€)</label>
+                <input type="number" name="price" step="0.01" min="0" value="10"
+                       class="w-28 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-2.5 focus:outline-none focus:border-accent transition" />
+            </div>
+            <div class="pb-2.5">
+                <label class="block text-sm font-medium mb-2">Venda</label>
+                @if (Model.BookingId.HasValue)
+                {
+                    <p class="text-sm text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-2.5">
+                        Galeria de sessão — fotos incluídas no preço da sessão (sem custo para o cliente).
+                    </p>
+                }
+                else
+                {
+                    <label class="flex items-center gap-2 text-sm text-white/70 cursor-pointer select-none">
+                        <input type="checkbox" name="forSale" value="true" checked
+                               class="w-4 h-4 rounded accent-[#d9a441]" />
+                        <input type="hidden" name="forSale" value="false" />
+                        Fotos à venda (com preço)
+                    </label>
+                    <p class="text-white/40 text-xs mt-1">Desmarca para sessões — fotos incluídas no preço.</p>
+                }
+            </div>
+            <button class="btn-primary">@SharedLocalizer["UploadPhotos"]</button>
+        </form>
+        <p class="text-white/40 text-xs mt-3">✅ Cada upload gera automaticamente a prévia com marca de água (© Shots By Marques) — o cliente só recebe o ficheiro original depois de pagar.</p>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        @foreach (var photo in Model.Photos)
+        {
+            <div class="card overflow-hidden fade-up">
+                <img src="@photo.PreviewUrl()" alt="@photo.Title" class="aspect-[3/2] w-full object-cover" />
+                <div class="p-4">
+                    <p class="text-sm font-medium truncate">@photo.Title</p>
+                    @if (photo.IsForSale)
+                    {
+                        <p class="text-accent text-sm font-semibold mt-1">@photo.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+                        <span class="inline-block mt-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/15 rounded-full px-2 py-0.5">@SharedLocalizer["ForSale"]</span>
+                    }
+                    else
+                    {
+                        <p class="text-white/50 text-xs mt-1">@SharedLocalizer["IncludedInSession"]</p>
+                    }
+                    <div class="flex items-center gap-3 mt-3">
+                        @if (!Model.IsSession && !Model.BookingId.HasValue)
+                        {
+                            <form asp-action="ToggleSale" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@photo.Id" />
+                                <button class="text-xs text-white/60 hover:text-accent transition">@(photo.IsForSale ? "Incluir na sessão" : "Marcar à venda")</button>
+                            </form>
+                        }
+                        <form asp-action="DeletePhoto" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@photo.Id" />
+                            <button class="text-xs text-red-400 hover:text-red-300 transition">@SharedLocalizer["Delete"]</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.Photos.Count == 0)
+    {
+        <p class="text-white/40 text-center py-10">Esta galeria ainda não tem fotos.</p>
+    }
+</section>

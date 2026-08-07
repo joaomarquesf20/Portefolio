@@ -1,0 +1,63 @@
+@model ShotsByMarques.Web.ViewModels.BookingCreateViewModel
+@{
+    ViewData["Title"] = SharedLocalizer["BookSessionTitle"];
+}
+
+<section class="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+    <a href="/sessoes" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
+    <h1 class="font-display text-4xl mt-3 mb-8 fade-up">@SharedLocalizer["BookSessionTitle"]</h1>
+
+    <div class="card p-7 mb-8 fade-up">
+        <div class="flex items-center gap-5">
+            <img src="@Model.SessionType!.ImagePath" alt="@Model.SessionType.Name" class="w-28 h-20 object-cover rounded-lg" />
+            <div>
+                <h2 class="font-display text-2xl">@Model.SessionType.Name</h2>
+                <p class="text-white/50 text-sm mt-1">@Model.SessionType.Description</p>
+                <p class="text-accent font-semibold mt-2">@Model.SessionType.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+            </div>
+        </div>
+    </div>
+
+    @if (!User.Identity!.IsAuthenticated)
+    {
+        <div class="rounded-xl border border-accent/40 bg-[color:var(--accent-soft)] px-5 py-4 text-sm mb-8 fade-up">
+            Inicia sessão para concluir a marcação →
+            <a asp-controller="Account" asp-action="Login"
+               asp-route-returnUrl="@Url.Action("Create", "Bookings", new { id = Model.SessionTypeId })"
+               class="text-accent font-semibold underline ml-1">@SharedLocalizer["NavLogin"]</a>
+        </div>
+    }
+
+    <form asp-action="Create" method="post" id="booking-form" data-session-type-id="@Model.SessionTypeId" class="space-y-8 fade-up">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="SessionTypeId" />
+        <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm"></div>
+
+        <div>
+            <label class="block text-sm font-medium mb-2">@SharedLocalizer["ChooseDate"]</label>
+            <input asp-for="Date" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                   class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+            <span asp-validation-for="Date" class="text-red-400 text-xs"></span>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-3">@SharedLocalizer["ChooseTime"]</label>
+            <div id="slots" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>
+            <p id="no-slots" class="hidden text-white/40 text-sm mt-3">@SharedLocalizer["NoSlots"]</p>
+            <input type="hidden" asp-for="TimeSlot" id="TimeSlot" />
+            <span asp-validation-for="TimeSlot" class="text-red-400 text-xs"></span>
+        </div>
+
+        <div>
+            <label asp-for="Notes" class="block text-sm font-medium mb-2">@SharedLocalizer["Notes"]</label>
+            <textarea asp-for="Notes" rows="3" placeholder="Localização, tipo de carro, ideias…"
+                      class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition"></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary w-full sm:w-auto">@SharedLocalizer["BookNow"] — @Model.SessionType.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</button>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

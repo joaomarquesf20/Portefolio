@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="NavHome" xml:space="preserve"><value>Home</value></data>
+  <data name="NavPortfolio" xml:space="preserve"><value>Portfolio</value></data>
+  <data name="NavServices" xml:space="preserve"><value>Services</value></data>
+  <data name="NavSessions" xml:space="preserve"><value>Sessions</value></data>
+  <data name="NavContact" xml:space="preserve"><value>Contact</value></data>
+  <data name="NavCart" xml:space="preserve"><value>Cart</value></data>
+  <data name="NavLogin" xml:space="preserve"><value>Sign in</value></data>
+  <data name="NavRegister" xml:space="preserve"><value>Create account</value></data>
+  <data name="NavLogout" xml:space="preserve"><value>Sign out</value></data>
+  <data name="NavMyBookings" xml:space="preserve"><value>My bookings</value></data>
+  <data name="NavDownloads" xml:space="preserve"><value>Downloads</value></data>
+  <data name="NavDashboard" xml:space="preserve"><value>Admin panel</value></data>
+  <data name="NavHello" xml:space="preserve"><value>Hello</value></data>
+  <data name="HeroTitle" xml:space="preserve"><value>Immortalize your moments</value></data>
+  <data name="HeroSubtitle" xml:space="preserve"><value>Car photography — car sessions and event coverage, delivered through an online gallery.</value></data>
+  <data name="HeroCta" xml:space="preserve"><value>View portfolio</value></data>
+  <data name="HeroCta2" xml:space="preserve"><value>Book a session</value></data>
+  <data name="PortfolioTitle" xml:space="preserve"><value>Portfolio</value></data>
+  <data name="PortfolioSubtitle" xml:space="preserve"><value>Check out my latest work</value></data>
+  <data name="ServicesTitle" xml:space="preserve"><value>Services</value></data>
+  <data name="ServicesSubtitle" xml:space="preserve"><value>Check out my services</value></data>
+  <data name="ContactTitle" xml:space="preserve"><value>Ready to talk?</value></data>
+  <data name="ContactSubtitle" xml:space="preserve"><value>Reach out to book your session or ask for more information.</value></data>
+  <data name="ContactCta" xml:space="preserve"><value>Contact me</value></data>
+  <data name="GetInTouch" xml:space="preserve"><value>Get in touch</value></data>
+  <data name="LearnMore" xml:space="preserve"><value>Learn more</value></data>
+  <data name="HomeName" xml:space="preserve"><value>João Marques</value></data>
+  <data name="ServicesPageTitle" xml:space="preserve"><value>Services &amp; Packs</value></data>
+  <data name="ServicesIntro" xml:space="preserve"><value>What started as a weekend hobby became a passion: trying to capture that perfect angle, the reflection on the paint or the detail only true car lovers notice. I'm not a big advertising company — it's just me, my camera and the will to photograph incredible machines. If you have a car you cherish and would like some great photos of it to remember (or for Instagram!), just say the word.</value></data>
+  <data name="ServicesQuote" xml:space="preserve"><value>The best love is the kind that awakens the soul and makes us reach for more, that plants a fire in our hearts and brings peace to our minds.</value></data>
+  <data name="ServicesQuoteAuthor" xml:space="preserve"><value>— Nicholas Sparks</value></data>
+  <data name="PricingTitle" xml:space="preserve"><value>PRICES &amp; FORMATS</value></data>
+  <data name="Nr01Title" xml:space="preserve"><value>events</value></data>
+  <data name="Nr01Desc" xml:space="preserve"><value>If you were at an event, meet or trackday with your car and saw me around with a camera, chances are I have photos of your car. Photos can be purchased individually or in digital packs, already edited and ready to share on social media.</value></data>
+  <data name="Nr01Price" xml:space="preserve"><value>From €3</value></data>
+  <data name="Nr01Cta" xml:space="preserve"><value>Request Photos</value></data>
+  <data name="Nr02Title" xml:space="preserve"><value>sessions</value></data>
+  <data name="Nr02Desc" xml:space="preserve"><value>A photo session dedicated entirely to your car, at a location of your choice. We take it slow, looking for the best angles and making the most of the ideal light to highlight every line, the paint and the details that make your project unique.</value></data>
+  <data name="Nr02Price" xml:space="preserve"><value>From €45</value></data>
+  <data name="Nr02Cta" xml:space="preserve"><value>Book a Session</value></data>
+  <data name="Nr03Title" xml:space="preserve"><value>STANDS</value></data>
+  <data name="Nr03Desc" xml:space="preserve"><value>Photography focused on car dealerships and businesses in the sector. Clean, professional images of exteriors, interiors and mechanical details — essential to showcase vehicles in ads and help speed up sales.</value></data>
+  <data name="Nr03Price" xml:space="preserve"><value>From €35 / car</value></data>
+  <data name="Nr03Cta" xml:space="preserve"><value>Request a Quote</value></data>
+  <data name="LatestWorkTitle" xml:space="preserve"><value>See my most recent work</value></data>
+  <data name="SeeMore" xml:space="preserve"><value>See More</value></data>
+  <data name="SessionsTitle" xml:space="preserve"><value>Sessions</value></data>
+  <data name="EventsTitle" xml:space="preserve"><value>Events</value></data>
+  <data name="PhotosCount" xml:space="preserve"><value>photos</value></data>
+  <data name="NewSessionType" xml:space="preserve"><value>New session type</value></data>
+  <data name="Activate" xml:space="preserve"><value>Activate</value></data>
+  <data name="Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="Subtotal" xml:space="preserve"><value>Subtotal</value></data>
+  <data name="PackHint" xml:space="preserve"><value>Buy</value></data>
+  <data name="PhotoPacks" xml:space="preserve"><value>Photo packs</value></data>
+  <data name="NewPack" xml:space="preserve"><value>New pack</value></data>
+  <data name="PhotoPacksHint" xml:space="preserve"><value>Packs apply automatic discounts at checkout: from X selected photos, the client gets a percentage off the total.</value></data>
+  <data name="PackFrom" xml:space="preserve"><value>from</value></data>
+  <data name="BookNow" xml:space="preserve"><value>Book</value></data>
+  <data name="ViewGallery" xml:space="preserve"><value>View gallery</value></data>
+  <data name="PricePerPhoto" xml:space="preserve"><value>per photo</value></data>
+  <data name="SelectPhotos" xml:space="preserve"><value>Pick your favourite photos</value></data>
+  <data name="AddToSelection" xml:space="preserve"><value>Select</value></data>
+  <data name="RemoveFromSelection" xml:space="preserve"><value>Remove</value></data>
+  <data name="SelectedCount" xml:space="preserve"><value>selected</value></data>
+  <data name="ContinueCheckout" xml:space="preserve"><value>Continue to checkout</value></data>
+  <data name="ClearSelection" xml:space="preserve"><value>Clear</value></data>
+  <data name="CheckoutTitle" xml:space="preserve"><value>Checkout</value></data>
+  <data name="CheckoutEmpty" xml:space="preserve"><value>You have no photos selected. Pick your favourites in a gallery.</value></data>
+  <data name="CheckoutLoginRequired" xml:space="preserve"><value>Sign in to complete your purchase.</value></data>
+  <data name="PayNow" xml:space="preserve"><value>Pay with card or MB Way</value></data>
+  <data name="Total" xml:space="preserve"><value>Total</value></data>
+  <data name="Photo" xml:space="preserve"><value>Photo</value></data>
+  <data name="Gallery" xml:space="preserve"><value>Gallery</value></data>
+  <data name="Price" xml:space="preserve"><value>Price</value></data>
+  <data name="PaymentSuccess" xml:space="preserve"><value>Payment successful!</value></data>
+  <data name="PaymentSuccessMsg" xml:space="preserve"><value>Your photos are now available for download.</value></data>
+  <data name="PaymentCancelled" xml:space="preserve"><value>Payment cancelled.</value></data>
+  <data name="PaymentCancelledMsg" xml:space="preserve"><value>Don't worry — your selection is still saved. You can try again.</value></data>
+  <data name="GoDownloads" xml:space="preserve"><value>Go to downloads</value></data>
+  <data name="GoHome" xml:space="preserve"><value>Back to home</value></data>
+  <data name="DownloadsTitle" xml:space="preserve"><value>My purchases</value></data>
+  <data name="DownloadsEmpty" xml:space="preserve"><value>You haven't bought any photos yet.</value></data>
+  <data name="Download" xml:space="preserve"><value>Download</value></data>
+  <data name="OrderNumber" xml:space="preserve"><value>Order</value></data>
+  <data name="OrderDate" xml:space="preserve"><value>Date</value></data>
+  <data name="Status" xml:space="preserve"><value>Status</value></data>
+  <data name="BookSessionTitle" xml:space="preserve"><value>Book a session</value></data>
+  <data name="Duration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Minutes" xml:space="preserve"><value>min</value></data>
+  <data name="Availability" xml:space="preserve"><value>Availability</value></data>
+  <data name="ChooseDate" xml:space="preserve"><value>Pick a day</value></data>
+  <data name="ChooseTime" xml:space="preserve"><value>Pick a time slot</value></data>
+  <data name="NoSlots" xml:space="preserve"><value>No time slots available on this day.</value></data>
+  <data name="MyBookingsTitle" xml:space="preserve"><value>My bookings</value></data>
+  <data name="BookingCreated" xml:space="preserve"><value>Booking requested! The photographer will confirm shortly.</value></data>
+  <data name="BookingSlotTaken" xml:space="preserve"><value>That time slot is no longer available. Please pick another one.</value></data>
+  <data name="BookingStatusPending" xml:space="preserve"><value>Pending</value></data>
+  <data name="BookingStatusConfirmed" xml:space="preserve"><value>Confirmed</value></data>
+  <data name="BookingStatusCancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="BookingStatusCompleted" xml:space="preserve"><value>Completed</value></data>
+  <data name="Dashboard" xml:space="preserve"><value>Admin dashboard</value></data>
+  <data name="Galleries" xml:space="preserve"><value>Galleries</value></data>
+  <data name="Bookings" xml:space="preserve"><value>Bookings</value></data>
+  <data name="Orders" xml:space="preserve"><value>Orders</value></data>
+  <data name="SessionTypes" xml:space="preserve"><value>Session types</value></data>
+  <data name="NewGallery" xml:space="preserve"><value>New gallery</value></data>
+  <data name="GalleryType" xml:space="preserve"><value>Gallery type</value></data>
+  <data name="GalleryTypeEvent" xml:space="preserve"><value>Event</value></data>
+  <data name="GalleryTypeEventHint" xml:space="preserve"><value>Photos sold individually or in packs</value></data>
+  <data name="GalleryTypeSession" xml:space="preserve"><value>Session</value></data>
+  <data name="GalleryTypeSessionHint" xml:space="preserve"><value>Photos included in the session price</value></data>
+  <data name="Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Photos" xml:space="preserve"><value>Photos</value></data>
+  <data name="UploadPhotos" xml:space="preserve"><value>Upload photos</value></data>
+  <data name="Publish" xml:space="preserve"><value>Publish</value></data>
+  <data name="Unpublish" xml:space="preserve"><value>Unpublish</value></data>
+  <data name="Client" xml:space="preserve"><value>Client</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Notes" xml:space="preserve"><value>Notes</value></data>
+  <data name="FooterRights" xml:space="preserve"><value>All rights reserved.</value></data>
+  <data name="LoginTitle" xml:space="preserve"><value>Sign in</value></data>
+  <data name="RegisterTitle" xml:space="preserve"><value>Create account</value></data>
+  <data name="Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Password" xml:space="preserve"><value>Password</value></data>
+  <data name="InvalidLogin" xml:space="preserve"><value>Invalid email or password.</value></data>
+  <data name="RegisterSuccess" xml:space="preserve"><value>Account created successfully!</value></data>
+  <data name="StripeNotConfigured" xml:space="preserve"><value>Stripe keys are not configured yet. Add them to appsettings.json (test mode).</value></data>
+  <data name="ConfirmDelete" xml:space="preserve"><value>Are you sure you want to delete?</value></data>
+  <data name="OrderStatusPaid" xml:space="preserve"><value>Paid</value></data>
+  <data name="OrderStatusPending" xml:space="preserve"><value>Payment processing</value></data>
+  <data name="FreeDelivery" xml:space="preserve"><value>Digital delivery</value></data>
+  <data name="HighRes" xml:space="preserve"><value>High resolution</value></data>
+  <data name="WatermarkNote" xml:space="preserve"><value>Previews are watermarked — purchased photos are downloaded without the watermark in high resolution.</value></data>
+  <data name="IncludedInSession" xml:space="preserve"><value>Included in the session</value></data>
+  <data name="SessionPhotosIncluded" xml:space="preserve"><value>Photos in this gallery are included in the session — no extra cost.</value></data>
+  <data name="SelectAll" xml:space="preserve"><value>Select all</value></data>
+  <data name="DownloadAll" xml:space="preserve"><value>Download all</value></data>
+  <data name="SessionPhotosTitle" xml:space="preserve"><value>My sessions</value></data>
+  <data name="SessionPhotosHint" xml:space="preserve"><value>Photos from your sessions — already included in the session price, no extra cost.</value></data>
+  <data name="SessionIncluded" xml:space="preserve"><value>Included in session</value></data>
+  <data name="Session" xml:space="preserve"><value>Session</value></data>
+  <data name="ForSale" xml:space="preserve"><value>For sale</value></data>
+</root>

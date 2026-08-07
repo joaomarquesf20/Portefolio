@@ -1,0 +1,62 @@
+@model List<ShotsByMarques.Web.Models.Booking>
+@{
+    ViewData["Title"] = SharedLocalizer["Bookings"];
+    var filter = ViewData["Filter"] as ShotsByMarques.Web.Models.BookingStatus?;
+}
+
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <h1 class="font-display text-4xl mb-8 fade-up">@SharedLocalizer["Bookings"]</h1>
+
+    <div class="flex flex-wrap gap-2 mb-8 text-sm">
+        <a href="/AdminBookings" class="px-3 py-1.5 rounded-full border @(filter is null ? "bg-accent text-black font-semibold border-accent" : "border-[color:var(--border)] text-white/60 hover:text-accent")">Todos</a>
+        @foreach (var status in Enum.GetValues<ShotsByMarques.Web.Models.BookingStatus>())
+        {
+            <a href="/AdminBookings?status=@((int)status)"
+               class="px-3 py-1.5 rounded-full border @(filter == status ? "bg-accent text-black font-semibold border-accent" : "border-[color:var(--border)] text-white/60 hover:text-accent")">@status</a>
+        }
+    </div>
+
+    <div class="space-y-4">
+        @foreach (var booking in Model)
+        {
+            <div class="card p-6 fade-up">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <p class="font-semibold">@booking.SessionType?.Name</p>
+                        <p class="text-white/40 text-sm mt-1">
+                            @booking.ClientUser?.FullName · @booking.ClientUser?.Email
+                        </p>
+                        <p class="text-white/40 text-sm">@booking.Start.ToLocalTime().ToString("dddd, dd 'de' MMMM yyyy 'às' HH:mm", new System.Globalization.CultureInfo("pt-PT"))</p>
+                        @if (!string.IsNullOrEmpty(booking.Notes))
+                        {
+                            <p class="text-white/40 text-xs mt-1">“@booking.Notes”</p>
+                        }
+                    </div>
+                    <div class="text-right">
+                        <p class="text-accent font-semibold">@booking.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+                        <p class="text-xs text-white/40 mt-1">@SharedLocalizer["Status"]: @booking.Status</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[color:var(--border)]">
+                    @foreach (var status in Enum.GetValues<ShotsByMarques.Web.Models.BookingStatus>())
+                    {
+                        @if (status != booking.Status)
+                        {
+                            <form asp-action="SetStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@booking.Id" />
+                                <input type="hidden" name="status" value="@((int)status)" />
+                                <button class="text-xs px-3 py-1.5 rounded-full border border-[color:var(--border)] text-white/60 hover:text-accent transition">→ @status</button>
+                            </form>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <p class="text-white/40 text-center py-16">Sem marcações.</p>
+    }
+</section>

@@ -1,0 +1,26 @@
+@model List<ShotsByMarques.Web.Models.SessionType>
+@{
+    ViewData["Title"] = SharedLocalizer["NavSessions"];
+}
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+    <div class="text-center mb-12 fade-up">
+        <h1 class="font-display text-4xl sm:text-5xl">@SharedLocalizer["NavSessions"]</h1>
+        <p class="text-white/50 mt-3">@SharedLocalizer["ServicesSubtitle"]</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        @foreach (var session in Model)
+        {
+            <div class="card overflow-hidden fade-up">
+                <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name" class="h-48 w-full object-cover" loading="lazy" />
+                <div class="p-7">
+                    <h2 class="font-display text-2xl">@session.Name</h2>
+                    <p class="text-white/50 text-sm mt-3">@session.Description</p>
+                    <p class="text-accent font-semibold text-lg mt-6">@session.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+                    <a href="/sessoes/marcar/@session.Id" class="btn-primary w-full text-center mt-6">@SharedLocalizer["BookNow"]</a>
+                </div>
+            </div>
+        }
+    </div>
+</section>
