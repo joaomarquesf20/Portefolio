@@ -17,12 +17,12 @@
         <div>
             <label class="block text-sm font-medium mb-2">@SharedLocalizer["GalleryType"]</label>
             <div class="grid grid-cols-2 gap-3">
-                <label class="card p-4 cursor-pointer transition hover:border-accent @(!Model.IsSession ? "ring-2 ring-[color:var(--accent)]" : "") has-[:checked]:ring-2 has-[:checked]:ring-[color:var(--accent)]">
+                <label class="card p-4 cursor-pointer transition hover:border-accent has-[:checked]:ring-2 has-[:checked]:ring-[color:var(--accent)]">
                     <input type="radio" name="IsSession" value="false" @(!Model.IsSession ? "checked" : "") class="sr-only" />
                     <p class="font-semibold">📷 @SharedLocalizer["GalleryTypeEvent"]</p>
                     <p class="text-white/50 text-xs mt-1">@SharedLocalizer["GalleryTypeEventHint"]</p>
                 </label>
-                <label class="card p-4 cursor-pointer transition hover:border-accent @(Model.IsSession ? "ring-2 ring-[color:var(--accent)]" : "") has-[:checked]:ring-2 has-[:checked]:ring-[color:var(--accent)]">
+                <label class="card p-4 cursor-pointer transition hover:border-accent has-[:checked]:ring-2 has-[:checked]:ring-[color:var(--accent)]">
                     <input type="radio" name="IsSession" value="true" @(Model.IsSession ? "checked" : "") class="sr-only" />
                     <p class="font-semibold">🚗 @SharedLocalizer["GalleryTypeSession"]</p>
                     <p class="text-white/50 text-xs mt-1">@SharedLocalizer["GalleryTypeSessionHint"]</p>

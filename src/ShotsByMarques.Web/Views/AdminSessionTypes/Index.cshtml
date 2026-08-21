@@ -4,15 +4,38 @@
 }
 
 <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
     <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
         <h1 class="font-display text-4xl fade-up">@SharedLocalizer["SessionTypes"]</h1>
         <a href="/AdminSessionTypes/Create" class="btn-primary fade-up">+ @SharedLocalizer["NewSessionType"]</a>
     </div>
 
+    <div id="bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
+        <label class="flex items-center gap-2 text-white/70 cursor-pointer">
+            <input type="checkbox" id="select-all" class="accent-[color:var(--accent)] w-4 h-4" />
+            <span>Selecionar todas</span>
+        </label>
+        <span class="text-white/40" id="selected-count">0</span>
+        <div class="flex-1"></div>
+        <form asp-action="BulkDelete" method="post" class="inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ids" id="bulk-ids" value="" />
+            <button type="submit" id="bulk-delete-btn" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled
+                    onclick="return bulkSubmit()">
+                🗑 Eliminar selecionadas
+            </button>
+        </form>
+    </div>
+
     <div class="space-y-4">
-        @foreach (var session in Model)
+        @for (var i = 0; i < Model.Count; i++)
         {
+            var session = Model[i];
             <div class="card p-5 flex flex-wrap items-center gap-5 fade-up @(!session.IsActive ? "opacity-60" : "")">
+                <input type="checkbox" class="session-check accent-[color:var(--accent)] w-4 h-4" value="@session.Id"
+                       aria-label="@session.Name" />
+                <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name"
+                     class="w-28 h-20 object-cover rounded-lg border border-[color:var(--border)]" loading="lazy" />
                 <div class="flex-1 min-w-[200px]">
                     <p class="font-semibold">@session.Name
                         @if (!session.IsActive)
@@ -20,10 +43,22 @@
                             <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">inativo</span>
                         }
                     </p>
-                    <p class="text-white/40 text-sm mt-0.5">Ordem @session.SortOrder</p>
+                    <p class="text-white/40 text-sm mt-0.5">@(i + 1)º na lista</p>
                 </div>
                 <span class="text-accent font-semibold">@session.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
                 <div class="flex items-center gap-3 text-sm">
+                    <form asp-action="MoveUp" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@session.Id" />
+                        <button class="px-2 py-1 rounded-lg border border-[color:var(--border)] hover:border-accent transition"
+                                title="Subir" @(i == 0 ? "disabled" : "")>↑</button>
+                    </form>
+                    <form asp-action="MoveDown" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@session.Id" />
+                        <button class="px-2 py-1 rounded-lg border border-[color:var(--border)] hover:border-accent transition"
+                                title="Descer" @(i == Model.Count - 1 ? "disabled" : "")>↓</button>
+                    </form>
                     <a href="/AdminSessionTypes/Edit/@session.Id" class="text-white/60 hover:text-accent transition">@SharedLocalizer["Edit"]</a>
                     <form asp-action="ToggleActive" method="post" class="inline">
                         @Html.AntiForgeryToken()
@@ -45,3 +80,36 @@
         <p class="text-white/40 py-16 text-center">Ainda não há tipos de sessão.</p>
     }
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var checks = Array.from(document.querySelectorAll(".session-check"));
+            var selectAll = document.getElementById("select-all");
+            var bulkBar = document.getElementById("bulk-bar");
+            var countEl = document.getElementById("selected-count");
+            var bulkIds = document.getElementById("bulk-ids");
+            var bulkDelete = document.getElementById("bulk-delete-btn");
+
+            function refresh() {
+                var selected = checks.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+                bulkIds.value = selected.join(",");
+                countEl.textContent = selected.length > 0 ? selected.length + " selecionadas" : "";
+                bulkBar.classList.toggle("hidden", selected.length === 0);
+                bulkDelete.disabled = selected.length === 0;
+                selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
+            }
+
+            checks.forEach(function (c) { c.addEventListener("change", refresh); });
+            selectAll.addEventListener("change", function () {
+                checks.forEach(function (c) { c.checked = selectAll.checked; });
+                refresh();
+            });
+
+            window.bulkSubmit = function () {
+                return confirm('@SharedLocalizer["ConfirmDelete"]');
+            };
+            refresh();
+        })();
+    </script>
+}

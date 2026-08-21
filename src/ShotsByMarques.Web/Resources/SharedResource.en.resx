@@ -98,6 +98,7 @@
   <data name="ChooseDate" xml:space="preserve"><value>Pick a day</value></data>
   <data name="ChooseTime" xml:space="preserve"><value>Pick a time slot</value></data>
   <data name="NoSlots" xml:space="preserve"><value>No time slots available on this day.</value></data>
+  <data name="SlotBarHint" xml:space="preserve"><value>Pick an available time slot</value></data>
   <data name="MyBookingsTitle" xml:space="preserve"><value>My bookings</value></data>
   <data name="BookingCreated" xml:space="preserve"><value>Booking requested! The photographer will confirm shortly.</value></data>
   <data name="BookingSlotTaken" xml:space="preserve"><value>That time slot is no longer available. Please pick another one.</value></data>
@@ -121,6 +122,7 @@
   <data name="Save" xml:space="preserve"><value>Save</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Back" xml:space="preserve"><value>Back</value></data>
+  <data name="BackToDashboard" xml:space="preserve"><value>Back to dashboard</value></data>
   <data name="Actions" xml:space="preserve"><value>Actions</value></data>
   <data name="Photos" xml:space="preserve"><value>Photos</value></data>
   <data name="UploadPhotos" xml:space="preserve"><value>Upload photos</value></data>
@@ -142,6 +144,9 @@
   <data name="OrderStatusPending" xml:space="preserve"><value>Payment processing</value></data>
   <data name="FreeDelivery" xml:space="preserve"><value>Digital delivery</value></data>
   <data name="HighRes" xml:space="preserve"><value>High resolution</value></data>
+  <data name="RemoveItem" xml:space="preserve"><value>Remove</value></data>
+  <data name="EmptyCart" xml:space="preserve"><value>Empty cart</value></data>
+  <data name="ConfirmEmptyCart" xml:space="preserve"><value>Are you sure you want to empty your cart?</value></data>
   <data name="WatermarkNote" xml:space="preserve"><value>Previews are watermarked — purchased photos are downloaded without the watermark in high resolution.</value></data>
   <data name="IncludedInSession" xml:space="preserve"><value>Included in the session</value></data>
   <data name="SessionPhotosIncluded" xml:space="preserve"><value>Photos in this gallery are included in the session — no extra cost.</value></data>
@@ -152,4 +157,88 @@
   <data name="SessionIncluded" xml:space="preserve"><value>Included in session</value></data>
   <data name="Session" xml:space="preserve"><value>Session</value></data>
   <data name="ForSale" xml:space="preserve"><value>For sale</value></data>
+  <data name="AddWindow" xml:space="preserve"><value>Add window</value></data>
+  <data name="Day" xml:space="preserve"><value>Day</value></data>
+  <data name="StartTime" xml:space="preserve"><value>Start time</value></data>
+  <data name="EndTime" xml:space="preserve"><value>End time</value></data>
+  <data name="AvailabilityHint" xml:space="preserve"><value>Set the days and hours clients can book sessions. Existing bookings are kept.</value></data>
+  <data name="NoAvailability" xml:space="preserve"><value>No windows defined — clients cannot book sessions.</value></data>
+  <data name="ClosedDay" xml:space="preserve"><value>Closed</value></data>
+  <data name="NoWindowDay" xml:space="preserve"><value>No hours</value></data>
+  <data name="NoMiniHours" xml:space="preserve"><value>Hours not set yet</value></data>
+  <data name="MiniShort" xml:space="preserve"><value>mini</value></data>
+  <data name="BookedShort" xml:space="preserve"><value>booked</value></data>
+  <data name="LegendHours" xml:space="preserve"><value>Hours of the day (set by you on the bar)</value></data>
+  <data name="WeeklyAllSame" xml:space="preserve"><value>All week: {0} – {1}</value></data>
+  <data name="AvailabilityCalendar" xml:space="preserve"><value>Availability calendar</value></data>
+  <data name="AvailabilityCalendarHint" xml:space="preserve"><value>Mark each upcoming day: available (with hours), unavailable, maybe, or an event with mini sessions (capped). Unmarked days are closed.</value></data>
+  <data name="WeeklyTemplate" xml:space="preserve"><value>Default weekly schedule</value></data>
+  <data name="WeeklyTemplateHint" xml:space="preserve"><value>Applied to days without a calendar marking. Sets the start/end hours.</value></data>
+  <data name="MarkDay" xml:space="preserve"><value>Mark day</value></data>
+  <data name="BulkToggle" xml:space="preserve"><value>Select multiple</value></data>
+  <data name="BulkCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="DaysSelected" xml:space="preserve"><value>day(s) selected</value></data>
+  <data name="BulkClearMark" xml:space="preserve"><value>Clear marking</value></data>
+  <data name="BulkApply" xml:space="preserve"><value>Apply to selected days</value></data>
+  <data name="NoOverride" xml:space="preserve"><value>No marking — day closed</value></data>
+  <data name="NoMarkFollows" xml:space="preserve"><value>No marking — the day stays closed, with no booking hours.</value></data>
+  <data name="StatusAvailable" xml:space="preserve"><value>Available</value></data>
+  <data name="StatusUnavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="StatusMaybe" xml:space="preserve"><value>Maybe</value></data>
+  <data name="StatusEvent" xml:space="preserve"><value>Event with mini sessions</value></data>
+  <data name="StatusZone" xml:space="preserve"><value>Photographer's fixed zone</value></data>
+  <data name="EventName" xml:space="preserve"><value>Event name (optional)</value></data>
+  <data name="EventLocation" xml:space="preserve"><value>Event location</value></data>
+  <data name="EventLocationHint" xml:space="preserve"><value>Where the event takes place — shown to clients when booking mini sessions.</value></data>
+  <data name="DayHours" xml:space="preserve"><value>Hours for this day (optional)</value></data>
+  <data name="DragHoursHint" xml:space="preserve"><value>Drag on the bar or tap a preset</value></data>
+  <data name="ClearHours" xml:space="preserve"><value>Clear</value></data>
+  <data name="PresetFullDay" xml:space="preserve"><value>Full day (09–20)</value></data>
+  <data name="PresetMorning" xml:space="preserve"><value>Morning (09–13)</value></data>
+  <data name="PresetAfternoon" xml:space="preserve"><value>Afternoon (14–19)</value></data>
+  <data name="PresetNight" xml:space="preserve"><value>Night (20–23)</value></data>
+  <data name="DayHoursHint" xml:space="preserve"><value>Standard hours: 09:00–20:00. To only be free for a few hours, set your own window here (night shoots work too, e.g. 20:00–23:00).</value></data>
+  <data name="DayZone" xml:space="preserve"><value>Zone where you'll be</value></data>
+  <data name="DayZoneAny" xml:space="preserve"><value>Anywhere (I can travel)</value></data>
+  <data name="DayZoneHint" xml:space="preserve"><value>If you set a zone, clients can only book localities of that zone on that day. Empty = you travel wherever needed.</value></data>
+  <data name="MaxMiniSessions" xml:space="preserve"><value>Max mini sessions</value></data>
+  <data name="MiniSessionsTitle" xml:space="preserve"><value>Mini sessions at events</value></data>
+  <data name="MiniSessionsSubtitle" xml:space="preserve"><value>On event days I run mini sessions for your car — photos included in the price. Book your spot now (limited).</value></data>
+  <data name="MiniSessionHours" xml:space="preserve"><value>Mini session hours</value></data>
+  <data name="MiniSessionHoursHint" xml:space="preserve"><value>What hours are you doing mini sessions at this event? Clients pick one of these times (every 30 minutes); the last one must end by the end time (e.g. 09:00–20:00 → up to 19:30). Night slots work too (e.g. 20:00–23:00).</value></data>
+  <data name="MiniSessionBook" xml:space="preserve"><value>Book a mini session</value></data>
+  <data name="MiniSessionSlotsLeft" xml:space="preserve"><value>{0} of {1} spots left</value></data>
+  <data name="MiniSessionSoldOut" xml:space="preserve"><value>Sold out</value></data>
+  <data name="MiniSessionTitle" xml:space="preserve"><value>Book a mini session</value></data>
+  <data name="MiniSessionDesc" xml:space="preserve"><value>A mini session on event day, just for your car. Photos are included in the price and delivered in a private gallery (no watermark).</value></data>
+  <data name="MiniSessionNoSchedule" xml:space="preserve"><value>The time slots for this event haven't been set yet.</value></data>
+  <data name="MiniSessionNoScheduleHint" xml:space="preserve"><value>The photographer will publish the mini session times soon. Come back later to book.</value></data>
+  <data name="MiniSessionFull" xml:space="preserve"><value>This event's mini sessions are sold out.</value></data>
+  <data name="TodaySlotsHint" xml:space="preserve"><value>Today only slots from {0} onwards — earlier times have already passed.</value></data>
+  <data name="SessionTypeName" xml:space="preserve"><value>Name</value></data>
+  <data name="SessionTypeDescription" xml:space="preserve"><value>Description</value></data>
+  <data name="SessionTypeActive" xml:space="preserve"><value>Active (visible on the Sessions page)</value></data>
+  <data name="Location" xml:space="preserve"><value>Locality</value></data>
+  <data name="Zone" xml:space="preserve"><value>Zone</value></data>
+  <data name="ChooseZone" xml:space="preserve"><value>Choose the zone…</value></data>
+  <data name="ChooseLocality" xml:space="preserve"><value>Choose the locality…</value></data>
+  <data name="ChooseZoneFirst" xml:space="preserve"><value>Choose the zone first</value></data>
+  <data name="TravelHint" xml:space="preserve"><value>Based in {0} — the first {1} km are included; beyond that {2} per km.</value></data>
+  <data name="TravelFee" xml:space="preserve"><value>Travel</value></data>
+  <data name="TotalPrice" xml:space="preserve"><value>Total</value></data>
+  <data name="Deposit" xml:space="preserve"><value>Deposit (50% at booking)</value></data>
+  <data name="Balance" xml:space="preserve"><value>Balance (50% at delivery)</value></data>
+  <data name="PayDeposit" xml:space="preserve"><value>Pay deposit</value></data>
+  <data name="PayBalance" xml:space="preserve"><value>Pay balance</value></data>
+  <data name="DepositPaid" xml:space="preserve"><value>Deposit paid</value></data>
+  <data name="BalancePaid" xml:space="preserve"><value>Balance paid</value></data>
+  <data name="LocationNotRecognized" xml:space="preserve"><value>Location not recognized — the distance will be arranged with the photographer.</value></data>
+  <data name="BookingNeedsDeposit" xml:space="preserve"><value>Pay the deposit to confirm your booking.</value></data>
+  <data name="BookingNeedsBalance" xml:space="preserve"><value>Pay the balance to receive your session photos.</value></data>
+  <data name="MakePrivate" xml:space="preserve"><value>Make private</value></data>
+  <data name="MakePrivateSelected" xml:space="preserve"><value>Make selected private</value></data>
+  <data name="DeleteSelected" xml:space="preserve"><value>Delete selected</value></data>
+  <data name="DeselectAll" xml:space="preserve"><value>Deselect all</value></data>
+  <data name="Selected" xml:space="preserve"><value>selected</value></data>
+  <data name="ConfirmBulkDelete" xml:space="preserve"><value>Are you sure you want to delete the selected galleries? This cannot be undone.</value></data>
 </root>

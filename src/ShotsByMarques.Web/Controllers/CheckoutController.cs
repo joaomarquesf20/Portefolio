@@ -39,7 +39,10 @@ public class CheckoutController : Controller
         var photos = await _db.Photos
             .Include(p => p.Gallery).ThenInclude(g => g!.Booking)
             .Where(p => photoIds.Contains(p.Id) && p.IsForSale &&
-                        ((p.Gallery!.IsPrivate && p.Gallery.Booking != null && p.Gallery.Booking.ClientUserId == UserId()) ||
+                        // Session galleries (or private galleries tied to a booking)
+                        // are already paid with the session — photos are NEVER sold.
+                        !p.Gallery!.IsSession && p.Gallery.BookingId == null &&
+                        ((p.Gallery.IsPrivate && p.Gallery.Booking != null && p.Gallery.Booking.ClientUserId == UserId()) ||
                          (!p.Gallery.IsPrivate && p.Gallery.IsPublished)))
             .ToListAsync();
 
@@ -81,7 +84,10 @@ public class CheckoutController : Controller
         var photos = await _db.Photos
             .Include(p => p.Gallery).ThenInclude(g => g!.Booking)
             .Where(p => photoIds.Contains(p.Id) && p.IsForSale &&
-                        ((p.Gallery!.IsPrivate && p.Gallery.Booking != null && p.Gallery.Booking.ClientUserId == userId) ||
+                        // Session galleries (or private galleries tied to a booking)
+                        // are already paid with the session — photos are NEVER sold.
+                        !p.Gallery!.IsSession && p.Gallery.BookingId == null &&
+                        ((p.Gallery.IsPrivate && p.Gallery.Booking != null && p.Gallery.Booking.ClientUserId == userId) ||
                          (!p.Gallery.IsPrivate && p.Gallery.IsPublished)))
             .ToListAsync();
         if (photos.Count == 0)

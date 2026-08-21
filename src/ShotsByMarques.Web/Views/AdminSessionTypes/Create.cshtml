@@ -7,18 +7,18 @@
     <a href="/AdminSessionTypes" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
     <h1 class="font-display text-4xl mt-3 mb-8 fade-up">@SharedLocalizer["NewSessionType"]</h1>
 
-    <form asp-action="Create" method="post" class="card p-8 space-y-5 fade-up">
+    <form asp-action="Create" method="post" enctype="multipart/form-data" class="card p-8 space-y-5 fade-up">
         @Html.AntiForgeryToken()
         <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm"></div>
 
         <div>
-            <label asp-for="Name" class="block text-sm font-medium mb-2"></label>
+            <label asp-for="Name" class="block text-sm font-medium mb-2">@SharedLocalizer["SessionTypeName"]</label>
             <input asp-for="Name" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
             <span asp-validation-for="Name" class="text-red-400 text-xs"></span>
         </div>
 
         <div>
-            <label asp-for="Description" class="block text-sm font-medium mb-2"></label>
+            <label asp-for="Description" class="block text-sm font-medium mb-2">@SharedLocalizer["SessionTypeDescription"]</label>
             <textarea asp-for="Description" rows="3" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition"></textarea>
         </div>
 
@@ -28,13 +28,14 @@
         </div>
 
         <div>
-            <label asp-for="SortOrder" class="block text-sm font-medium mb-2">Ordem</label>
-            <input asp-for="SortOrder" type="number" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+            <label class="block text-sm font-medium mb-2">Capa (foto)</label>
+            <input type="file" name="cover" accept="image/*" class="text-sm text-white/60" />
+            <p class="text-white/40 text-xs mt-1">Opcional — podes adicionar a foto de capa depois, ao editar.</p>
         </div>
 
-        <div>
-            <label asp-for="ImagePath" class="block text-sm font-medium mb-2">Imagem (URL, opcional)</label>
-            <input asp-for="ImagePath" placeholder="/sample-photos/cars-cover.svg" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+        <div class="flex items-center gap-3">
+            <input asp-for="IsActive" class="w-4 h-4 rounded accent-[#d9a441]" />
+            <label asp-for="IsActive" class="text-sm">@SharedLocalizer["SessionTypeActive"]</label>
         </div>
 
         <button type="submit" class="btn-primary">@SharedLocalizer["Save"]</button>

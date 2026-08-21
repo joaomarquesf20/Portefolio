@@ -95,6 +95,28 @@ public class AdminPhotoPacksController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BulkDelete(string ids)
+    {
+        var idList = (ids ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        if (idList.Count == 0)
+            return RedirectToAction(nameof(Index));
+
+        var packs = await _db.PhotoPacks.Where(p => idList.Contains(p.Id)).ToListAsync();
+        _db.PhotoPacks.RemoveRange(packs);
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"{packs.Count} pack(s) eliminado(s).";
+        return RedirectToAction(nameof(Index));
+    }
+
     private void Validate(PhotoPack pack)
     {
         if (string.IsNullOrWhiteSpace(pack.Name))

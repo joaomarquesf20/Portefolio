@@ -26,14 +26,22 @@ public class AdminGalleriesController : Controller
         .OrderByDescending(b => b.Start)
         .ToListAsync();
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? filter)
     {
-        var galleries = await _db.Galleries
+        var query = _db.Galleries
             .Include(g => g.Photos)
             .Include(g => g.Booking).ThenInclude(b => b!.ClientUser)
-            .OrderByDescending(g => g.CreatedAt)
-            .ToListAsync();
-        return View(galleries);
+            .AsQueryable();
+
+        if (filter == "public")
+            query = query.Where(g => !g.IsPrivate && g.IsPublished);
+        else if (filter == "private")
+            query = query.Where(g => g.IsPrivate);
+        else if (filter == "hidden")
+            query = query.Where(g => !g.IsPrivate && !g.IsPublished);
+
+        ViewData["Filter"] = filter;
+        return View(await query.OrderByDescending(g => g.CreatedAt).ToListAsync());
     }
 
     public async Task<IActionResult> Create()
@@ -106,7 +114,19 @@ public class AdminGalleriesController : Controller
 
         // A gallery linked to a booking is always a session gallery (photos included).
         if (gallery.BookingId.HasValue)
+        {
             gallery.IsSession = true;
+            // The session is already paid — the photos must NEVER be sold
+            // separately, even if they were uploaded with a price before the
+            // gallery became private (e.g. an event gallery turned into a
+            // session delivery). Clear the price of every photo.
+            var photos = await _db.Photos.Where(p => p.GalleryId == gallery.Id).ToListAsync();
+            foreach (var photo in photos)
+            {
+                photo.IsForSale = false;
+                photo.Price = 0m;
+            }
+        }
 
         _db.Update(gallery);
         await _db.SaveChangesAsync();
@@ -128,15 +148,72 @@ public class AdminGalleriesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MakePrivate(int id)
+    {
+        var gallery = await _db.Galleries.FindAsync(id);
+        if (gallery is not null)
+        {
+            // "Privar" esconde a galeria do público sem a apagar: despublica-a.
+            gallery.IsPublished = false;
+            await _db.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BulkAction(string ids, string action)
+    {
+        // The view sends the selected ids as a comma-separated string ("1,2,3").
+        var idList = (ids ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        if (idList.Count == 0)
+            return RedirectToAction(nameof(Index));
+
+        var galleries = await _db.Galleries.Include(g => g.Photos)
+            .Where(g => idList.Contains(g.Id))
+            .ToListAsync();
+
+        if (action == "private")
+        {
+            // Esconder do público sem apagar nada.
+            foreach (var gallery in galleries)
+                gallery.IsPublished = false;
+            await _db.SaveChangesAsync();
+        }
+        else if (action == "delete")
+        {
+            foreach (var gallery in galleries)
+            {
+                foreach (var photo in gallery.Photos)
+                    _storage.Delete(photo.FilePath, photo.PreviewPath);
+                _db.Galleries.Remove(gallery);
+            }
+            await _db.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var gallery = await _db.Galleries.Include(g => g.Photos).FirstOrDefaultAsync(g => g.Id == id);
+        var gallery = await _db.Galleries
+            .Include(g => g.Photos)
+            .FirstOrDefaultAsync(g => g.Id == id);
         if (gallery is not null)
         {
             foreach (var photo in gallery.Photos)
                 _storage.Delete(photo.FilePath, photo.PreviewPath);
             _db.Galleries.Remove(gallery);
             await _db.SaveChangesAsync();
+            TempData["Success"] = "Galeria eliminada.";
         }
         return RedirectToAction(nameof(Index));
     }
@@ -147,7 +224,10 @@ public class AdminGalleriesController : Controller
             .Include(g => g.Booking).ThenInclude(b => b!.ClientUser)
             .Include(g => g.Photos.OrderBy(p => p.SortOrder))
             .FirstOrDefaultAsync(g => g.Id == id);
-        return gallery is null ? NotFound() : View(gallery);
+        if (gallery is null)
+            return NotFound();
+        ViewData["Bookings"] = await BookingsAsync();
+        return View(gallery);
     }
 
     [HttpPost]
@@ -210,6 +290,91 @@ public class AdminGalleriesController : Controller
         if (skipped > 0)
             TempData["Error"] = $"{skipped} ficheiro(s) ignorado(s) (limite de 25 MB).";
         return RedirectToAction(nameof(Photos), new { id });
+    }
+
+    /// <summary>
+    /// Applies a price to ALL photos of an event gallery at once — useful when
+    /// photos were uploaded while the gallery was still a session (free) and the
+    /// admin then switches it to an event and wants to sell them.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApplyPriceToAll(int id, decimal price, bool forSale = true)
+    {
+        var gallery = await _db.Galleries.FindAsync(id);
+        if (gallery is null)
+            return NotFound();
+
+        // Session galleries (or galleries linked to a booking) keep photos free.
+        if (gallery.IsSession || gallery.BookingId.HasValue)
+        {
+            TempData["Error"] = "As fotos de uma galeria de sessão estão incluídas no preço — não podem ser vendidas à parte.";
+            return RedirectToAction(nameof(Photos), new { id });
+        }
+
+        if (forSale && price <= 0)
+            price = 10m;
+
+        var photos = await _db.Photos.Where(p => p.GalleryId == id).ToListAsync();
+        foreach (var photo in photos)
+        {
+            photo.IsForSale = forSale;
+            photo.Price = forSale ? price : 0m;
+        }
+        await _db.SaveChangesAsync();
+
+        TempData["Success"] = forSale
+            ? $"Preço de {price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))} aplicado a {photos.Count} foto(s)."
+            : $"{photos.Count} foto(s) marcadas como incluídas (sem custo).";
+        return RedirectToAction(nameof(Photos), new { id });
+    }
+
+    /// <summary>
+    /// Applies a price to only the SELECTED photos of an event gallery — the
+    /// admin picks a few photos (checkboxes) and sets their price in one go.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApplyPriceToSelected(string ids, decimal price, bool forSale = true)
+    {
+        var idList = (ids ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+        if (idList.Count == 0)
+            return RedirectToAction(nameof(Index));
+
+        var photos = await _db.Photos.Include(p => p.Gallery)
+            .Where(p => idList.Contains(p.Id))
+            .ToListAsync();
+        if (photos.Count == 0)
+            return RedirectToAction(nameof(Index));
+
+        var galleryId = photos[0].GalleryId;
+        var gallery = photos[0].Gallery!;
+        if (gallery.IsSession || gallery.BookingId.HasValue)
+        {
+            TempData["Error"] = "As fotos de uma galeria de sessão estão incluídas no preço — não podem ser vendidas à parte.";
+            return RedirectToAction(nameof(Photos), new { id = galleryId });
+        }
+
+        if (forSale && price <= 0)
+            price = 10m;
+
+        foreach (var photo in photos)
+        {
+            photo.IsForSale = forSale;
+            photo.Price = forSale ? price : 0m;
+        }
+        await _db.SaveChangesAsync();
+
+        TempData["Success"] = forSale
+            ? $"Preço de {price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))} aplicado a {photos.Count} foto(s) selecionada(s)."
+            : $"{photos.Count} foto(s) selecionada(s) marcadas como incluídas (sem custo).";
+        return RedirectToAction(nameof(Photos), new { id = galleryId });
     }
 
     [HttpPost]

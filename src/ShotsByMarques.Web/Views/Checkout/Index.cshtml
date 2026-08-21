@@ -24,13 +24,15 @@
         <div class="space-y-4 mb-8">
             @foreach (var item in Model.Items)
             {
-                <div class="card p-4 flex items-center gap-4">
+                <div class="card p-4 flex items-center gap-4 checkout-item" data-photo-id="@item.PhotoId">
                     <img src="@item.PreviewUrl" alt="@item.Title" class="w-20 h-14 object-cover rounded-lg" />
                     <div class="flex-1">
                         <p class="font-medium">@item.Title</p>
                         <p class="text-white/40 text-xs">@item.GalleryTitle</p>
                     </div>
                     <span class="text-accent font-semibold">@item.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                    <button type="button" class="remove-item-btn text-red-400 hover:text-red-300 transition text-sm shrink-0"
+                            title="@SharedLocalizer["RemoveItem"]">✕</button>
                 </div>
             }
         </div>
@@ -60,6 +62,12 @@
             <p class="text-white/40 text-xs mt-2">@SharedLocalizer["HighRes"] · @SharedLocalizer["FreeDelivery"]</p>
         </div>
 
+        <div class="text-center mb-4">
+            <button type="button" id="empty-cart-btn" class="text-white/40 hover:text-red-300 text-sm transition underline underline-offset-4">
+                🗑 @SharedLocalizer["EmptyCart"]
+            </button>
+        </div>
+
         <form asp-action="PlaceOrder" method="post" class="text-center">
             @Html.AntiForgeryToken()
             <input type="hidden" name="ids" value="@ids" />
@@ -69,3 +77,38 @@
         </form>
     }
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var confirmEmpty = "@SharedLocalizer["ConfirmEmptyCart"]";
+
+            // Remove a single photo from the localStorage cart and reload the
+            // checkout with the remaining ids.
+            document.querySelectorAll(".remove-item-btn").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var item = btn.closest(".checkout-item");
+                    var photoId = Number(item.dataset.photoId);
+                    removeFromCart(photoId);
+                    var remaining = Array.from(document.querySelectorAll(".checkout-item"))
+                        .filter(function (el) { return el !== item; })
+                        .map(function (el) { return el.dataset.photoId; });
+                    window.location.href = remaining.length
+                        ? "/Checkout?ids=" + remaining.join(",")
+                        : "/Checkout";
+                });
+            });
+
+            // Empty the whole cart.
+            var emptyBtn = document.getElementById("empty-cart-btn");
+            if (emptyBtn) {
+                emptyBtn.addEventListener("click", function () {
+                    if (!confirm(confirmEmpty)) return;
+                    clearCart();
+                    window.location.href = "/Checkout";
+                });
+            }
+        })();
+    </script>
+}
+

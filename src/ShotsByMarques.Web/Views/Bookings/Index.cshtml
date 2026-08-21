@@ -1,4 +1,4 @@
-@model List<ShotsByMarques.Web.Models.SessionType>
+@model ShotsByMarques.Web.ViewModels.BookingsIndexViewModel
 @{
     ViewData["Title"] = SharedLocalizer["NavSessions"];
 }
@@ -10,7 +10,7 @@
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        @foreach (var session in Model)
+        @foreach (var session in Model.SessionTypes)
         {
             <div class="card overflow-hidden fade-up">
                 <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name" class="h-48 w-full object-cover" loading="lazy" />
@@ -23,4 +23,43 @@
             </div>
         }
     </div>
+
+    @if (Model.MiniDays.Count > 0)
+    {
+        <div class="mt-20 fade-up">
+            <div class="text-center mb-10">
+                <h2 class="font-display text-3xl sm:text-4xl">🎪 @SharedLocalizer["MiniSessionsTitle"]</h2>
+                <p class="text-white/50 mt-3 max-w-2xl mx-auto">@SharedLocalizer["MiniSessionsSubtitle"]</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                @foreach (var m in Model.MiniDays)
+                {
+                    <div class="card p-7 fade-up">
+                        <h3 class="font-display text-2xl">@m.Title</h3>
+                        <p class="text-white/50 text-sm mt-3 capitalize">
+                            @m.Date.ToString("dddd, dd MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture)
+                        </p>
+                        @if (!string.IsNullOrEmpty(m.Zone) || !string.IsNullOrEmpty(m.Location))
+                        {
+                            <p class="text-sm mt-2">📍 <span class="text-white/80">@m.Zone</span>@(string.IsNullOrEmpty(m.Location) ? "" : $" — {m.Location}")</p>
+                        }
+                        <p class="text-accent font-semibold text-lg mt-4">@m.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+                        <div class="flex flex-wrap items-center justify-between gap-3 mt-6">
+                            @if (m.Remaining > 0)
+                            {
+                                <span class="text-xs px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 font-semibold">
+                                    @string.Format(System.Globalization.CultureInfo.CurrentCulture, SharedLocalizer["MiniSessionSlotsLeft"].ToString(), m.Remaining, m.MaxMiniSessions)
+                                </span>
+                                <a href="/sessoes/mini-sessao/@m.Date.ToString("yyyy-MM-dd")" class="btn-primary !py-2.5 !px-5 !text-sm">@SharedLocalizer["MiniSessionBook"]</a>
+                            }
+                            else
+                            {
+                                <span class="text-xs px-3 py-1.5 rounded-full bg-red-500/15 text-red-300 font-semibold">@SharedLocalizer["MiniSessionSoldOut"]</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 </section>

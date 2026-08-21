@@ -21,35 +21,62 @@
 
         @foreach (var gallery in Model.SessionGalleries.Where(g => g.Photos.Count > 0))
         {
+            var booking = gallery.Booking;
+            // Mini-session bookings are reservations (no split payment); regular
+            // session photos unlock only after the balance is paid at delivery.
+            var isMini = booking?.SessionType?.IsMiniSessionType == true;
+            var locked = booking is { BalancePaid: false } && !isMini;
             <div class="card p-6 mb-6 fade-up">
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <div>
                         <p class="font-semibold">@gallery.Title</p>
                         <p class="text-white/40 text-xs mt-1">
                             @SharedLocalizer["Session"]
-                            @if (gallery.Booking?.SessionType != null)
+                            @if (booking?.SessionType != null)
                             {
-                                <text>· @gallery.Booking.SessionType.Name</text>
+                                <text>· @booking.SessionType.Name</text>
                             }
                         </p>
                     </div>
-                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300">@SharedLocalizer["SessionIncluded"]</span>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    @foreach (var photo in gallery.Photos.OrderBy(p => p.SortOrder))
+                    @if (locked)
                     {
-                        <div class="relative rounded-lg overflow-hidden group">
-                            <img src="@photo.PreviewUrl()" alt="@photo.Title" class="w-full aspect-[3/2] object-cover" loading="lazy" />
-                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                                <form asp-controller="Downloads" asp-action="SessionPhoto" asp-route-photoId="@photo.Id" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <button class="btn-primary !py-2 !px-4 !text-xs">↓ @SharedLocalizer["Download"]</button>
-                                </form>
-                            </div>
-                        </div>
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-yellow-500/15 text-yellow-300">@SharedLocalizer["Balance"]</span>
+                    }
+                    else
+                    {
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300">@SharedLocalizer["SessionIncluded"]</span>
                     }
                 </div>
+
+                @if (locked)
+                {
+                    <div class="rounded-xl border border-amber-400/30 bg-amber-500/10 px-5 py-6 text-center">
+                        <p class="text-2xl">🔒</p>
+                        <p class="text-white/70 text-sm mt-2">@SharedLocalizer["BookingNeedsBalance"]</p>
+                        <p class="text-white/40 text-xs mt-1">@SharedLocalizer["Balance"]: @booking!.BalanceAmount.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+                        <form asp-controller="Bookings" asp-action="PayBalance" asp-route-id="@booking!.Id" method="post" class="mt-4">
+                            @Html.AntiForgeryToken()
+                            <button class="btn-primary !py-2.5 !px-5 !text-sm">@SharedLocalizer["PayBalance"]</button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        @foreach (var photo in gallery.Photos.OrderBy(p => p.SortOrder))
+                        {
+                            <div class="relative rounded-lg overflow-hidden group">
+                                <img src="@photo.PreviewUrl()" alt="@photo.Title" class="w-full aspect-[3/2] object-cover" loading="lazy" />
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                    <form asp-controller="Downloads" asp-action="SessionPhoto" asp-route-photoId="@photo.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn-primary !py-2 !px-4 !text-xs">↓ @SharedLocalizer["Download"]</button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         }
     }

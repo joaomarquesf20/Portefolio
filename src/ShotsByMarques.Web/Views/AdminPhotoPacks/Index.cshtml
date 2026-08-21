@@ -4,6 +4,7 @@
 }
 
 <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
     <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
         <h1 class="font-display text-4xl fade-up">@SharedLocalizer["PhotoPacks"]</h1>
         <a href="/AdminPhotoPacks/Create" class="btn-primary fade-up">+ @SharedLocalizer["NewPack"]</a>
@@ -11,10 +12,29 @@
 
     <p class="text-white/40 text-sm mb-8">🎉 @SharedLocalizer["PhotoPacksHint"]</p>
 
+    <div id="bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
+        <label class="flex items-center gap-2 text-white/70 cursor-pointer">
+            <input type="checkbox" id="select-all" class="accent-[color:var(--accent)] w-4 h-4" />
+            <span>Selecionar todas</span>
+        </label>
+        <span class="text-white/40" id="selected-count">0</span>
+        <div class="flex-1"></div>
+        <form asp-action="BulkDelete" method="post" class="inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ids" id="bulk-ids" value="" />
+            <button type="submit" id="bulk-delete-btn" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled
+                    onclick="return bulkSubmit()">
+                🗑 Eliminar selecionadas
+            </button>
+        </form>
+    </div>
+
     <div class="space-y-4">
         @foreach (var pack in Model)
         {
             <div class="card p-5 flex flex-wrap items-center gap-5 fade-up @(!pack.IsActive ? "opacity-60" : "")">
+                <input type="checkbox" class="pack-check accent-[color:var(--accent)] w-4 h-4" value="@pack.Id"
+                       aria-label="@pack.Name" />
                 <div class="flex-1 min-w-[200px]">
                     <p class="font-semibold">@pack.Name
                         @if (!pack.IsActive)
@@ -47,3 +67,36 @@
         <p class="text-white/40 py-16 text-center">Ainda não há packs.</p>
     }
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var checks = Array.from(document.querySelectorAll(".pack-check"));
+            var selectAll = document.getElementById("select-all");
+            var bulkBar = document.getElementById("bulk-bar");
+            var countEl = document.getElementById("selected-count");
+            var bulkIds = document.getElementById("bulk-ids");
+            var bulkDelete = document.getElementById("bulk-delete-btn");
+
+            function refresh() {
+                var selected = checks.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+                bulkIds.value = selected.join(",");
+                countEl.textContent = selected.length > 0 ? selected.length + " selecionadas" : "";
+                bulkBar.classList.toggle("hidden", selected.length === 0);
+                bulkDelete.disabled = selected.length === 0;
+                selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
+            }
+
+            checks.forEach(function (c) { c.addEventListener("change", refresh); });
+            selectAll.addEventListener("change", function () {
+                checks.forEach(function (c) { c.checked = selectAll.checked; });
+                refresh();
+            });
+
+            window.bulkSubmit = function () {
+                return confirm('@SharedLocalizer["ConfirmDelete"]');
+            };
+            refresh();
+        })();
+    </script>
+}

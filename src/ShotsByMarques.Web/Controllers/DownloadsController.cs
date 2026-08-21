@@ -140,7 +140,7 @@ public class DownloadsController : Controller
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
         var photo = await _db.Photos
-            .Include(p => p.Gallery).ThenInclude(g => g!.Booking)
+            .Include(p => p.Gallery).ThenInclude(g => g!.Booking).ThenInclude(b => b!.SessionType)
             .FirstOrDefaultAsync(p => p.Id == photoId);
 
         // Only the client who booked the session (or an admin) may download.
@@ -152,6 +152,13 @@ public class DownloadsController : Controller
 
         // Session photos are included in the price — they are never sold per photo.
         if (photo.IsForSale)
+            return NotFound();
+
+        // Photos unlock only after the balance is paid (delivery). Exempt:
+        // admins and mini-session bookings (reservations, no split payment).
+        var booking = photo.Gallery!.Booking;
+        var isMini = booking?.SessionType?.IsMiniSessionType == true;
+        if (!User.IsInRole("Admin") && !isMini && booking is { BalancePaid: false })
             return NotFound();
 
         var (fullPath, contentType) = ResolveFile(photo.FilePath);

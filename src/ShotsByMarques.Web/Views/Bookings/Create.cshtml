@@ -1,9 +1,26 @@
 @model ShotsByMarques.Web.ViewModels.BookingCreateViewModel
 @{
     ViewData["Title"] = SharedLocalizer["BookSessionTitle"];
+    var fmt = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat;
+    var first = new DateTime(Model.Year, Model.Month, 1);
+    var prev = first.AddMonths(-1);
+    var next = first.AddMonths(1);
+    var pt = new System.Globalization.CultureInfo("pt-PT");
 }
 
-<section class="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+@functions {
+    string CellClass(ShotsByMarques.Web.ViewModels.CalendarDay d)
+    {
+        if (!d.InMonth) return "bg-white/[0.02] border-white/5 text-white/25";
+        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Available) return "bg-emerald-500/15 border-emerald-400/50 text-emerald-200";
+        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Unavailable) return "bg-red-500/10 border-red-400/40 text-red-300/80";
+        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Maybe) return "bg-amber-500/15 border-amber-400/50 text-amber-200";
+        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Event) return "bg-violet-500/15 border-violet-400/50 text-violet-100";
+        return "bg-white/5 border-white/10 text-white/60";
+    }
+}
+
+<section class="max-w-4xl mx-auto px-4 sm:px-6 py-12">
     <a href="/sessoes" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
     <h1 class="font-display text-4xl mt-3 mb-8 fade-up">@SharedLocalizer["BookSessionTitle"]</h1>
 
@@ -13,7 +30,7 @@
             <div>
                 <h2 class="font-display text-2xl">@Model.SessionType.Name</h2>
                 <p class="text-white/50 text-sm mt-1">@Model.SessionType.Description</p>
-                <p class="text-accent font-semibold mt-2">@Model.SessionType.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+                <p class="text-accent font-semibold mt-2">@Model.SessionType.Price.ToString("C", pt)</p>
             </div>
         </div>
     </div>
@@ -28,36 +45,398 @@
         </div>
     }
 
-    <form asp-action="Create" method="post" id="booking-form" data-session-type-id="@Model.SessionTypeId" class="space-y-8 fade-up">
+    <form asp-action="Create" method="post" id="booking-form"
+          data-session-type-id="@Model.SessionTypeId"
+          data-mini-price="@Model.MiniPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+          data-mini-label="@SharedLocalizer["MiniSessionBook"]"
+          class="space-y-8 fade-up">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="SessionTypeId" />
         <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm"></div>
 
-        <div>
-            <label class="block text-sm font-medium mb-2">@SharedLocalizer["ChooseDate"]</label>
-            <input asp-for="Date" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")"
-                   class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition" />
-            <span asp-validation-for="Date" class="text-red-400 text-xs"></span>
+        @* ----- Availability calendar ----- *@
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display text-xl">@SharedLocalizer["ChooseDate"]</h3>
+                <div class="flex items-center gap-3 text-sm">
+                    <a href="/sessoes/marcar/@Model.SessionTypeId?year=@prev.Year&month=@prev.Month" class="btn-outline !px-3 !py-1.5" aria-label="Mês anterior">←</a>
+                    <span class="font-semibold w-40 text-center">@fmt.GetMonthName(Model.Month) @Model.Year</span>
+                    <a href="/sessoes/marcar/@Model.SessionTypeId?year=@next.Year&month=@next.Month" class="btn-outline !px-3 !py-1.5" aria-label="Mês seguinte">→</a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-1.5">
+                @for (int i = 1; i <= 7; i++)
+                {
+                    <div class="text-center text-xs uppercase tracking-wide text-white/40 py-1">@fmt.GetAbbreviatedDayName((System.DayOfWeek)(i % 7))</div>
+                }
+                @foreach (var d in Model.Days)
+                {
+                    <button type="button"
+                            data-cal-day
+                            data-date="@d.Date.ToString("yyyy-MM-dd")"
+                            data-available="@(d.InMonth && !d.IsPast && (d.Status is ShotsByMarques.Web.Models.DayStatus.Available or ShotsByMarques.Web.Models.DayStatus.Maybe) ? "true" : "false")"
+                            data-status="@((int?)d.Status ?? 0)"
+                            data-title="@(d.EventTitle ?? "")"
+                            data-zone="@(d.Zone ?? "")"
+                            data-location="@(d.Location ?? "")"
+                            class="relative aspect-square rounded-lg border text-sm flex flex-col items-center justify-center gap-0.5 transition
+                                   @CellClass(d)
+                                   @(d.InMonth && !d.IsPast ? "hover:scale-[1.05] hover:ring-2 hover:ring-accent/60 cursor-pointer" : "cursor-default")">
+                        <span class="font-semibold leading-none">@d.Date.Day</span>
+                        @if (d.InMonth && d.Status == ShotsByMarques.Web.Models.DayStatus.Event)
+                        {
+                            if (!string.IsNullOrEmpty(d.Zone))
+                            {
+                                <span class="text-[9px] leading-none opacity-70">@d.Zone</span>
+                            }
+                            else
+                            {
+                                <span class="text-[10px] leading-none opacity-90">🎪</span>
+                            }
+                        }
+                        else if (d.InMonth && d.Status == ShotsByMarques.Web.Models.DayStatus.Unavailable)
+                        {
+                            <span class="text-[10px] leading-none opacity-80">✕</span>
+                        }
+                        else if (d.InMonth && !string.IsNullOrEmpty(d.Zone))
+                        {
+                            <span class="text-[9px] leading-none opacity-70">@d.Zone</span>
+                        }
+                    </button>
+                }
+            </div>
+
+            <div class="flex flex-wrap gap-x-5 gap-y-2 text-xs text-white/60 mt-4">
+                <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-emerald-500/15 border border-emerald-400/50"></i> @SharedLocalizer["StatusAvailable"]</span>
+                <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-red-500/10 border border-red-400/40"></i> @SharedLocalizer["StatusUnavailable"]</span>
+                <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-amber-500/15 border border-amber-400/50"></i> @SharedLocalizer["StatusMaybe"]</span>
+                <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-violet-500/15 border border-violet-400/50"></i> @SharedLocalizer["StatusEvent"]</span>
+                <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-white/5 border border-white/10"></i> @SharedLocalizer["StatusZone"]</span>
+            </div>
+            <p id="day-note" data-today-hint="@SharedLocalizer["TodaySlotsHint"]" class="hidden mt-4 text-sm text-white/70 rounded-xl border border-white/10 bg-white/5 px-4 py-3"></p>
         </div>
+
+        @* Hidden date keeps the id="Date" that site.js uses to load slots *@
+        <div id="day-info" class="hidden">
+            <input type="date" asp-for="Date" id="Date" class="hidden" />
+        </div>
+        <span asp-validation-for="Date" class="text-red-400 text-xs"></span>
 
         <div>
             <label class="block text-sm font-medium mb-3">@SharedLocalizer["ChooseTime"]</label>
-            <div id="slots" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>
+            <div id="slots" data-hint="@SharedLocalizer["SlotBarHint"]"></div>
             <p id="no-slots" class="hidden text-white/40 text-sm mt-3">@SharedLocalizer["NoSlots"]</p>
             <input type="hidden" asp-for="TimeSlot" id="TimeSlot" />
             <span asp-validation-for="TimeSlot" class="text-red-400 text-xs"></span>
         </div>
 
-        <div>
-            <label asp-for="Notes" class="block text-sm font-medium mb-2">@SharedLocalizer["Notes"]</label>
-            <textarea asp-for="Notes" rows="3" placeholder="Localização, tipo de carro, ideias…"
-                      class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition"></textarea>
+        @* ----- Location + travel fee ----- *@
+        <div id="location-section">
+            @* The admin's fixed zone for this day: shown as info, not a choice. *@
+            <div id="zone-fixed" class="hidden mb-4">
+                <p class="text-white/40 text-xs uppercase tracking-wide">@SharedLocalizer["Zone"]</p>
+                <p class="font-semibold">📍 <span id="zone-fixed-name"></span></p>
+            </div>
+            @* Free choice (travel): zone, then locality — only when no zone is defined. *@
+            <div id="zone-picker" class="grid sm:grid-cols-2 gap-4">
+                <div id="zone-drop-wrap">
+                    <label for="LocationRegion" class="block text-sm font-medium mb-2">@SharedLocalizer["Zone"]</label>
+                    <select asp-for="SelectedRegion" id="LocationRegion" autocomplete="off"
+                            class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition">
+                        <option value="">@SharedLocalizer["ChooseZone"]</option>
+                        @foreach (var region in Model.Regions)
+                        {
+                            <option value="@region">@region</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label asp-for="Location" class="block text-sm font-medium mb-2">@SharedLocalizer["Location"]</label>
+                    <select asp-for="Location" id="Location" autocomplete="off"
+                            data-choose="@SharedLocalizer["ChooseLocality"]"
+                            data-first="@SharedLocalizer["ChooseZoneFirst"]"
+                            data-posted="@Model.Location"
+                            class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--card)] px-4 py-3 focus:outline-none focus:border-accent transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <option value="">@SharedLocalizer["ChooseZoneFirst"]</option>
+                    </select>
+                    <span asp-validation-for="Location" class="text-red-400 text-xs"></span>
+                </div>
+            </div>
+            <p class="text-white/40 text-xs mt-2">
+                @string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    SharedLocalizer["TravelHint"].ToString(), Model.Travel.BaseCity, Model.Travel.FreeKm,
+                    Model.Travel.PricePerKm.ToString("C", pt))
+            </p>
         </div>
 
-        <button type="submit" class="btn-primary w-full sm:w-auto">@SharedLocalizer["BookNow"] — @Model.SessionType.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</button>
+        @* ----- Totals + deposit breakdown ----- *@
+        <div class="card p-6 space-y-2 text-sm">
+            <div class="flex justify-between"><span class="text-white/60">@SharedLocalizer["Price"]</span><span class="font-medium" id="sum-session">@Model.SessionType.Price.ToString("C", pt)</span></div>
+            <div class="flex justify-between"><span class="text-white/60">@SharedLocalizer["TravelFee"]</span><span class="font-medium" id="sum-travel">@Model.TravelFee.ToString("C", pt)</span></div>
+            <div class="flex justify-between border-t border-[color:var(--border)] pt-2 font-semibold"><span>@SharedLocalizer["TotalPrice"]</span><span class="text-accent" id="sum-total">@Model.TotalPrice.ToString("C", pt)</span></div>
+            <div class="flex justify-between text-xs text-white/50"><span>@SharedLocalizer["Deposit"]</span><span id="sum-deposit">@Model.DepositAmount.ToString("C", pt)</span></div>
+            <div class="flex justify-between text-xs text-white/50"><span>@SharedLocalizer["Balance"]</span><span id="sum-balance">@Model.BalanceAmount.ToString("C", pt)</span></div>
+            <p id="travel-note" class="hidden text-amber-300/90 text-xs">@SharedLocalizer["LocationNotRecognized"]</p>
+        </div>
+
+        <button type="submit" class="btn-primary w-full sm:w-auto" id="submit-btn">
+            <span id="submit-label">@SharedLocalizer["BookNow"]</span> — @SharedLocalizer["Deposit"]: <span id="submit-deposit">@Model.DepositAmount.ToString("C", pt)</span>
+        </button>
     </form>
 </section>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            // ---- Travel fee live preview (server recomputes on POST) ----
+            var cities = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.Cities.Select(c => new { c.Name, c.Region, c.Lat, c.Lon })));
+            var baseLat = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Travel.BaseLat));
+            var baseLon = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Travel.BaseLon));
+            var freeKm = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Travel.FreeKm));
+            var pricePerKm = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Travel.PricePerKm));
+            var sessionPrice = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SessionType.Price));
+
+            function haversine(lat1, lon1, lat2, lon2) {
+                var r = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+                var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                return 2 * r * Math.asin(Math.min(1, Math.sqrt(a)));
+            }
+            function norm(s) { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
+            function updateTravel() {
+                var q = norm(document.getElementById("Location").value || "");
+                var city = cities.find(function (c) { return norm(c.Name) === q; });
+                var note = document.getElementById("travel-note");
+                if (!city) {
+                    note.classList.toggle("hidden", q.length === 0);
+                    renderTotals(0, false);
+                    return;
+                }
+                note.classList.add("hidden");
+                var km = Math.round(haversine(baseLat, baseLon, city.Lat, city.Lon));
+                var fee = km > freeKm ? Math.round((km - freeKm) * pricePerKm * 100) / 100 : 0;
+                renderTotals(fee, true);
+            }
+            function renderTotals(fee, recognized) {
+                var pt = { style: "currency", currency: "EUR" };
+                var total = sessionPrice + fee;
+                var deposit = Math.round(total * 50 + Number.EPSILON) / 100;
+                var balance = Math.round((total - deposit) * 100) / 100;
+                document.getElementById("sum-travel").textContent = fee.toLocaleString("pt-PT", pt);
+                document.getElementById("sum-total").textContent = total.toLocaleString("pt-PT", pt);
+                document.getElementById("sum-deposit").textContent = deposit.toLocaleString("pt-PT", pt);
+                document.getElementById("sum-balance").textContent = balance.toLocaleString("pt-PT", pt);
+                document.getElementById("submit-deposit").textContent = deposit.toLocaleString("pt-PT", pt);
+            }
+
+            // ---- Event days: the picked time books a mini session at the event ----
+            var bookingForm = document.getElementById("booking-form");
+            var miniPrice = Number(bookingForm.dataset.miniPrice || "0");
+            var miniLabel = bookingForm.dataset.miniLabel || "Reservar mini sessão";
+            var bookLabel = document.getElementById("submit-label").textContent;
+            var eventMode = false;
+
+            function renderMiniTotals() {
+                var pt = { style: "currency", currency: "EUR" };
+                var deposit = Math.round(miniPrice * 50 + Number.EPSILON) / 100;
+                var balance = Math.round((miniPrice - deposit) * 100) / 100;
+                document.getElementById("sum-session").textContent = miniPrice.toLocaleString("pt-PT", pt);
+                document.getElementById("sum-travel").textContent = (0).toLocaleString("pt-PT", pt);
+                document.getElementById("sum-total").textContent = miniPrice.toLocaleString("pt-PT", pt);
+                document.getElementById("sum-deposit").textContent = deposit.toLocaleString("pt-PT", pt);
+                document.getElementById("sum-balance").textContent = balance.toLocaleString("pt-PT", pt);
+                document.getElementById("submit-deposit").textContent = deposit.toLocaleString("pt-PT", pt);
+                document.getElementById("submit-label").textContent = miniLabel;
+                document.getElementById("travel-note").classList.add("hidden");
+            }
+            function enterEventMode() {
+                eventMode = true;
+                renderMiniTotals();
+            }
+            function exitEventMode() {
+                eventMode = false;
+                document.getElementById("submit-label").textContent = bookLabel;
+                document.getElementById("sum-session").textContent =
+                    sessionPrice.toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
+                updateTravel();
+            }
+            // ---- Location: two-step selector (zone -> locality) ----
+            var regionSelect = document.getElementById("LocationRegion");
+            var locSelect = document.getElementById("Location");
+
+            function fillLocalities() {
+                var region = regionSelect.value;
+                // Restore the server-posted value after a validation error (read once).
+                var keep = locSelect.getAttribute("data-posted");
+                locSelect.removeAttribute("data-posted");
+                if (keep == null) keep = locSelect.value;
+                locSelect.innerHTML = "";
+                var placeholder = document.createElement("option");
+                placeholder.value = "";
+                placeholder.textContent = region ? "— " + locSelect.getAttribute("data-choose") + " —" : locSelect.getAttribute("data-first");
+                locSelect.appendChild(placeholder);
+                if (region) {
+                    cities.forEach(function (c) {
+                        if (c.Region !== region) return;
+                        var o = document.createElement("option");
+                        o.value = c.Name;
+                        o.textContent = c.Name;
+                        locSelect.appendChild(o);
+                    });
+                    locSelect.disabled = false;
+                } else {
+                    locSelect.disabled = true;
+                }
+                // Restore the posted value if it still belongs to the chosen region.
+                if (keep && Array.from(locSelect.options).some(function (o) { return o.value === keep; })) {
+                    locSelect.value = keep;
+                } else {
+                    locSelect.value = "";
+                }
+                updateTravel();
+            }
+            regionSelect.addEventListener("change", fillLocalities);
+            locSelect.addEventListener("change", updateTravel);
+            fillLocalities();
+            updateTravel();
+
+            // ---- Calendar: pick a day -> set the hidden date input + load slots ----
+            var dateInput = document.getElementById("Date");
+            var dayInfo = document.getElementById("day-info");
+            var dayNote = document.getElementById("day-note");
+            var selectedDate = dateInput.value;
+
+            // If the server-default date (today) does not belong to the shown month,
+            // or it is in the past, clear it so the page does not show a confusing
+            // "no time slots" state when the user navigated to another month.
+            var shownMonth = @Model.Year * 100 + @Model.Month;
+            if (selectedDate) {
+                var d = selectedDate.split("-");
+                var ym = Number(d[0]) * 100 + Number(d[1]);
+                var isPast = new Date(selectedDate + "T00:00:00") < new Date(new Date().toDateString());
+                if (ym !== shownMonth || isPast) {
+                    dateInput.value = "";
+                    selectedDate = "";
+                }
+            }
+
+            function applyDayZone(btn) {
+                // The admin's zone for this day is shown as fixed info, never as a
+                // choice; the client only picks the locality inside that zone.
+                var zone = btn.dataset.zone || "";
+                var zoneFixed = document.getElementById("zone-fixed");
+                var locationSection = document.getElementById("location-section");
+                locationSection.classList.remove("hidden");
+                var zoneDropWrap = document.getElementById("zone-drop-wrap");
+                if (zone) {
+                    document.getElementById("zone-fixed-name").textContent = zone;
+                    zoneFixed.classList.remove("hidden");
+                    zoneDropWrap.classList.add("hidden");
+                    regionSelect.value = zone;
+                    regionSelect.disabled = true;
+                    fillLocalities();
+                } else {
+                    zoneFixed.classList.add("hidden");
+                    zoneDropWrap.classList.remove("hidden");
+                    regionSelect.disabled = false;
+                }
+            }
+            function showDayInfo(btn) {
+                var status = Number(btn.dataset.status || 0);
+                var title = btn.dataset.title || "";
+                var zone = btn.dataset.zone || "";
+                var loc = btn.dataset.location || "";
+                if (status === 4) {
+                    dayNote.textContent = (title || "Dia de evento") +
+                        (zone ? " — " + zone + (loc ? ", " + loc : "") : "") +
+                        " — Escolhe um horário de mini sessão abaixo.";
+                    dayNote.classList.remove("hidden");
+                } else if (status === 2) {
+                    dayNote.textContent = "✕ Não disponível neste dia.";
+                    dayNote.classList.remove("hidden");
+                } else {
+                    dayNote.classList.add("hidden");
+                }
+            }
+            document.querySelectorAll("[data-cal-day]").forEach(function (btn) {
+                if (btn.dataset.available === "true") {
+                    btn.addEventListener("click", function () {
+                        dateInput.value = btn.dataset.date;
+                        dateInput.dispatchEvent(new Event("change", { bubbles: true }));
+                        selectedDate = btn.dataset.date;
+                        document.querySelectorAll("[data-cal-day]").forEach(function (b) {
+                            b.classList.remove("ring-2", "ring-accent/80");
+                        });
+                        btn.classList.add("ring-2", "ring-accent/80");
+                        exitEventMode();
+                        applyDayZone(btn);
+                        showDayInfo(btn);
+                        dayInfo.classList.remove("hidden");
+                    });
+                } else if (Number(btn.dataset.status) === 4) {
+                    // Event day: select it and load the event's mini-session slots so
+                    // the client can pick a time right here (books a mini session).
+                    btn.addEventListener("click", function () {
+                        dateInput.value = btn.dataset.date;
+                        dateInput.dispatchEvent(new Event("change", { bubbles: true }));
+                        selectedDate = btn.dataset.date;
+                        document.querySelectorAll("[data-cal-day]").forEach(function (b) {
+                            b.classList.remove("ring-2", "ring-accent/80");
+                        });
+                        btn.classList.add("ring-2", "ring-accent/80");
+                        var locationSection = document.getElementById("location-section");
+                        if (locationSection) locationSection.classList.add("hidden");
+                        enterEventMode();
+                        showDayInfo(btn);
+                        dayInfo.classList.remove("hidden");
+                    });
+                } else {
+                    // Unavailable days: clear the current selection so the buyer never
+                    // books a different day/locality while thinking the day was selected.
+                    btn.addEventListener("click", function () {
+                        dateInput.value = "";
+                        selectedDate = "";
+                        document.querySelectorAll("[data-cal-day]").forEach(function (b) {
+                            b.classList.remove("ring-2", "ring-accent/80");
+                        });
+                        var slotsEl = document.getElementById("slots");
+                        if (slotsEl) slotsEl.innerHTML = "";
+                        var noSlotsEl = document.getElementById("no-slots");
+                        if (noSlotsEl) noSlotsEl.classList.add("hidden");
+                        var timeEl = document.getElementById("TimeSlot");
+                        if (timeEl) timeEl.value = "";
+                        regionSelect.value = "";
+                        fillLocalities();
+                        // Unavailable days cannot be booked here: hide the whole
+                        // location section (no zone or locality to choose).
+                        var locationSection = document.getElementById("location-section");
+                        if (locationSection) locationSection.classList.add("hidden");
+                        showDayInfo(btn);
+                        dayInfo.classList.remove("hidden");
+                    });
+                }
+                if (btn.dataset.date === selectedDate) btn.classList.add("ring-2", "ring-accent/80");
+            });
+            // Restore the selected day's UI after a validation-error re-render.
+            if (selectedDate) {
+                var selBtn = Array.from(document.querySelectorAll("[data-cal-day]"))
+                    .find(function (b) { return b.dataset.date === selectedDate; });
+                if (selBtn) {
+                    if (Number(selBtn.dataset.status) === 4) {
+                        var locationSection = document.getElementById("location-section");
+                        if (locationSection) locationSection.classList.add("hidden");
+                        enterEventMode();
+                    } else {
+                        exitEventMode();
+                        applyDayZone(selBtn);
+                    }
+                    showDayInfo(selBtn);
+                    dayInfo.classList.remove("hidden");
+                }
+            }
+        })();
+    </script>
 }

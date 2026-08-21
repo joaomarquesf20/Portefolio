@@ -4,13 +4,34 @@
 }
 
 <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
     <h1 class="font-display text-4xl mb-8 fade-up">@SharedLocalizer["Orders"]</h1>
+
+    <div id="bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
+        <label class="flex items-center gap-2 text-white/70 cursor-pointer">
+            <input type="checkbox" id="select-all" class="accent-[color:var(--accent)] w-4 h-4" />
+            <span>Selecionar todas</span>
+        </label>
+        <span class="text-white/40" id="selected-count">0</span>
+        <div class="flex-1"></div>
+        <form asp-action="BulkDelete" method="post" class="inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ids" id="bulk-ids" value="" />
+            <button type="submit" id="bulk-delete-btn" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled
+                    onclick="return bulkSubmit()">
+                🗑 Eliminar selecionadas
+            </button>
+        </form>
+    </div>
 
     <div class="space-y-4">
         @foreach (var order in Model)
         {
             <div class="card p-6 fade-up">
                 <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-start gap-4">
+                    <input type="checkbox" class="order-check accent-[color:var(--accent)] w-4 h-4 mt-1" value="@order.Id"
+                           aria-label="@order.OrderNumber" />
                     <div>
                         <p class="font-semibold">@order.OrderNumber</p>
                         <p class="text-white/40 text-sm mt-1">@order.ClientUser?.FullName · @order.ClientUser?.Email</p>
@@ -24,6 +45,7 @@
                         }
                         <p class="text-accent font-semibold">@order.Total.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
                         <span class="inline-block mt-1 text-xs font-semibold px-3 py-1 rounded-full @(order.Status == ShotsByMarques.Web.Models.OrderStatus.Paid ? "bg-emerald-500/15 text-emerald-300" : "bg-yellow-500/15 text-yellow-300")">@order.Status</span>
+                    </div>
                     </div>
                 </div>
                 @if (order.Items.Count > 0)
@@ -40,6 +62,13 @@
                         }
                     </div>
                 }
+                <div class="flex justify-end mt-4 pt-4 border-t border-[color:var(--border)]">
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@order.Id" />
+                        <button class="text-xs px-3 py-1.5 rounded-full border border-red-400/40 text-red-300 hover:bg-red-500/10 transition">🗑 @SharedLocalizer["Delete"]</button>
+                    </form>
+                </div>
             </div>
         }
     </div>
@@ -49,3 +78,36 @@
         <p class="text-white/40 text-center py-16">Sem encomendas.</p>
     }
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var checks = Array.from(document.querySelectorAll(".order-check"));
+            var selectAll = document.getElementById("select-all");
+            var bulkBar = document.getElementById("bulk-bar");
+            var countEl = document.getElementById("selected-count");
+            var bulkIds = document.getElementById("bulk-ids");
+            var bulkDelete = document.getElementById("bulk-delete-btn");
+
+            function refresh() {
+                var selected = checks.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+                bulkIds.value = selected.join(",");
+                countEl.textContent = selected.length > 0 ? selected.length + " selecionadas" : "";
+                bulkBar.classList.toggle("hidden", selected.length === 0);
+                bulkDelete.disabled = selected.length === 0;
+                selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
+            }
+
+            checks.forEach(function (c) { c.addEventListener("change", refresh); });
+            selectAll.addEventListener("change", function () {
+                checks.forEach(function (c) { c.checked = selectAll.checked; });
+                refresh();
+            });
+
+            window.bulkSubmit = function () {
+                return confirm('@SharedLocalizer["ConfirmDelete"]');
+            };
+            refresh();
+        })();
+    </script>
+}

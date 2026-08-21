@@ -1,44 +1,101 @@
 @model List<ShotsByMarques.Web.Models.Gallery>
 @{
     ViewData["Title"] = SharedLocalizer["Galleries"];
+    var filter = ViewData["Filter"] as string;
 }
 
 <section class="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
+    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 class="font-display text-4xl fade-up">@SharedLocalizer["Galleries"]</h1>
         <a href="/AdminGalleries/Create" class="btn-primary fade-up">+ @SharedLocalizer["NewGallery"]</a>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mb-8 text-sm">
+        <a href="/AdminGalleries" class="px-3 py-1.5 rounded-full border @(filter is null ? "bg-accent text-black font-semibold border-accent" : "border-[color:var(--border)] text-white/60 hover:text-accent")">Todas</a>
+        <a href="/AdminGalleries?filter=public" class="px-3 py-1.5 rounded-full border @(filter == "public" ? "bg-accent text-black font-semibold border-accent" : "border-[color:var(--border)] text-white/60 hover:text-accent")">🌐 Públicas</a>
+        <a href="/AdminGalleries?filter=hidden" class="px-3 py-1.5 rounded-full border @(filter == "hidden" ? "bg-accent text-black font-semibold border-accent" : "border-[color:var(--border)] text-white/60 hover:text-accent")">👁 Ocultas</a>
+        <a href="/AdminGalleries?filter=private" class="px-3 py-1.5 rounded-full border @(filter == "private" ? "bg-accent text-black font-semibold border-accent" : "border-[color:var(--border)] text-white/60 hover:text-accent")">🔒 Privadas</a>
+    </div>
+
+    @* ----- Bulk actions bar ----- *@
+    <div id="bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
+        <label class="flex items-center gap-2 text-white/70 cursor-pointer">
+            <input type="checkbox" id="select-all" class="accent-[color:var(--accent)] w-4 h-4" />
+            <span id="select-all-label">@SharedLocalizer["SelectAll"]</span>
+        </label>
+        <span class="text-white/40" id="selected-count">0</span>
+        <div class="flex-1"></div>
+        <form asp-action="BulkAction" method="post" class="inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ids" id="bulk-ids" value="" />
+            <input type="hidden" name="action" id="bulk-action" value="" />
+            <button type="submit" id="bulk-private-btn" class="btn-outline !px-4 !py-2" disabled
+                    onclick="return bulkSubmit('private')">
+                👁 Ocultar selecionadas
+            </button>
+            <button type="submit" id="bulk-delete-btn" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled
+                    onclick="return bulkSubmit('delete')">
+                @SharedLocalizer["DeleteSelected"]
+            </button>
+        </form>
     </div>
 
     <div class="space-y-4">
         @foreach (var gallery in Model)
         {
             <div class="card p-5 flex flex-wrap items-center gap-5 fade-up">
+                <input type="checkbox" class="gallery-check accent-[color:var(--accent)] w-4 h-4" value="@gallery.Id"
+                       aria-label="@gallery.Title" />
                 <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-24 h-16 object-cover rounded-lg" />
                 <div class="flex-1 min-w-[200px]">
-                    <p class="font-semibold">@gallery.Title</p>
-                    <p class="text-white/40 text-sm">
-                        <span class="@(gallery.IsSession ? "text-accent" : "text-emerald-300")">@(gallery.IsSession ? "🚗 Sessão" : "📷 Evento")</span> ·
-                        @gallery.Photos.Count fotos ·
+                    <div class="flex flex-wrap items-center gap-2">
+                        <p class="font-semibold">@gallery.Title</p>
                         @if (gallery.IsPrivate)
                         {
-                            <span class="text-accent">🔒 privada — @gallery.Booking?.ClientUser?.FullName (@gallery.Booking?.ClientUser?.Email)</span>
+                            <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/30">🔒 Privada</span>
+                        }
+                        else if (gallery.IsPublished)
+                        {
+                            <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">🌐 Pública</span>
                         }
                         else
                         {
-                            @(gallery.IsPublished ? "publicada" : "privada")
+                            <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-white/10 text-white/50 border border-white/10">👁 Ocultada</span>
+                        }
+                    </div>
+                    <p class="text-white/40 text-sm mt-1">
+                        <span class="@(gallery.IsSession ? "text-accent" : "text-emerald-300")">@(gallery.IsSession ? "🚗 Sessão" : "📷 Evento")</span> ·
+                        @gallery.Photos.Count fotos
+                        @if (gallery.IsPrivate && gallery.Booking?.ClientUser is not null)
+                        {
+                            <span>· @gallery.Booking.ClientUser.FullName (@gallery.Booking.ClientUser.Email)</span>
                         }
                     </p>
                 </div>
-                <div class="flex items-center gap-3 text-sm">
-                    <a href="/galeria/@gallery.Id" target="_blank" class="text-white/60 hover:text-accent transition">Ver</a>
-                    <a href="/AdminGalleries/Photos/@gallery.Id" class="text-accent hover:underline">@SharedLocalizer["Photos"]</a>
-                    <a href="/AdminGalleries/Edit/@gallery.Id" class="text-white/60 hover:text-accent transition">@SharedLocalizer["Edit"]</a>
-                    <form asp-action="TogglePublish" method="post" class="inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@gallery.Id" />
-                        <button class="text-white/60 hover:text-accent transition">@(gallery.IsPublished ? SharedLocalizer["Unpublish"] : SharedLocalizer["Publish"])</button>
-                    </form>
-                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                <div class="flex items-center gap-4 text-sm">
+                    <a href="/galeria/@gallery.Id" target="_blank" class="text-white/60 hover:text-accent transition" title="Abrir no site">↗</a>
+                    <a href="/AdminGalleries/Photos/@gallery.Id" class="btn-primary !py-2 !px-5">@SharedLocalizer["Edit"]</a>
+                    @if (!gallery.IsPrivate)
+                    {
+                        @if (gallery.IsPublished)
+                        {
+                            <form asp-action="MakePrivate" method="post" class="inline" title="Esconde do público (a galeria continua guardada)">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@gallery.Id" />
+                                <button class="text-white/60 hover:text-accent transition">👁 Ocultar</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form asp-action="TogglePublish" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@gallery.Id" />
+                                <button class="text-white/60 hover:text-accent transition">@SharedLocalizer["Publish"]</button>
+                            </form>
+                        }
+                    }
+                    <form asp-action="Delete" method="post" class="inline" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@gallery.Id" />
                         <button class="text-red-400 hover:text-red-300 transition">@SharedLocalizer["Delete"]</button>
@@ -53,3 +110,51 @@
         <p class="text-white/40 py-16 text-center">Ainda não há galerias.</p>
     }
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var checks = Array.from(document.querySelectorAll(".gallery-check"));
+            var selectAll = document.getElementById("select-all");
+            var bulkBar = document.getElementById("bulk-bar");
+            var countEl = document.getElementById("selected-count");
+            var bulkIds = document.getElementById("bulk-ids");
+            var bulkPrivate = document.getElementById("bulk-private-btn");
+            var bulkDelete = document.getElementById("bulk-delete-btn");
+            var selectAllLabel = document.getElementById("select-all-label");
+
+            function refresh() {
+                var selected = checks.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+                bulkIds.value = selected.join(",");
+                countEl.textContent = selected.length > 0
+                    ? selected.length + " " + "@SharedLocalizer["Selected"]"
+                    : "";
+                bulkBar.classList.toggle("hidden", selected.length === 0);
+                bulkPrivate.disabled = selected.length === 0;
+                bulkDelete.disabled = selected.length === 0;
+                selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
+                selectAllLabel.textContent = selectAll.checked
+                    ? "@SharedLocalizer["DeselectAll"]"
+                    : "@SharedLocalizer["SelectAll"]";
+            }
+
+            checks.forEach(function (c) { c.addEventListener("change", refresh); });
+            selectAll.addEventListener("change", function () {
+                checks.forEach(function (c) { c.checked = selectAll.checked; });
+                refresh();
+            });
+
+            window.bulkSubmit = function (action) {
+                if (action === "delete" &&
+                    !confirm("@Html.Raw(SharedLocalizer["ConfirmBulkDelete"])")) {
+                    return false;
+                }
+                bulkIds.value = checks.filter(function (c) { return c.checked; })
+                    .map(function (c) { return c.value; }).join(",");
+                document.getElementById("bulk-action").value = action;
+                return true;
+            };
+            refresh();
+        })();
+    </script>
+}

@@ -34,6 +34,19 @@ function clearCart() {
   window.dispatchEvent(new CustomEvent("sbm:cart-change", { detail: 0 }));
 }
 
+// Remove a photo by id from whichever gallery holds it (used by the cart page).
+function removeFromCart(photoId) {
+  const cart = getCart();
+  let changed = false;
+  for (const gid in cart) {
+    const list = cart[gid];
+    const idx = list.indexOf(photoId);
+    if (idx >= 0) { list.splice(idx, 1); changed = true; }
+    if (list.length === 0) delete cart[gid];
+  }
+  if (changed) saveCart(cart);
+}
+
 function countSelected() {
   return Object.values(getCart()).reduce((sum, list) => sum + list.length, 0);
 }
@@ -48,6 +61,70 @@ function refreshCartBadge() {
     el.textContent = count;
   });
 }
+
+// ----- Time slot bar (client booking) -----
+// Renders the admin-style hour strip as a row of selectable time segments:
+// golden when selected, violet for night hours, dimmed when already taken.
+// container: element the bar is built into (previous content is cleared)
+// slots: [{ time: "HH:mm", taken: bool }]
+// opts:  { selected: "HH:mm", hint: string, onSelect: fn(time) }
+window.SBM = window.SBM || {};
+window.SBM.buildSlotBar = function (container, slots, opts) {
+  opts = opts || {};
+  // Accept both camelCase ({time, taken}) and PascalCase ({Time, Taken}) JSON.
+  const list = (slots || [])
+    .map(s => ({ time: s.time || s.Time, taken: !!(s.taken || s.Taken) }))
+    .sort((a, b) => a.time.localeCompare(b.time));
+  let selected = opts.selected || "";
+  container.className = "rounded-xl border border-white/10 bg-[color:var(--bg)] p-3";
+  container.innerHTML = "";
+
+  const header = document.createElement("div");
+  header.className = "flex items-center justify-between mb-2 text-xs gap-2";
+  const labelWrap = document.createElement("span");
+  labelWrap.className = "text-white/60 flex items-center gap-2 min-w-0";
+  const selLabel = document.createElement("span");
+  selLabel.className = "text-accent font-semibold whitespace-nowrap";
+  selLabel.textContent = selected ? "⏱ " + selected : "—";
+  const hint = document.createElement("span");
+  hint.className = "text-white/35 hidden sm:inline truncate";
+  hint.textContent = opts.hint || "";
+  labelWrap.append(selLabel, hint);
+  header.appendChild(labelWrap);
+  container.appendChild(header);
+
+  const bar = document.createElement("div");
+  bar.className = "flex gap-[3px] overflow-x-auto pb-0.5";
+  const segs = [];
+  list.forEach(slot => {
+    const seg = document.createElement("button");
+    seg.type = "button";
+    const h = Number(slot.time.split(":")[0]);
+    const night = h >= 20 || h < 6;
+    seg.className = "slot-bar-seg" + (night ? " night" : "") + (slot.taken ? " taken" : "");
+    seg.textContent = slot.time;
+    seg.title = slot.time;
+    seg.disabled = slot.taken;
+    if (!slot.taken) {
+      seg.addEventListener("click", () => {
+        segs.forEach(s => s.classList.remove("sel", "night-sel"));
+        seg.classList.add("sel");
+        if (night) seg.classList.add("night-sel");
+        selected = slot.time;
+        selLabel.textContent = "⏱ " + slot.time;
+        if (opts.onSelect) opts.onSelect(slot.time);
+      });
+      if (slot.time === selected) {
+        seg.classList.add("sel");
+        if (night) seg.classList.add("night-sel");
+      }
+    }
+    bar.appendChild(seg);
+    segs.push(seg);
+  });
+  container.appendChild(bar);
+  return { selected: () => selected };
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   refreshCartBadge();
@@ -312,19 +389,26 @@ document.addEventListener("DOMContentLoaded", () => {
       timeInput.value = "";
       const res = await fetch(`/Bookings/Available?sessionTypeId=${typeId}&date=${dateInput.value}`);
       const slots = await res.json();
-      if (slots.length === 0) { noSlots?.classList.remove("hidden"); return; }
-      slots.forEach(slot => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "time-slot";
-        btn.textContent = slot;
-        btn.addEventListener("click", () => {
-          slotsWrap.querySelectorAll(".time-slot").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          timeInput.value = slot;
-        });
-        slotsWrap.appendChild(btn);
+      const free = (slots || []).filter(s => !s.taken);
+      if (free.length === 0) { noSlots?.classList.remove("hidden"); return; }
+      // Admin-style time bar: click a segment to pick the hour.
+      window.SBM.buildSlotBar(slotsWrap, slots || [], {
+        selected: "",
+        hint: slotsWrap.dataset.hint || "",
+        onSelect: (t) => { timeInput.value = t; }
       });
+      // Explain why today may offer fewer slots than other days (local date).
+      const hint = document.getElementById("day-note");
+      if (hint && hint.dataset.todayHint) {
+        const now = new Date();
+        const localToday = now.getFullYear() + "-" +
+          String(now.getMonth() + 1).padStart(2, "0") + "-" +
+          String(now.getDate()).padStart(2, "0");
+        if (dateInput.value === localToday) {
+          hint.textContent = hint.dataset.todayHint.replace("{0}", free[0].time);
+          hint.classList.remove("hidden");
+        }
+      }
     };
     dateInput.addEventListener("change", loadSlots);
     if (dateInput.value) loadSlots();

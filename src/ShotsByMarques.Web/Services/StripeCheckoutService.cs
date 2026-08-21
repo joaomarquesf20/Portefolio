@@ -89,6 +89,60 @@ public class StripeCheckoutService
         return session.Id;
     }
 
+    /// <summary>
+    /// Creates a Stripe Checkout session for a booking payment (deposit or balance).
+    /// The webhook and the success page match it via metadata (bookingId + purpose).
+    /// </summary>
+    public async Task<string?> CreateBookingCheckoutSessionAsync(Booking booking, decimal amount, string purpose)
+    {
+        if (!IsConfigured)
+            return null;
+
+        var successAction = purpose == "balance" ? "BalanceSuccess" : "DepositSuccess";
+        var isBalance = purpose == "balance";
+        var options = new SessionCreateOptions
+        {
+            Mode = "payment",
+            SuccessUrl = $"{_baseUrl}/Bookings/{successAction}?session_id={{CHECKOUT_SESSION_ID}}",
+            CancelUrl = $"{_baseUrl}/as-minhas-marcacoes",
+            CustomerEmail = booking.ClientUser?.Email,
+            Metadata = new Dictionary<string, string>
+            {
+                ["bookingId"] = booking.Id.ToString(),
+                ["purpose"] = purpose
+            },
+            LineItems = new List<SessionLineItemOptions>
+            {
+                new()
+                {
+                    Quantity = 1,
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        Currency = "eur",
+                        UnitAmount = (long)Math.Round(amount * 100),
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = isBalance ? "Sessão — saldo (na entrega)" : "Sessão — depósito (50%)",
+                            Description = booking.SessionType?.Name ?? "Marcação de sessão"
+                        }
+                    }
+                }
+            }
+        };
+
+        var paymentMethods = _config["Stripe:PaymentMethods"];
+        if (!string.IsNullOrWhiteSpace(paymentMethods))
+        {
+            options.PaymentMethodTypes = paymentMethods
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+
+        var service = new SessionService(_client);
+        var session = await service.CreateAsync(options);
+        return session.Id;
+    }
+
     /// <summary>"paid", "processing" (MB Way confirmation pending) or "unpaid".</summary>
     public async Task<string?> GetPaymentStatusAsync(string sessionId)
     {

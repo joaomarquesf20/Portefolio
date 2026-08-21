@@ -24,6 +24,72 @@ public static class DbSeeder
 
         await db.Database.EnsureCreatedAsync();
 
+        // ---- Idempotent schema sync for existing dev databases ----
+        // The weekly template (AvailabilityWindows) was removed: days are only
+        // bookable when the admin explicitly marks them. Drop the legacy table
+        // for existing databases (fresh ones never create it).
+        await db.Database.ExecuteSqlRawAsync("""
+            IF OBJECT_ID('AvailabilityWindows') IS NOT NULL
+            DROP TABLE AvailabilityWindows
+            """);
+
+        // Calendar overrides (DayAvailability) + the mini-session flag on SessionType
+        // — created manually for existing databases (EnsureCreated does not add
+        // new tables/columns once the DB exists; this preserves all existing data).
+        await db.Database.ExecuteSqlRawAsync("""
+            IF OBJECT_ID('DayAvailability') IS NULL
+            CREATE TABLE DayAvailability (
+                Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                [Date] DATETIME2 NOT NULL,
+                [Status] INT NOT NULL,
+                MaxMiniSessions INT NULL,
+                Title NVARCHAR(200) NULL,
+                CONSTRAINT UQ_DayAvailability_Date UNIQUE ([Date])
+            )
+            """);
+        await db.Database.ExecuteSqlRawAsync("""
+            IF COL_LENGTH('SessionTypes', 'IsMiniSessionType') IS NULL
+            ALTER TABLE SessionTypes ADD IsMiniSessionType BIT NOT NULL DEFAULT 0
+            """);
+        // DayAvailability gained Zone/Location (event location + per-day photographer zone).
+        await db.Database.ExecuteSqlRawAsync("""
+            IF COL_LENGTH('DayAvailability', 'Zone') IS NULL
+            ALTER TABLE DayAvailability ADD Zone NVARCHAR(100) NULL;
+            IF COL_LENGTH('DayAvailability', 'Location') IS NULL
+            ALTER TABLE DayAvailability ADD Location NVARCHAR(200) NULL;
+            """);
+        // Event days gained a mini-session time window (admin defines the available hours).
+        await db.Database.ExecuteSqlRawAsync("""
+            IF COL_LENGTH('DayAvailability', 'MiniStart') IS NULL
+            ALTER TABLE DayAvailability ADD MiniStart TIME NULL;
+            IF COL_LENGTH('DayAvailability', 'MiniEnd') IS NULL
+            ALTER TABLE DayAvailability ADD MiniEnd TIME NULL;
+            """);
+        // Available/Maybe days gained their own start/end hours (per-day override
+        // of the weekly template — e.g. only 14:00–18:00 on a specific day).
+        await db.Database.ExecuteSqlRawAsync("""
+            IF COL_LENGTH('DayAvailability', 'WindowStart') IS NULL
+            ALTER TABLE DayAvailability ADD WindowStart TIME NULL;
+            IF COL_LENGTH('DayAvailability', 'WindowEnd') IS NULL
+            ALTER TABLE DayAvailability ADD WindowEnd TIME NULL;
+            """);
+
+        // Booking payment/travel columns — new for existing databases.
+        await db.Database.ExecuteSqlRawAsync("""
+            IF COL_LENGTH('Bookings', 'Location') IS NULL
+            ALTER TABLE Bookings ADD Location NVARCHAR(200) NULL;
+            IF COL_LENGTH('Bookings', 'TravelFee') IS NULL
+            ALTER TABLE Bookings ADD TravelFee DECIMAL(18,2) NOT NULL DEFAULT 0;
+            IF COL_LENGTH('Bookings', 'DepositPaid') IS NULL
+            ALTER TABLE Bookings ADD DepositPaid BIT NOT NULL DEFAULT 0;
+            IF COL_LENGTH('Bookings', 'BalancePaid') IS NULL
+            ALTER TABLE Bookings ADD BalancePaid BIT NOT NULL DEFAULT 0;
+            IF COL_LENGTH('Bookings', 'DepositSessionId') IS NULL
+            ALTER TABLE Bookings ADD DepositSessionId NVARCHAR(200) NULL;
+            IF COL_LENGTH('Bookings', 'BalanceSessionId') IS NULL
+            ALTER TABLE Bookings ADD BalanceSessionId NVARCHAR(200) NULL;
+            """);
+
         // ---- Cleanup on every startup (keeps existing dev databases in sync) ----
         // Only car photography is offered — portrait/lifestyle sessions are no longer available.
         var legacyLifestyle = await db.SessionTypes
@@ -41,6 +107,17 @@ public static class DbSeeder
 
         var lifestyleImg = Path.Combine(env.WebRootPath, "sample-photos", "lifestyle-cover.svg");
         if (File.Exists(lifestyleImg)) File.Delete(lifestyleImg);
+
+        // The demo booking is fully paid (deposit + balance), so the demo private
+        // gallery stays downloadable for the demo client.
+        var demoBooking = await db.Bookings.FirstOrDefaultAsync(b => b.Notes == "Galeria privada de demonstração");
+        if (demoBooking is not null && (!demoBooking.DepositPaid || !demoBooking.BalancePaid))
+        {
+            demoBooking.DepositPaid = true;
+            demoBooking.BalancePaid = true;
+            demoBooking.Location = string.IsNullOrEmpty(demoBooking.Location) ? "Porto" : demoBooking.Location;
+            await db.SaveChangesAsync();
+        }
 
         // Session photos are included in the session price — never sold separately.
         var sessionGallery = await db.Galleries.FirstOrDefaultAsync(g => g.Title == "Sessões de Carros");
@@ -73,6 +150,23 @@ public static class DbSeeder
             await SeedAdminAsync(userManager);
             await SeedDemoClientAsync(userManager);
             await SeedContentAsync(db, env);
+        }
+
+        // Mini-session type — required for event-day mini bookings (created on
+        // fresh and existing databases). Price/duration are editable in the admin.
+        if (!await db.SessionTypes.AnyAsync(s => s.IsMiniSessionType))
+        {
+            db.SessionTypes.Add(new SessionType
+            {
+                Name = "Mini Sessão — Evento",
+                Description = "Mini sessão no dia de um evento, só para o teu carro. As fotos ficam incluídas no preço.",
+                DurationMinutes = 30,
+                Price = 25m,
+                SortOrder = 99,
+                IsActive = true,
+                IsMiniSessionType = true
+            });
+            await db.SaveChangesAsync();
         }
     }
 

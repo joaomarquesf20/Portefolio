@@ -5,6 +5,7 @@
 }
 
 <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
     <h1 class="font-display text-4xl mb-8 fade-up">@SharedLocalizer["Bookings"]</h1>
 
     <div class="flex flex-wrap gap-2 mb-8 text-sm">
@@ -16,25 +17,57 @@
         }
     </div>
 
+    <div id="bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
+        <label class="flex items-center gap-2 text-white/70 cursor-pointer">
+            <input type="checkbox" id="select-all" class="accent-[color:var(--accent)] w-4 h-4" />
+            <span>Selecionar todas</span>
+        </label>
+        <span class="text-white/40" id="selected-count">0</span>
+        <div class="flex-1"></div>
+        <form asp-action="BulkDelete" method="post" class="inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ids" id="bulk-ids" value="" />
+            <button type="submit" id="bulk-delete-btn" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled
+                    onclick="return bulkSubmit()">
+                🗑 Eliminar selecionadas
+            </button>
+        </form>
+    </div>
+
     <div class="space-y-4">
         @foreach (var booking in Model)
         {
             <div class="card p-6 fade-up">
                 <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-start gap-4">
+                    <input type="checkbox" class="booking-check accent-[color:var(--accent)] w-4 h-4 mt-1" value="@booking.Id"
+                           aria-label="@booking.SessionType?.Name" />
                     <div>
                         <p class="font-semibold">@booking.SessionType?.Name</p>
                         <p class="text-white/40 text-sm mt-1">
                             @booking.ClientUser?.FullName · @booking.ClientUser?.Email
                         </p>
                         <p class="text-white/40 text-sm">@booking.Start.ToLocalTime().ToString("dddd, dd 'de' MMMM yyyy 'às' HH:mm", new System.Globalization.CultureInfo("pt-PT"))</p>
+                        @if (!string.IsNullOrEmpty(booking.Location))
+                        {
+                            <p class="text-white/40 text-sm">📍 @booking.Location@(booking.TravelFee > 0 ? $" (+{booking.TravelFee.ToString("C", new System.Globalization.CultureInfo("pt-PT"))} deslocação)" : "")</p>
+                        }
                         @if (!string.IsNullOrEmpty(booking.Notes))
                         {
                             <p class="text-white/40 text-xs mt-1">“@booking.Notes”</p>
                         }
                     </div>
+                    </div>
                     <div class="text-right">
                         <p class="text-accent font-semibold">@booking.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
                         <p class="text-xs text-white/40 mt-1">@SharedLocalizer["Status"]: @booking.Status</p>
+                        @if (booking.SessionType?.IsMiniSessionType != true)
+                        {
+                            <p class="text-xs mt-1">
+                                <span class="@(booking.DepositPaid ? "text-emerald-300" : "text-yellow-300")">@SharedLocalizer["Deposit"]: @(booking.DepositPaid ? "✓" : "—") @booking.DepositAmount.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span><br />
+                                <span class="@(booking.BalancePaid ? "text-emerald-300" : "text-yellow-300")">@SharedLocalizer["Balance"]: @(booking.BalancePaid ? "✓" : "—") @booking.BalanceAmount.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                            </p>
+                        }
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[color:var(--border)]">
@@ -50,6 +83,33 @@
                             </form>
                         }
                     }
+                    @if (booking.SessionType?.IsMiniSessionType != true)
+                    {
+                        @if (!booking.DepositPaid)
+                        {
+                            <form asp-action="SetPayment" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@booking.Id" />
+                                <input type="hidden" name="what" value="deposit" />
+                                <button class="text-xs px-3 py-1.5 rounded-full border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/10 transition">✓ Depósito pago</button>
+                            </form>
+                        }
+                        @if (!booking.BalancePaid)
+                        {
+                            <form asp-action="SetPayment" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@booking.Id" />
+                                <input type="hidden" name="what" value="balance" />
+                                <button class="text-xs px-3 py-1.5 rounded-full border border-sky-400/40 text-sky-300 hover:bg-sky-500/10 transition">✓ Saldo pago</button>
+                            </form>
+                        }
+                    }
+                    <span class="flex-1"></span>
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@booking.Id" />
+                        <button class="text-xs px-3 py-1.5 rounded-full border border-red-400/40 text-red-300 hover:bg-red-500/10 transition">🗑 @SharedLocalizer["Delete"]</button>
+                    </form>
                 </div>
             </div>
         }
@@ -60,3 +120,36 @@
         <p class="text-white/40 text-center py-16">Sem marcações.</p>
     }
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var checks = Array.from(document.querySelectorAll(".booking-check"));
+            var selectAll = document.getElementById("select-all");
+            var bulkBar = document.getElementById("bulk-bar");
+            var countEl = document.getElementById("selected-count");
+            var bulkIds = document.getElementById("bulk-ids");
+            var bulkDelete = document.getElementById("bulk-delete-btn");
+
+            function refresh() {
+                var selected = checks.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+                bulkIds.value = selected.join(",");
+                countEl.textContent = selected.length > 0 ? selected.length + " selecionadas" : "";
+                bulkBar.classList.toggle("hidden", selected.length === 0);
+                bulkDelete.disabled = selected.length === 0;
+                selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
+            }
+
+            checks.forEach(function (c) { c.addEventListener("change", refresh); });
+            selectAll.addEventListener("change", function () {
+                checks.forEach(function (c) { c.checked = selectAll.checked; });
+                refresh();
+            });
+
+            window.bulkSubmit = function () {
+                return confirm('@SharedLocalizer["ConfirmDelete"]');
+            };
+            refresh();
+        })();
+    </script>
+}

@@ -59,6 +59,19 @@ public class StripeWebhookController : ControllerBase
                         _logger.LogInformation("Order {OrderNumber} marked as paid.", order.OrderNumber);
                     }
                 }
+                else if (session?.Metadata?.TryGetValue("bookingId", out var bookingId) == true
+                         && int.TryParse(bookingId, out var bid)
+                         && session.Metadata.TryGetValue("purpose", out var purpose))
+                {
+                    var booking = await _db.Bookings.FindAsync(bid);
+                    if (booking is not null)
+                    {
+                        if (purpose == "balance") booking.BalancePaid = true;
+                        else booking.DepositPaid = true;
+                        await _db.SaveChangesAsync();
+                        _logger.LogInformation("Booking {BookingId} {Purpose} marked as paid.", bid, purpose);
+                    }
+                }
             }
 
             return Ok();

@@ -1,0 +1,112 @@
+@model ShotsByMarques.Web.ViewModels.MiniSessionBookingViewModel
+@{
+    ViewData["Title"] = SharedLocalizer["MiniSessionBook"];
+    var pt = new System.Globalization.CultureInfo("pt-PT");
+}
+
+<section class="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+    <a href="/sessoes" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
+    <h1 class="font-display text-4xl mt-3 mb-8 fade-up">🎪 @Model.EventTitle</h1>
+
+    <div class="card p-7 mb-8 fade-up">
+        <div class="flex flex-wrap items-center gap-x-10 gap-y-4">
+            <div>
+                <p class="text-white/40 text-xs uppercase tracking-wide">@SharedLocalizer["Date"]</p>
+                <p class="font-semibold text-lg capitalize mt-1">
+                    @Model.Date.ToString("dddd, dd MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture)
+                </p>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Zone) || !string.IsNullOrEmpty(Model.Location))
+            {
+                <div>
+                    <p class="text-white/40 text-xs uppercase tracking-wide">@SharedLocalizer["Location"]</p>
+                    <p class="font-semibold text-lg mt-1">📍 @Model.Zone@(string.IsNullOrEmpty(Model.Location) ? "" : $" — {Model.Location}")</p>
+                </div>
+            }
+            <div>
+                <p class="text-white/40 text-xs uppercase tracking-wide">@SharedLocalizer["Price"]</p>
+                <p class="text-accent font-semibold text-lg mt-1">@Model.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+            </div>
+            <div>
+                <p class="text-white/40 text-xs uppercase tracking-wide">@SharedLocalizer["Status"]</p>
+                <p class="font-semibold text-lg mt-1 @(Model.Remaining > 0 ? "text-emerald-300" : "text-red-300")">
+                    @string.Format(System.Globalization.CultureInfo.CurrentCulture, SharedLocalizer["MiniSessionSlotsLeft"].ToString(), Model.Remaining, Model.MaxMiniSessions)
+                </p>
+            </div>
+        </div>
+        <p class="text-white/50 text-sm mt-5">@SharedLocalizer["MiniSessionDesc"]</p>
+    </div>
+
+    @if (!User.Identity!.IsAuthenticated)
+    {
+        <div class="rounded-xl border border-accent/40 bg-[color:var(--accent-soft)] px-5 py-4 text-sm mb-8 fade-up">
+            Inicia sessão para concluir a reserva →
+            <a asp-controller="Account" asp-action="Login"
+               asp-route-returnUrl="@Url.Action("MiniSession", "Bookings", new { date = Model.Date.ToString("yyyy-MM-dd") })"
+               class="text-accent font-semibold underline ml-1">@SharedLocalizer["NavLogin"]</a>
+        </div>
+    }
+
+    @if (Model.Remaining <= 0)
+    {
+        <div class="card p-7 text-center fade-up">
+            <p class="text-red-300 font-semibold">@SharedLocalizer["MiniSessionSoldOut"]</p>
+            <p class="text-white/50 text-sm mt-2">@SharedLocalizer["MiniSessionFull"]</p>
+        </div>
+    }
+    else if (!Model.HasSchedule)
+    {
+        <div class="card p-7 text-center fade-up">
+            <p class="text-amber-300 font-semibold">@SharedLocalizer["MiniSessionNoSchedule"]</p>
+            <p class="text-white/50 text-sm mt-2">@SharedLocalizer["MiniSessionNoScheduleHint"]</p>
+        </div>
+    }
+    else
+    {
+        <form asp-action="MiniSession" method="post" class="card p-8 space-y-6 fade-up">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm"></div>
+
+            <div>
+                <label class="block text-sm font-medium mb-3">@SharedLocalizer["ChooseTime"]</label>
+                <div id="mini-slots" data-hint="@SharedLocalizer["SlotBarHint"]"></div>
+                @if (!Model.SlotOptions.Any(o => !o.Taken))
+                {
+                    <p class="text-white/40 text-sm mt-3">@SharedLocalizer["NoSlots"]</p>
+                }
+                <input type="hidden" asp-for="TimeSlot" id="TimeSlot" />
+                <span asp-validation-for="TimeSlot" class="text-red-400 text-xs"></span>
+            </div>
+
+            <div class="rounded-xl border border-[color:var(--border)] bg-white/[0.03] p-5 space-y-2 text-sm">
+                <div class="flex justify-between"><span class="text-white/60">@SharedLocalizer["Price"]</span><span class="font-medium">@Model.Price.ToString("C", pt)</span></div>
+                <div class="flex justify-between border-t border-[color:var(--border)] pt-2 font-semibold"><span>@SharedLocalizer["TotalPrice"]</span><span class="text-accent">@Model.Price.ToString("C", pt)</span></div>
+                <div class="flex justify-between text-xs text-white/50"><span>@SharedLocalizer["Deposit"]</span><span>@Model.DepositAmount.ToString("C", pt)</span></div>
+                <div class="flex justify-between text-xs text-white/50"><span>@SharedLocalizer["Balance"]</span><span>@Model.BalanceAmount.ToString("C", pt)</span></div>
+            </div>
+
+            <button type="submit" class="btn-primary w-full sm:w-auto">
+                @SharedLocalizer["MiniSessionBook"] — @SharedLocalizer["Deposit"]: <span id="submit-deposit">@Model.DepositAmount.ToString("C", pt)</span>
+            </button>
+        </form>
+    }    </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var timeInput = document.getElementById("TimeSlot");
+            var wrap = document.getElementById("mini-slots");
+            var options = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.SlotOptions.Select(o => new { o.Time, o.Taken })));
+            if (window.SBM && wrap && options.length > 0) {
+                // Admin-style time bar: click a segment to pick the hour.
+                window.SBM.buildSlotBar(wrap, options, {
+                    selected: timeInput.value || "",
+                    hint: wrap.dataset.hint || "",
+                    onSelect: function (t) { timeInput.value = t; }
+                });
+            }
+        })();
+    </script>
+}
+

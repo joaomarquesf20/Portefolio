@@ -11,5 +11,8 @@ public class SessionType
     public bool IsActive { get; set; } = true;
     public int SortOrder { get; set; }
 
+    /// <summary>Mini sessions booked on event days (never listed on the public sessions page).</summary>
+    public bool IsMiniSessionType { get; set; }
+
     public List<Booking> Bookings { get; set; } = new();
 }

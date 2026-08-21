@@ -7,19 +7,19 @@
     <a href="/AdminSessionTypes" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
     <h1 class="font-display text-4xl mt-3 mb-8 fade-up">@SharedLocalizer["Edit"] — @Model.Name</h1>
 
-    <form asp-action="Edit" method="post" class="card p-8 space-y-5 fade-up">
+    <form asp-action="Edit" method="post" enctype="multipart/form-data" class="card p-8 space-y-5 fade-up">
         @Html.AntiForgeryToken()
         <input asp-for="Id" type="hidden" />
         <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm"></div>
 
         <div>
-            <label asp-for="Name" class="block text-sm font-medium mb-2"></label>
+            <label asp-for="Name" class="block text-sm font-medium mb-2">@SharedLocalizer["SessionTypeName"]</label>
             <input asp-for="Name" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
             <span asp-validation-for="Name" class="text-red-400 text-xs"></span>
         </div>
 
         <div>
-            <label asp-for="Description" class="block text-sm font-medium mb-2"></label>
+            <label asp-for="Description" class="block text-sm font-medium mb-2">@SharedLocalizer["SessionTypeDescription"]</label>
             <textarea asp-for="Description" rows="3" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition"></textarea>
         </div>
 
@@ -29,13 +29,15 @@
         </div>
 
         <div>
-            <label asp-for="SortOrder" class="block text-sm font-medium mb-2">Ordem</label>
-            <input asp-for="SortOrder" type="number" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
-        </div>
-
-        <div>
-            <label asp-for="ImagePath" class="block text-sm font-medium mb-2">Imagem (URL, opcional)</label>
-            <input asp-for="ImagePath" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
+            <label class="block text-sm font-medium mb-2">Capa (foto)</label>
+            @if (!string.IsNullOrEmpty(Model.ImagePath))
+            {
+                <div class="mb-3">
+                    <img src="@Model.ImagePath" alt="@Model.Name" class="w-full max-w-xs h-40 object-cover rounded-xl border border-[color:var(--border)]" />
+                </div>
+            }
+            <input type="file" name="cover" accept="image/*" class="text-sm text-white/60" />
+            <p class="text-white/40 text-xs mt-1">Se não escolheres ficheiro, a capa atual é mantida.</p>
         </div>
 
         <div class="flex items-center gap-3">

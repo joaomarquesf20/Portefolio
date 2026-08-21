@@ -9,6 +9,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
     public DbSet<SessionType> SessionTypes => Set<SessionType>();
+    public DbSet<DayAvailability> DayAvailability => Set<DayAvailability>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Gallery> Galleries => Set<Gallery>();
     public DbSet<Photo> Photos => Set<Photo>();
@@ -59,6 +60,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<Order>().HasIndex(o => o.StripeSessionId);
         builder.Entity<Order>().HasIndex(o => o.OrderNumber).IsUnique();
+
+        // One calendar marking per date
+        builder.Entity<DayAvailability>().HasIndex(d => d.Date).IsUnique();
 
         // Decimal precision for money values
         builder.Entity<SessionType>().Property(s => s.Price).HasPrecision(18, 2);

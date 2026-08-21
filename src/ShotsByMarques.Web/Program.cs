@@ -70,6 +70,11 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<StripeCheckoutService>();
 builder.Services.AddScoped<PhotoStorageService>();
+builder.Services.AddScoped<AvailabilityCalendarService>();
+
+// Travel fee settings (base location, free radius, price per extra km)
+builder.Services.Configure<ShotsByMarques.Web.Models.TravelSettings>(
+    builder.Configuration.GetSection("Travel"));
 
 var app = builder.Build();
 
