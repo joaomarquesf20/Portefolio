@@ -2,51 +2,255 @@
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
     var isAdminArea = User.IsInRole("Admin") &&
         (Context.Request.Path.StartsWithSegments("/admin", StringComparison.OrdinalIgnoreCase) || currentController.StartsWith("Admin", StringComparison.OrdinalIgnoreCase));
+
+    var currentPath = (Context.Request.Path.Value ?? "/").ToLowerInvariant();
+    bool NavActive(string prefix) => prefix == "/" ? (currentPath.Trim('/') == string.Empty) : currentPath.StartsWith(prefix);
 }
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-PT" class="scroll-smooth">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] — Shots By Marques</title>
+    <meta name="description" content="Fotografia automóvel premium em Portugal — sessões privadas, eventos, stands e dealers." />
+    <meta name="theme-color" content="#08090b" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: "#08090b",
+                        panel: "#0d0f12",
+                        gold: "#d8a95b"
+                    },
+                    fontFamily: {
+                        display: ["Space Grotesk", "Inter", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        /* ===== Public chrome (dark, immersive) — public pages only ===== */
+        body.pub-bg {
+            background-color: #08090b;
+            color: #f2f1ed;
+        }
+
+        body.pub-bg ::selection {
+            background: rgba(216, 169, 91, 0.92);
+            color: #0b0b0d;
+        }
+
+        body.pub-bg ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        body.pub-bg ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        body.pub-bg ::-webkit-scrollbar-thumb {
+            background: #23252b;
+            border-radius: 9999px;
+            border: 2px solid #08090b;
+        }
+
+        /* header scroll state */
+        [data-header] {
+            background: transparent;
+            border-bottom: 1px solid transparent;
+            transition: background-color .5s ease, border-color .5s ease, backdrop-filter .5s ease;
+        }
+
+        [data-header].is-scrolled {
+            background: rgba(8, 9, 11, 0.84);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom-color: rgba(255, 255, 255, 0.07);
+        }
+
+        /* ken-burns drift */
+        .kb {
+            will-change: transform;
+            animation: kb 26s cubic-bezier(.23, 1, .32, 1) infinite alternate;
+        }
+        @@keyframes kb {
+            from { transform: scale(1.03); }
+            to { transform: scale(1.16) translateY(-2.5%); }
+        }
+
+        /* scroll-in reveal */
+        .js .rv {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1s cubic-bezier(.16, 1, .3, 1), transform 1s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        .js .rv.in {
+            opacity: 1;
+            transform: none;
+        }
+
+        .rv-d1 { transition-delay: .1s; }
+        .rv-d2 { transition-delay: .2s; }
+        .rv-d3 { transition-delay: .3s; }
+        .rv-d4 { transition-delay: .4s; }
+
+        /* marquee strip */
+        .marquee {
+            overflow: hidden;
+            -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+        }
+
+        .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: mq 32s linear infinite;
+        }
+        @@keyframes mq {
+            to { transform: translateX(-50%); }
+        }
+
+        /* animated nav underline */
+        .nlink {
+            position: relative;
+            color: rgba(255, 255, 255, 0.55);
+            transition: color .3s ease;
+        }
+
+        .nlink:hover {
+            color: #fff;
+        }
+
+        .nlink::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -7px;
+            height: 1px;
+            width: 100%;
+            background: var(--accent, #d8a95b);
+            transform: scaleX(0);
+            transform-origin: 100% 50%;
+            transition: transform .45s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        .nlink:hover::after,
+        .nlink.on::after {
+            transform: scaleX(1);
+            transform-origin: 0 50%;
+        }
+
+        .nlink.on {
+            color: #fff;
+        }
+
+        /* quiet underline link (footer / inline) */
+        .u-link {
+            position: relative;
+            display: inline-block;
+            transition: color .3s ease;
+        }
+
+        .u-link::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -3px;
+            height: 1px;
+            width: 100%;
+            background: var(--accent, #d8a95b);
+            transform: scaleX(0);
+            transform-origin: 100% 50%;
+            transition: transform .4s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        .u-link:hover::after {
+            transform: scaleX(1);
+            transform-origin: 0 50%;
+        }
+
+        /* hero scroll cue */
+        .cue {
+            width: 1px;
+            height: 56px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .8), transparent);
+            animation: cue 2.4s ease-in-out infinite;
+        }
+        @@keyframes cue {
+            0% { transform: scaleY(0); transform-origin: top; }
+            45% { transform: scaleY(1); transform-origin: top; }
+            55% { transform: scaleY(1); transform-origin: bottom; }
+            100% { transform: scaleY(0); transform-origin: bottom; }
+        }
+
+        /* film grain overlay (decorative sections) */
+        .grain::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: .08;
+            mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* toast fade */
+        [data-toast] {
+            transition: opacity .45s ease, transform .45s ease;
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .kb { animation: none; }
+            .js .rv { opacity: 1; transform: none; }
+            .marquee-track { animation: none; }
+            .cue { display: none; }
+        }
+    </style>
     @if (ViewData["MetaRefresh"] is string refresh && !string.IsNullOrEmpty(refresh))
     {
         <meta http-equiv="refresh" content="@refresh" />
     }
+    <script>document.documentElement.classList.add('js');</script>
 </head>
-<body class="min-h-screen antialiased @(isAdminArea ? "admin-page" : "")">
-    <nav class="nav-glass fixed top-0 inset-x-0 z-50 @(isAdminArea ? "admin-site-nav" : "")">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-            <a href="/" class="font-display text-xl tracking-tight">Shots <span class="text-white/60">By Marques</span></a>
+<body class="min-h-screen antialiased @(isAdminArea ? "admin-page" : "pub-bg")">
 
-            <div class="hidden md:flex items-center gap-8 text-sm">
-                <a href="/portfolio" class="nav-link">@SharedLocalizer["NavPortfolio"]</a>
-                <a href="/servicos" class="nav-link">@SharedLocalizer["NavServices"]</a>
-                <a href="/sessoes" class="nav-link">@SharedLocalizer["NavSessions"]</a>
-                <a href="/#contacto" class="nav-link">@SharedLocalizer["NavContact"]</a>
+    @* ================= HEADER ================= *@
+    <header data-header class="fixed inset-x-0 top-0 z-50 @(isAdminArea ? "admin-site-nav" : "")">
+        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
+            <a href="/" class="shrink-0 font-display text-lg font-bold tracking-[-0.02em] text-white">
+                SHOTS&nbsp;<span class="font-medium text-white/40">BY&nbsp;MARQUES</span>
+            </a>
+
+            <nav class="hidden md:flex items-center gap-8 text-[13px] font-medium uppercase tracking-[0.14em]">
+                <a href="/portfolio" class="nlink @(NavActive("/portfolio") ? "on" : "")">@SharedLocalizer["NavPortfolio"]</a>
+                <a href="/servicos" class="nlink @(NavActive("/servicos") ? "on" : "")">@SharedLocalizer["NavServices"]</a>
+                <a href="/sessoes" class="nlink @(NavActive("/sessoes") ? "on" : "")">@SharedLocalizer["NavSessions"]</a>
+                <a href="/#contacto" class="nlink">@SharedLocalizer["NavContact"]</a>
                 @if (User.IsInRole("Admin"))
                 {
-                    <a href="/admin" class="nav-link">@SharedLocalizer["NavDashboard"]</a>
+                    <a href="/admin" class="nlink @(NavActive("/admin") ? "on" : "") text-gold">@SharedLocalizer["NavDashboard"]</a>
                 }
-            </div>
+            </nav>
 
             <div class="flex items-center gap-4">
-                <!-- language switcher -->
-                <form asp-controller="Culture" asp-action="Set" method="post" class="flex items-center gap-1 text-xs">
+                <form asp-controller="Culture" asp-action="Set" method="post" class="hidden sm:flex items-center rounded-full border border-white/10 text-[11px] font-semibold tracking-[0.08em]">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                    <button name="culture" value="pt-PT" class="px-1.5 py-0.5 rounded @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-accent text-black font-semibold" : "text-white/60 hover:text-white")">PT</button>
-                    <span class="text-white/25">|</span>
-                    <button name="culture" value="en-US" class="px-1.5 py-0.5 rounded @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-accent text-black font-semibold" : "text-white/60 hover:text-white")">EN</button>
+                    <button name="culture" value="pt-PT" class="rounded-full px-2.5 py-1 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-gold text-ink" : "text-white/50 hover:text-white")">PT</button>
+                    <button name="culture" value="en-US" class="rounded-full px-2.5 py-1 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-gold text-ink" : "text-white/50 hover:text-white")">EN</button>
                 </form>
 
-                <a href="/Checkout" class="relative text-white/80 hover:text-accent transition" title="@SharedLocalizer["NavCart"]">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                <a href="/Checkout" class="relative block text-white/80 transition hover:text-gold" title="@SharedLocalizer["NavCart"]" aria-label="@SharedLocalizer["NavCart"]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-[22px] w-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
                     </svg>
                     <span data-cart-badge class="cart-badge hidden">0</span>
@@ -54,61 +258,84 @@
 
                 @if (User.Identity!.IsAuthenticated)
                 {
-                    <div class="hidden md:flex items-center gap-3 text-sm">
-                        <a href="/as-minhas-marcacoes" class="text-white/80 hover:text-accent transition">@SharedLocalizer["NavMyBookings"]</a>
-                        <a href="/downloads" class="text-white/80 hover:text-accent transition">@SharedLocalizer["NavDownloads"]</a>
-                        <span class="text-white/40">|</span>
+                    <div class="hidden md:flex items-center gap-4 text-[13px]">
+                        <a href="/as-minhas-marcacoes" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavMyBookings"]</a>
+                        <a href="/downloads" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavDownloads"]</a>
                         <form asp-controller="Account" asp-action="Logout" method="post" class="inline" onsubmit="try{localStorage.removeItem('sbm_cart')}catch(e){}">
                             @Html.AntiForgeryToken()
-                            <button class="text-white/80 hover:text-accent transition">@SharedLocalizer["NavLogout"] (@User.Identity.Name)</button>
+                            <button class="text-white/45 transition hover:text-gold">@SharedLocalizer["NavLogout"]</button>
                         </form>
                     </div>
                 }
                 else
                 {
-                    <div class="hidden md:flex items-center gap-3 text-sm">
-                        <a href="/Account/Login" class="text-white/80 hover:text-accent transition">@SharedLocalizer["NavLogin"]</a>
-                        <a href="/Account/Register" class="btn-primary !py-2 !px-4 !text-sm">@SharedLocalizer["NavRegister"]</a>
+                    <div class="hidden md:flex items-center gap-4 text-[13px]">
+                        <a href="/Account/Login" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavLogin"]</a>
+                        <a href="/Account/Register" class="inline-flex items-center rounded-full bg-gold px-4 py-2 text-[12px] font-semibold text-ink transition duration-300 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_10px_28px_-14px_rgba(216,169,91,0.55)]">@SharedLocalizer["NavRegister"]</a>
                     </div>
                 }
 
-                <button id="menu-btn" class="md:hidden text-white/80">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+                <button id="menu-btn" class="md:hidden text-white/80 transition hover:text-white" aria-label="Menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
                 </button>
             </div>
         </div>
 
-        <div id="mobile-menu" class="hidden md:hidden border-t border-[color:var(--border)] px-6 py-4 space-y-3 text-sm">
-            <a href="/portfolio" class="block hover:text-accent">@SharedLocalizer["NavPortfolio"]</a>
-            <a href="/servicos" class="block hover:text-accent">@SharedLocalizer["NavServices"]</a>
-            <a href="/sessoes" class="block hover:text-accent">@SharedLocalizer["NavSessions"]</a>
-            <a href="/#contacto" class="block hover:text-accent">@SharedLocalizer["NavContact"]</a>
-            @if (User.Identity!.IsAuthenticated)
-            {
-                <a href="/as-minhas-marcacoes" class="block hover:text-accent">@SharedLocalizer["NavMyBookings"]</a>
-                <a href="/downloads" class="block hover:text-accent">@SharedLocalizer["NavDownloads"]</a>
-            }
-            else
-            {
-                <a href="/Account/Login" class="block hover:text-accent">@SharedLocalizer["NavLogin"]</a>
-                <a href="/Account/Register" class="block hover:text-accent">@SharedLocalizer["NavRegister"]</a>
-            }
-        </div>
-    </nav>
+        @* Mobile full-screen menu (site.js toggles #mobile-menu on #menu-btn click) *@
+        <div id="mobile-menu" class="hidden fixed inset-0 z-40 bg-ink/[0.985] px-7 pb-16 pt-24">
+            <button onclick="document.getElementById('mobile-menu').classList.add('hidden')" class="absolute right-5 top-20 text-3xl text-white/60 transition hover:text-white" aria-label="Fechar menu">✕</button>
 
-    <main class="@(isAdminArea ? "admin-main" : "pt-16")">
-        @if (TempData["Success"] is not null)
+            <nav class="flex flex-col gap-1 text-3xl font-bold tracking-[-0.02em]">
+                <a href="/portfolio" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">01</span>@SharedLocalizer["NavPortfolio"]</a>
+                <a href="/servicos" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">02</span>@SharedLocalizer["NavServices"]</a>
+                <a href="/sessoes" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">03</span>@SharedLocalizer["NavSessions"]</a>
+                <a href="/#contacto" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">04</span>@SharedLocalizer["NavContact"]</a>
+                <a href="/Checkout" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">05</span>@SharedLocalizer["NavCart"]</a>
+            </nav>
+
+            <div class="mt-8 space-y-3 border-t border-white/10 pt-8 text-sm text-white/60">
+                @if (User.Identity!.IsAuthenticated)
+                {
+                    <a href="/as-minhas-marcacoes" class="block transition hover:text-white">@SharedLocalizer["NavMyBookings"]</a>
+                    <a href="/downloads" class="block transition hover:text-white">@SharedLocalizer["NavDownloads"]</a>
+                    <form asp-controller="Account" asp-action="Logout" method="post" onsubmit="try{localStorage.removeItem('sbm_cart')}catch(e){}">
+                        @Html.AntiForgeryToken()
+                        <button class="transition hover:text-gold">@SharedLocalizer["NavLogout"]</button>
+                    </form>
+                }
+                else
+                {
+                    <a href="/Account/Login" class="block transition hover:text-white">@SharedLocalizer["NavLogin"]</a>
+                    <a href="/Account/Register" class="block transition hover:text-gold">@SharedLocalizer["NavRegister"]</a>
+                }
+            </div>
+
+            <form asp-controller="Culture" asp-action="Set" method="post" class="mt-10 flex items-center gap-2 text-xs">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                <button name="culture" value="pt-PT" class="rounded-full border border-white/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-gold text-ink" : "text-white/60 hover:text-white")">PT</button>
+                <button name="culture" value="en-US" class="rounded-full border border-white/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-gold text-ink" : "text-white/60 hover:text-white")">EN</button>
+            </form>
+        </div>
+    </header>
+
+    @* ================= BODY ================= *@
+    <main id="main" class="@(isAdminArea ? "admin-main" : "pt-16")">
+        @* Toasts (fixed, auto-fade) *@
+        @if (TempData["Success"] is not null || TempData["Error"] is not null)
         {
-            <div class="max-w-3xl mx-auto mt-6 px-4">
-                <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 px-4 py-3 text-sm">@TempData["Success"]</div>
+            <div class="pointer-events-none fixed inset-x-0 top-[5.5rem] z-40 flex flex-col items-center gap-3 px-4">
+                @if (TempData["Success"] is not null)
+                {
+                    <div data-toast class="pointer-events-auto rounded-xl border border-white/10 bg-[#12141a]/95 px-5 py-3.5 text-sm text-emerald-300 shadow-2xl backdrop-blur">@TempData["Success"]</div>
+                }
+                @if (TempData["Error"] is not null)
+                {
+                    <div data-toast class="pointer-events-auto rounded-xl border border-red-500/25 bg-[#12141a]/95 px-5 py-3.5 text-sm text-red-300 shadow-2xl backdrop-blur">@TempData["Error"]</div>
+                }
             </div>
         }
-        @if (TempData["Error"] is not null)
-        {
-            <div class="max-w-3xl mx-auto mt-6 px-4">
-                <div class="rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 px-4 py-3 text-sm">@TempData["Error"]</div>
-            </div>
-        }
+
         @if (isAdminArea)
         {
             <div class="admin-shell">
@@ -122,38 +349,39 @@
         }
     </main>
 
-    <footer class="border-t border-[color:var(--border)] mt-20">
-        <div class="max-w-7xl mx-auto px-6 py-16">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-                <div>
-                    <span class="font-display text-2xl text-white">Shots <span class="text-white/50">By Marques</span></span>
-                    <p class="text-white/40 text-sm mt-4 max-w-xs leading-relaxed">@SharedLocalizer["FooterTagline"]</p>
+    @* ================= FOOTER ================= *@
+    <footer class="border-t border-white/[0.08] mt-24">
+        <div class="mx-auto max-w-7xl px-6 py-16 lg:px-10">
+            <div class="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="lg:col-span-2">
+                    <span class="font-display text-3xl font-bold tracking-[-0.02em] text-white">SHOTS&nbsp;<span class="font-medium text-white/40">BY&nbsp;MARQUES</span></span>
+                    <p class="mt-5 max-w-sm text-sm leading-relaxed text-white/40">@SharedLocalizer["FooterTagline"]</p>
                 </div>
                 <div>
-                    <p class="text-white/35 text-xs uppercase tracking-[0.2em] mb-4">@SharedLocalizer["FooterNav"]</p>
-                    <ul class="space-y-2.5 text-sm">
-                        <li><a href="/portfolio" class="nav-link">@SharedLocalizer["NavPortfolio"]</a></li>
-                        <li><a href="/servicos" class="nav-link">@SharedLocalizer["NavServices"]</a></li>
-                        <li><a href="/sessoes" class="nav-link">@SharedLocalizer["NavSessions"]</a></li>
-                        <li><a href="/#contacto" class="nav-link">@SharedLocalizer["NavContact"]</a></li>
+                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/35">@SharedLocalizer["FooterNav"]</p>
+                    <ul class="space-y-3 text-sm text-white/55">
+                        <li><a href="/portfolio" class="u-link transition hover:text-white">@SharedLocalizer["NavPortfolio"]</a></li>
+                        <li><a href="/servicos" class="u-link transition hover:text-white">@SharedLocalizer["NavServices"]</a></li>
+                        <li><a href="/sessoes" class="u-link transition hover:text-white">@SharedLocalizer["NavSessions"]</a></li>
+                        <li><a href="/#contacto" class="u-link transition hover:text-white">@SharedLocalizer["NavContact"]</a></li>
                     </ul>
                 </div>
                 <div>
-                    <p class="text-white/35 text-xs uppercase tracking-[0.2em] mb-4">@SharedLocalizer["FooterContact"]</p>
-                    <ul class="space-y-2.5 text-sm">
-                        <li><a href="mailto:marquesphotography06@gmail.com" class="nav-link">marquesphotography06@gmail.com</a></li>
-                        <li><a href="https://www.instagram.com/shots.by.marques/" target="_blank" class="nav-link">Instagram — @@shots.by.marques</a></li>
+                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/35">@SharedLocalizer["FooterContact"]</p>
+                    <ul class="space-y-3 text-sm text-white/55">
+                        <li><a href="mailto:marquesphotography06@gmail.com" class="u-link transition hover:text-white">marquesphotography06@gmail.com</a></li>
+                        <li><a href="https://www.instagram.com/shots.by.marques/" target="_blank" rel="noopener" class="u-link transition hover:text-white">Instagram — @@shots.by.marques</a></li>
                     </ul>
                 </div>
             </div>
-            <div class="border-t border-[color:var(--border)] mt-14 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/35">
+            <div class="mt-16 flex flex-col items-center justify-between gap-3 border-t border-white/[0.08] pt-7 text-[11px] text-white/30 sm:flex-row">
                 <span>© @DateTime.Now.Year Shots By Marques. @SharedLocalizer["FooterRights"]</span>
                 <span>@SharedLocalizer["FooterMade"]</span>
             </div>
         </div>
     </footer>
 
-    <!-- Lightbox -->
+    @* ================= LIGHTBOX (IDs/classes usados pelo site.js — não alterar) ================= *@
     <div id="lightbox" class="lightbox">
         <button data-close-lightbox class="absolute top-5 right-6 text-white/70 hover:text-white text-3xl z-10">✕</button>
         <button data-lb-zoom-out class="absolute bottom-6 left-1/2 -translate-x-[5.5rem] text-white/70 hover:text-white text-2xl w-11 h-11 rounded-full border border-white/20 bg-black/40 transition">−</button>
@@ -167,6 +395,37 @@
         <button onclick="lbNav(1)" class="absolute right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl z-10">›</button>
     </div>
 
+    <script>
+        (function () {
+            // Header glass-on-scroll
+            var hdr = document.querySelector('[data-header]');
+            var onScroll = function () { if (hdr) hdr.classList.toggle('is-scrolled', window.scrollY > 24); };
+            onScroll();
+            window.addEventListener('scroll', onScroll, { passive: true });
+
+            // Reveal-on-scroll
+            var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if ('IntersectionObserver' in window && !reduce) {
+                var io = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (e) {
+                        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+                    });
+                }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+                document.querySelectorAll('.rv').forEach(function (el) { io.observe(el); });
+            } else {
+                document.querySelectorAll('.rv').forEach(function (el) { el.classList.add('in'); });
+            }
+
+            // Auto-dismiss toasts
+            document.querySelectorAll('[data-toast]').forEach(function (t) {
+                setTimeout(function () {
+                    t.style.opacity = '0';
+                    t.style.transform = 'translateY(-8px)';
+                    setTimeout(function () { t.remove(); }, 480);
+                }, 6000);
+            });
+        })();
+    </script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

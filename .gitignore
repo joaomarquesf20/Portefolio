@@ -6,3 +6,4 @@ obj/
 appsettings.Production.json
 wwwroot/uploads/*
 !wwwroot/uploads/.gitkeep
+App_Data/
