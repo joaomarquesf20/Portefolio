@@ -24,11 +24,10 @@ public static class PhotoUrlHelper
     public static string PreviewUrl(this Photo photo) => PreviewUrlInternal(photo);
 
     /// <summary>
-    /// CLEAN (watermark-free) thumbnail for light-theme grid tiles and covers.
-    /// Uploaded photos resolve to the /Photos/Thumb endpoint, which streams a
-    /// watermark-free resize derived from the original — the WATERMARKED large
-    /// preview is reserved exclusively for the lightbox (LargePreviewUrl).
-    /// Legacy wwwroot sample assets expose a clean variant; "-wm." is stripped.
+    /// CLEAN (watermark-free) thumbnail for light-theme grid tiles.
+    /// Uploaded photos resolve to the /Photos/Thumb endpoint (900px, quality
+    /// 92) — small enough to be low-theft-value. Legacy wwwroot sample assets
+    /// expose a clean variant; "-wm." is stripped.
     /// </summary>
     public static string ThumbUrl(this Photo photo) =>
         photo.PreviewPath.StartsWith("photos/")
@@ -36,15 +35,27 @@ public static class PhotoUrlHelper
             : photo.PreviewPath.Replace("-wm.", ".");
 
     /// <summary>
+    /// CLEAN, HIGH-RESOLUTION derivative for covers, full-bleed masonry tiles
+    /// and hero/page backgrounds. Uploaded photos resolve to /Photos/Cover —
+    /// 1920px, JPEG quality 92, sharp on desktop monitors, but still a
+    /// downscaled re-encode (never the raw original). Legacy wwwroot sample
+    /// assets expose a clean variant; "-wm." is stripped.
+    /// </summary>
+    public static string LargeCleanUrl(this Photo photo) =>
+        photo.PreviewPath.StartsWith("photos/")
+            ? $"/Photos/Cover/{photo.Id}"
+            : photo.PreviewPath.Replace("-wm.", ".");
+
+    /// <summary>
     /// Cover URL for rendering. Covers are usually a public wwwroot path, but
     /// when the cover was picked from one of the gallery's uploaded photos it
     /// points at a private preview path ("photos/...") — resolve it to the
-    /// CLEAN thumb endpoint instead of a raw (broken) path.
+    /// CLEAN high-res cover endpoint instead of a raw (broken) path.
     /// </summary>
     public static string CoverUrl(this Gallery gallery) =>
         gallery.CoverPath is null || gallery.CoverPath.Length == 0
             ? string.Empty
             : gallery.CoverPath.StartsWith("photos/")
-                ? gallery.Photos.FirstOrDefault(p => p.PreviewPath == gallery.CoverPath)?.ThumbUrl() ?? gallery.CoverPath
+                ? gallery.Photos.FirstOrDefault(p => p.PreviewPath == gallery.CoverPath)?.LargeCleanUrl() ?? gallery.CoverPath
                 : gallery.CoverPath;
 }

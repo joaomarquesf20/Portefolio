@@ -95,6 +95,55 @@ public class PhotosController : Controller
         return PhysicalFile(thumbPath, "image/jpeg");
     }
 
+    /// <summary>
+    /// CLEAN, HIGH-RESOLUTION derivative (covers, masonry tiles, hero banners,
+    /// full-bleed page backgrounds). 1920px, JPEG quality 92 — sharp on desktop
+    /// monitors. Authorization mirrors Preview/Thumb; still never the raw
+    /// original (that only goes out after payment/ownership checks), and no
+    /// watermark — backgrounds/covers are the clean side of the anti-theft
+    /// split; only the lightbox shows the watermarked large preview.
+    /// </summary>
+    [Route("photos/cover/{id:int}")]
+    public async Task<IActionResult> Cover(int id)
+    {
+        var photo = await AuthorizedPhotoAsync(id);
+        if (photo is null) return NotFound();
+
+        if (photo.FilePath.StartsWith("/"))
+            return Redirect(photo.FilePath); // legacy wwwroot sample asset (already clean)
+
+        if (!photo.FilePath.StartsWith("photos/"))
+            return NotFound();
+
+        var photosRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data", "photos"));
+        var fullPath = Path.GetFullPath(Path.Combine(photosRoot, photo.FilePath["photos/".Length..]));
+        if (!fullPath.StartsWith(photosRoot + Path.DirectorySeparatorChar) || !System.IO.File.Exists(fullPath))
+            return NotFound();
+
+        var coverPath = Path.Combine(
+            Path.GetDirectoryName(fullPath) ?? photosRoot,
+            Path.GetFileNameWithoutExtension(fullPath) + "-large.jpg");
+
+        if (!System.IO.File.Exists(coverPath))
+        {
+            try
+            {
+                PhotoStorageService.GenerateCleanLarge(fullPath, coverPath);
+            }
+            catch (IOException) when (System.IO.File.Exists(coverPath))
+            {
+                // Lost a generate-race to a concurrent request — the file exists now.
+            }
+            catch
+            {
+                return NotFound();
+            }
+        }
+
+        Response.Headers["Cache-Control"] = "public, max-age=604800";
+        return PhysicalFile(coverPath, "image/jpeg");
+    }
+
     /// <summary>Shared access rules: private → owner/admin; public → published only.</summary>
     private async Task<Models.Photo?> AuthorizedPhotoAsync(int id)
     {

@@ -52,11 +52,12 @@ public sealed class SitePageBackgroundService
     /// <summary>
     /// Maps any stored image path to a URL the browser can actually load,
     /// keeping the anti-theft rule: covers and page backgrounds are public,
-    /// "cover-like" imagery so they always render the CLEAN thumb. A raw
-    /// "photos/..." value is never servable (files live outside wwwroot)
-    /// and its preview asset is WATERMARKED — it resolves to the photo's
-    /// clean thumbnail, but only when the photo belongs to a published
-    /// public gallery; anything else falls back to the caller's default.
+    /// full-bleed imagery so they render the CLEAN HIGH-RES derivative
+    /// (/Photos/Cover — 1920px, quality 92). A raw "photos/..." value is
+    /// never servable (files live outside wwwroot) and its preview asset is
+    /// WATERMARKED — it resolves to the photo's clean large file, but only
+    /// when the photo belongs to a published public gallery; anything else
+    /// falls back to the caller's default.
     /// </summary>
     public async Task<string> ResolveAsync(string? path, string fallback)
     {
@@ -74,7 +75,7 @@ public sealed class SitePageBackgroundService
                 .Select(p => (int?)p.Id)
                 .FirstOrDefaultAsync();
 
-            return photoId is null ? fallback : $"/Photos/Thumb/{photoId.Value}";
+            return photoId is null ? fallback : $"/Photos/Cover/{photoId.Value}";
         }
 
         return path;

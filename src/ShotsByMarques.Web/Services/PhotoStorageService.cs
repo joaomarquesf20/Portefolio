@@ -23,6 +23,9 @@ public class PhotoStorageService
     /// <summary>Maximum width/height of the CLEAN (watermark-free) grid thumbnail.</summary>
     public const int ThumbMaxDimension = 900;
 
+    /// <summary>Maximum width/height of the CLEAN high-res derivative (covers / hero banners).</summary>
+    public const int CoverMaxDimension = 1920;
+
     /// <summary>Watermark text stamped on previews (shown to clients before purchase).</summary>
     public const string WatermarkText = "© Shots By Marques";
 
@@ -122,14 +125,15 @@ public class PhotoStorageService
     }
 
     /// <summary>
-    /// CLEAN (watermark-free) small derivative of the photo, used by grid
-    /// tiles and covers. The full-resolution original and the WATERMARKED
-    /// large preview follow the security split:
-    ///   thumb   → public, clean, small (anti-theft: little value to steal)
+    /// CLEAN (watermark-free) JPEG derivatives of the photo. The security
+    /// split stays intact:
+    ///   thumb   → public, clean, small 900px (grid tiles)
+    ///   large   → public, clean, 1920px, quality 92 (covers, hero banners,
+    ///             full-bleed backgrounds — must stay razor-sharp on desktop)
     ///   preview → lightbox only, ALWAYS watermarked, never in a src attr
     ///   original→ DownloadsController only, after payment/ownership checks
     /// </summary>
-    public static void GenerateCleanThumb(string sourcePath, string targetPath, int maxDimension = ThumbMaxDimension)
+    private static void GenerateCleanDerivative(string sourcePath, string targetPath, int maxDimension, int quality)
     {
         using var source = SKBitmap.Decode(sourcePath)
             ?? throw new InvalidOperationException("Could not decode image.");
@@ -147,10 +151,18 @@ public class PhotoStorageService
         }
 
         using var image = SKImage.FromBitmap(resized);
-        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 85);
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
         using var output = File.Create(targetPath);
         data.SaveTo(output);
     }
+
+    /// <summary>Small CLEAN thumb for grid tiles (900px, quality 92).</summary>
+    public static void GenerateCleanThumb(string sourcePath, string targetPath) =>
+        GenerateCleanDerivative(sourcePath, targetPath, ThumbMaxDimension, 92);
+
+    /// <summary>High-res CLEAN derivative for covers and hero banners (1920px, quality 92).</summary>
+    public static void GenerateCleanLarge(string sourcePath, string targetPath) =>
+        GenerateCleanDerivative(sourcePath, targetPath, CoverMaxDimension, 92);
 
     /// <summary>
     /// Saves a public gallery cover into wwwroot (covers are meant to be public).
@@ -187,7 +199,8 @@ public class PhotoStorageService
 
     /// <summary>
     /// Deletes both the full-resolution file and its watermarked preview —
-    /// plus the on-demand CLEAN thumb cache file if one was generated.
+    /// plus the on-demand CLEAN derivatives (thumb + high-res large) if one
+    /// was generated.
     /// </summary>
     public void Delete(string? relativePath, string? previewPath = null)
     {
@@ -203,9 +216,13 @@ public class PhotoStorageService
         var fullPath = Path.GetFullPath(Path.Combine(PhotosRoot, relativePath["photos/".Length..]));
         if (!fullPath.StartsWith(Path.GetFullPath(PhotosRoot) + Path.DirectorySeparatorChar))
             return;
-        var thumb = Path.Combine(Path.GetDirectoryName(fullPath) ?? string.Empty, Path.GetFileNameWithoutExtension(fullPath) + "-thumb.jpg");
-        if (File.Exists(thumb))
-            File.Delete(thumb);
+        var baseName = Path.Combine(Path.GetDirectoryName(fullPath) ?? string.Empty, Path.GetFileNameWithoutExtension(fullPath));
+        foreach (var suffix in new[] { "-thumb.jpg", "-large.jpg" })
+        {
+            var file = baseName + suffix;
+            if (File.Exists(file))
+                File.Delete(file);
+        }
     }
 
     private void DeleteFile(string? relativePath)
