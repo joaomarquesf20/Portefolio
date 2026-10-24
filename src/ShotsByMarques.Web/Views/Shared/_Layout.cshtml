@@ -3,6 +3,9 @@
     var isAdminArea = User.IsInRole("Admin") &&
         (Context.Request.Path.StartsWithSegments("/admin", StringComparison.OrdinalIgnoreCase) || currentController.StartsWith("Admin", StringComparison.OrdinalIgnoreCase));
 
+    var isHome = string.Equals(currentController, "Home", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), "Index", StringComparison.OrdinalIgnoreCase);
+
     var currentPath = (Context.Request.Path.Value ?? "/").ToLowerInvariant();
     bool NavActive(string prefix) => prefix == "/" ? (currentPath.Trim('/') == string.Empty) : currentPath.StartsWith(prefix);
 }
@@ -13,69 +16,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] — Shots By Marques</title>
     <meta name="description" content="Fotografia automóvel premium em Portugal — sessões privadas, eventos, stands e dealers." />
-    <meta name="theme-color" content="#08090b" />
+    <meta name="theme-color" content="#faf9f7" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        ink: "#08090b",
-                        panel: "#0d0f12",
-                        gold: "#d8a95b"
-                    },
-                    fontFamily: {
-                        display: ["Space Grotesk", "Inter", "sans-serif"]
-                    }
-                }
-            }
-        };
-    </script>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style>
-        /* ===== Public chrome (dark, immersive) — public pages only ===== */
-        body.pub-bg {
-            background-color: #08090b;
-            color: #f2f1ed;
+        /* ============================================================
+           PUBLIC LIGHT THEME — editorial paper (white) / ink / camel.
+           Tudo full-width: sem contentores max-w, sem cards em caixa.
+           ============================================================ */
+        :root {
+            --acc: #a1843f;
         }
 
-        body.pub-bg ::selection {
-            background: rgba(216, 169, 91, 0.92);
-            color: #0b0b0d;
+        body.pub-light {
+            background-color: #faf9f7;
+            color: #141414;
         }
 
-        body.pub-bg ::-webkit-scrollbar {
+        body.pub-light ::selection {
+            background: #141414;
+            color: #faf9f7;
+        }
+
+        body.pub-light ::-webkit-scrollbar {
             width: 10px;
         }
 
-        body.pub-bg ::-webkit-scrollbar-track {
+        body.pub-light ::-webkit-scrollbar-track {
             background: transparent;
         }
 
-        body.pub-bg ::-webkit-scrollbar-thumb {
-            background: #23252b;
+        body.pub-light ::-webkit-scrollbar-thumb {
+            background: #d9d5cc;
             border-radius: 9999px;
-            border: 2px solid #08090b;
+            border: 2px solid #faf9f7;
         }
 
-        /* header scroll state */
+        /* display font (determinístico, independente do Tailwind config) */
+        .fd {
+            font-family: 'Space Grotesk', Inter, sans-serif;
+        }
+
+        /* accent helpers */
+        .acc {
+            color: var(--acc);
+        }
+
+        .rule {
+            background: var(--acc);
+        }
+
+        /* ==== header: transparente sobre foto no topo; papel quando scroll ==== */
         [data-header] {
+            color: #fff;
             background: transparent;
             border-bottom: 1px solid transparent;
-            transition: background-color .5s ease, border-color .5s ease, backdrop-filter .5s ease;
+            transition: color .4s ease, background-color .45s ease, border-color .45s ease;
         }
 
         [data-header].is-scrolled {
-            background: rgba(8, 9, 11, 0.84);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom-color: rgba(255, 255, 255, 0.07);
+            color: #141414;
+            background: rgba(250, 249, 247, 0.92);
+            -webkit-backdrop-filter: blur(14px);
+            backdrop-filter: blur(14px);
+            border-bottom-color: rgba(20, 20, 20, 0.08);
         }
 
-        /* ken-burns drift */
+        /* páginas sem hero: header já entra em modo papel (CSS puro) */
+        body[data-glass-header='always'] [data-header] {
+            color: #141414;
+            background: rgba(250, 249, 247, 0.92);
+            -webkit-backdrop-filter: blur(14px);
+            backdrop-filter: blur(14px);
+            border-bottom-color: rgba(20, 20, 20, 0.08);
+        }
+
+        /* badge do carrinho: preto (sobre fundo papel) */
+        body.pub-light [data-cart-badge] {
+            background: #141414;
+            color: #faf9f7;
+        }
+
+        /* ==== ken-burns ==== */
         .kb {
             will-change: transform;
             animation: kb 26s cubic-bezier(.23, 1, .32, 1) infinite alternate;
@@ -85,7 +110,7 @@
             to { transform: scale(1.16) translateY(-2.5%); }
         }
 
-        /* scroll-in reveal */
+        /* ==== reveal ==== */
         .js .rv {
             opacity: 0;
             transform: translateY(30px);
@@ -102,7 +127,7 @@
         .rv-d3 { transition-delay: .3s; }
         .rv-d4 { transition-delay: .4s; }
 
-        /* marquee strip */
+        /* ==== marquee ==== */
         .marquee {
             overflow: hidden;
             -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
@@ -118,15 +143,16 @@
             to { transform: translateX(-50%); }
         }
 
-        /* animated nav underline */
+        /* ==== nav underline (usa currentColor + acento) ==== */
         .nlink {
             position: relative;
-            color: rgba(255, 255, 255, 0.55);
-            transition: color .3s ease;
+            color: currentColor;
+            opacity: .62;
+            transition: opacity .3s ease;
         }
 
         .nlink:hover {
-            color: #fff;
+            opacity: 1;
         }
 
         .nlink::after {
@@ -136,7 +162,7 @@
             bottom: -7px;
             height: 1px;
             width: 100%;
-            background: var(--accent, #d8a95b);
+            background: var(--acc);
             transform: scaleX(0);
             transform-origin: 100% 50%;
             transition: transform .45s cubic-bezier(.16, 1, .3, 1);
@@ -149,14 +175,14 @@
         }
 
         .nlink.on {
-            color: #fff;
+            opacity: 1;
         }
 
-        /* quiet underline link (footer / inline) */
+        /* ==== quiet underline link (footer / instagram) ==== */
         .u-link {
             position: relative;
             display: inline-block;
-            transition: color .3s ease;
+            transition: opacity .3s ease;
         }
 
         .u-link::after {
@@ -166,7 +192,7 @@
             bottom: -3px;
             height: 1px;
             width: 100%;
-            background: var(--accent, #d8a95b);
+            background: var(--acc);
             transform: scaleX(0);
             transform-origin: 100% 50%;
             transition: transform .4s cubic-bezier(.16, 1, .3, 1);
@@ -177,11 +203,11 @@
             transform-origin: 0 50%;
         }
 
-        /* hero scroll cue */
+        /* ==== scroll cue (sobre foto, branco) ==== */
         .cue {
             width: 1px;
             height: 56px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, .8), transparent);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .85), transparent);
             animation: cue 2.4s ease-in-out infinite;
         }
         @@keyframes cue {
@@ -191,19 +217,29 @@
             100% { transform: scaleY(0); transform-origin: bottom; }
         }
 
-        /* film grain overlay (decorative sections) */
+        /* ==== film grain (apenas hero/bandas de foto) ==== */
         .grain::before {
             content: "";
             position: absolute;
             inset: 0;
             z-index: 1;
             pointer-events: none;
-            opacity: .08;
+            opacity: .07;
             mix-blend-mode: overlay;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
         }
 
-        /* toast fade */
+        /* ==== filmstrip horizontal sem scrollbar ==== */
+        .no-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ==== toasts ==== */
         [data-toast] {
             transition: opacity .45s ease, transform .45s ease;
         }
@@ -221,35 +257,35 @@
     }
     <script>document.documentElement.classList.add('js');</script>
 </head>
-<body class="min-h-screen antialiased @(isAdminArea ? "admin-page" : "pub-bg")">
+<body class="min-h-screen antialiased @(isAdminArea ? "admin-page" : "pub-light")" data-glass-header="@(isAdminArea ? "admin" : (isHome ? "auto" : "always"))">
 
     @* ================= HEADER ================= *@
     <header data-header class="fixed inset-x-0 top-0 z-50 @(isAdminArea ? "admin-site-nav" : "")">
-        <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-10">
-            <a href="/" class="shrink-0 font-display text-lg font-bold tracking-[-0.02em] text-white">
-                SHOTS&nbsp;<span class="font-medium text-white/40">BY&nbsp;MARQUES</span>
+        <div class="flex h-16 items-center justify-between gap-6 px-5 sm:px-8 lg:px-12">
+            <a href="/" class="shrink-0 fd text-lg font-bold tracking-[-0.02em] text-current">
+                SHOTS&nbsp;<span class="font-medium opacity-50">BY&nbsp;MARQUES</span>
             </a>
 
-            <nav class="hidden md:flex items-center gap-8 text-[13px] font-medium uppercase tracking-[0.14em]">
+            <nav class="hidden items-center gap-8 text-[13px] font-medium uppercase tracking-[0.14em] md:flex">
                 <a href="/portfolio" class="nlink @(NavActive("/portfolio") ? "on" : "")">@SharedLocalizer["NavPortfolio"]</a>
                 <a href="/servicos" class="nlink @(NavActive("/servicos") ? "on" : "")">@SharedLocalizer["NavServices"]</a>
                 <a href="/sessoes" class="nlink @(NavActive("/sessoes") ? "on" : "")">@SharedLocalizer["NavSessions"]</a>
                 <a href="/#contacto" class="nlink">@SharedLocalizer["NavContact"]</a>
                 @if (User.IsInRole("Admin"))
                 {
-                    <a href="/admin" class="nlink @(NavActive("/admin") ? "on" : "") text-gold">@SharedLocalizer["NavDashboard"]</a>
+                    <a href="/admin" class="nlink acc @(NavActive("/admin") ? "on" : "")">@SharedLocalizer["NavDashboard"]</a>
                 }
             </nav>
 
             <div class="flex items-center gap-4">
-                <form asp-controller="Culture" asp-action="Set" method="post" class="hidden sm:flex items-center rounded-full border border-white/10 text-[11px] font-semibold tracking-[0.08em]">
+                <form asp-controller="Culture" asp-action="Set" method="post" class="hidden items-center rounded-full border border-white/25 text-[11px] font-semibold tracking-[0.08em] opacity-80 transition sm:flex" data-lang>
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                    <button name="culture" value="pt-PT" class="rounded-full px-2.5 py-1 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-gold text-ink" : "text-white/50 hover:text-white")">PT</button>
-                    <button name="culture" value="en-US" class="rounded-full px-2.5 py-1 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-gold text-ink" : "text-white/50 hover:text-white")">EN</button>
+                    <button name="culture" value="pt-PT" class="rounded-full px-2.5 py-1 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-[#141414] text-white" : "text-current opacity-50 hover:opacity-100")">PT</button>
+                    <button name="culture" value="en-US" class="rounded-full px-2.5 py-1 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-[#141414] text-white" : "text-current opacity-50 hover:opacity-100")">EN</button>
                 </form>
 
-                <a href="/Checkout" class="relative block text-white/80 transition hover:text-gold" title="@SharedLocalizer["NavCart"]" aria-label="@SharedLocalizer["NavCart"]">
+                <a href="/Checkout" class="relative block text-current opacity-80 transition hover:opacity-100" title="@SharedLocalizer["NavCart"]" aria-label="@SharedLocalizer["NavCart"]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-[22px] w-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
                     </svg>
@@ -258,80 +294,80 @@
 
                 @if (User.Identity!.IsAuthenticated)
                 {
-                    <div class="hidden md:flex items-center gap-4 text-[13px]">
+                    <div class="hidden items-center gap-4 text-[13px] md:flex">
                         <a href="/as-minhas-marcacoes" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavMyBookings"]</a>
                         <a href="/downloads" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavDownloads"]</a>
                         <form asp-controller="Account" asp-action="Logout" method="post" class="inline" onsubmit="try{localStorage.removeItem('sbm_cart')}catch(e){}">
                             @Html.AntiForgeryToken()
-                            <button class="text-white/45 transition hover:text-gold">@SharedLocalizer["NavLogout"]</button>
+                            <button class="opacity-60 transition hover:opacity-100">@SharedLocalizer["NavLogout"]</button>
                         </form>
                     </div>
                 }
                 else
                 {
-                    <div class="hidden md:flex items-center gap-4 text-[13px]">
+                    <div class="hidden items-center gap-4 text-[13px] md:flex">
                         <a href="/Account/Login" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavLogin"]</a>
-                        <a href="/Account/Register" class="inline-flex items-center rounded-full bg-gold px-4 py-2 text-[12px] font-semibold text-ink transition duration-300 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_10px_28px_-14px_rgba(216,169,91,0.55)]">@SharedLocalizer["NavRegister"]</a>
+                        <a href="/Account/Register" class="inline-flex items-center rounded-full bg-[#141414] px-4 py-2 text-[12px] font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:opacity-90">@SharedLocalizer["NavRegister"]</a>
                     </div>
                 }
 
-                <button id="menu-btn" class="md:hidden text-white/80 transition hover:text-white" aria-label="Menu">
+                <button id="menu-btn" class="text-current opacity-80 transition hover:opacity-100 md:hidden" aria-label="Menu">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
                 </button>
             </div>
         </div>
 
         @* Mobile full-screen menu (site.js toggles #mobile-menu on #menu-btn click) *@
-        <div id="mobile-menu" class="hidden fixed inset-0 z-40 bg-ink/[0.985] px-7 pb-16 pt-24">
-            <button onclick="document.getElementById('mobile-menu').classList.add('hidden')" class="absolute right-5 top-20 text-3xl text-white/60 transition hover:text-white" aria-label="Fechar menu">✕</button>
+        <div id="mobile-menu" class="fixed inset-0 z-40 hidden bg-[#faf9f7] px-7 pb-16 pt-24 text-[#141414]">
+            <button onclick="document.getElementById('mobile-menu').classList.add('hidden')" class="absolute right-5 top-20 text-3xl text-black/40 transition hover:text-black" aria-label="Fechar menu">✕</button>
 
-            <nav class="flex flex-col gap-1 text-3xl font-bold tracking-[-0.02em]">
-                <a href="/portfolio" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">01</span>@SharedLocalizer["NavPortfolio"]</a>
-                <a href="/servicos" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">02</span>@SharedLocalizer["NavServices"]</a>
-                <a href="/sessoes" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">03</span>@SharedLocalizer["NavSessions"]</a>
-                <a href="/#contacto" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">04</span>@SharedLocalizer["NavContact"]</a>
-                <a href="/Checkout" class="flex items-baseline gap-4 py-3 text-white transition hover:text-gold"><span class="font-display text-xs text-white/30">05</span>@SharedLocalizer["NavCart"]</a>
+            <nav class="flex flex-col gap-1 font-display text-3xl font-bold tracking-[-0.02em]">
+                <a href="/portfolio" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">01</span>@SharedLocalizer["NavPortfolio"]</a>
+                <a href="/servicos" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">02</span>@SharedLocalizer["NavServices"]</a>
+                <a href="/sessoes" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">03</span>@SharedLocalizer["NavSessions"]</a>
+                <a href="/#contacto" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">04</span>@SharedLocalizer["NavContact"]</a>
+                <a href="/Checkout" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">05</span>@SharedLocalizer["NavCart"]</a>
             </nav>
 
-            <div class="mt-8 space-y-3 border-t border-white/10 pt-8 text-sm text-white/60">
+            <div class="mt-8 space-y-3 border-t border-black/10 pt-8 text-sm text-black/60">
                 @if (User.Identity!.IsAuthenticated)
                 {
-                    <a href="/as-minhas-marcacoes" class="block transition hover:text-white">@SharedLocalizer["NavMyBookings"]</a>
-                    <a href="/downloads" class="block transition hover:text-white">@SharedLocalizer["NavDownloads"]</a>
+                    <a href="/as-minhas-marcacoes" class="block transition hover:text-black">@SharedLocalizer["NavMyBookings"]</a>
+                    <a href="/downloads" class="block transition hover:text-black">@SharedLocalizer["NavDownloads"]</a>
                     <form asp-controller="Account" asp-action="Logout" method="post" onsubmit="try{localStorage.removeItem('sbm_cart')}catch(e){}">
                         @Html.AntiForgeryToken()
-                        <button class="transition hover:text-gold">@SharedLocalizer["NavLogout"]</button>
+                        <button class="transition hover:text-[#a1843f]">@SharedLocalizer["NavLogout"]</button>
                     </form>
                 }
                 else
                 {
-                    <a href="/Account/Login" class="block transition hover:text-white">@SharedLocalizer["NavLogin"]</a>
-                    <a href="/Account/Register" class="block transition hover:text-gold">@SharedLocalizer["NavRegister"]</a>
+                    <a href="/Account/Login" class="block transition hover:text-black">@SharedLocalizer["NavLogin"]</a>
+                    <a href="/Account/Register" class="block transition hover:text-[#a1843f]">@SharedLocalizer["NavRegister"]</a>
                 }
             </div>
 
             <form asp-controller="Culture" asp-action="Set" method="post" class="mt-10 flex items-center gap-2 text-xs">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                <button name="culture" value="pt-PT" class="rounded-full border border-white/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-gold text-ink" : "text-white/60 hover:text-white")">PT</button>
-                <button name="culture" value="en-US" class="rounded-full border border-white/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-gold text-ink" : "text-white/60 hover:text-white")">EN</button>
+                <button name="culture" value="pt-PT" class="rounded-full border border-black/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-[#141414] text-white" : "text-black/60 hover:text-black")">PT</button>
+                <button name="culture" value="en-US" class="rounded-full border border-black/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-[#141414] text-white" : "text-black/60 hover:text-black")">EN</button>
             </form>
         </div>
     </header>
 
     @* ================= BODY ================= *@
-    <main id="main" class="@(isAdminArea ? "admin-main" : "pt-16")">
+    <main id="main" class="@(isAdminArea ? "admin-main" : (isHome ? "" : "pt-16"))">
         @* Toasts (fixed, auto-fade) *@
         @if (TempData["Success"] is not null || TempData["Error"] is not null)
         {
             <div class="pointer-events-none fixed inset-x-0 top-[5.5rem] z-40 flex flex-col items-center gap-3 px-4">
                 @if (TempData["Success"] is not null)
                 {
-                    <div data-toast class="pointer-events-auto rounded-xl border border-white/10 bg-[#12141a]/95 px-5 py-3.5 text-sm text-emerald-300 shadow-2xl backdrop-blur">@TempData["Success"]</div>
+                    <div data-toast class="pointer-events-auto rounded-full border border-black/10 bg-white/95 px-5 py-3 text-sm font-medium text-emerald-700 shadow-xl backdrop-blur">@TempData["Success"]</div>
                 }
                 @if (TempData["Error"] is not null)
                 {
-                    <div data-toast class="pointer-events-auto rounded-xl border border-red-500/25 bg-[#12141a]/95 px-5 py-3.5 text-sm text-red-300 shadow-2xl backdrop-blur">@TempData["Error"]</div>
+                    <div data-toast class="pointer-events-auto rounded-full border border-red-600/20 bg-white/95 px-5 py-3 text-sm font-medium text-red-700 shadow-xl backdrop-blur">@TempData["Error"]</div>
                 }
             </div>
         }
@@ -349,32 +385,35 @@
         }
     </main>
 
-    @* ================= FOOTER ================= *@
-    <footer class="border-t border-white/[0.08] mt-24">
-        <div class="mx-auto max-w-7xl px-6 py-16 lg:px-10">
-            <div class="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="lg:col-span-2">
-                    <span class="font-display text-3xl font-bold tracking-[-0.02em] text-white">SHOTS&nbsp;<span class="font-medium text-white/40">BY&nbsp;MARQUES</span></span>
-                    <p class="mt-5 max-w-sm text-sm leading-relaxed text-white/40">@SharedLocalizer["FooterTagline"]</p>
+    @* ================= FOOTER (papel, editorial) ================= *@
+    <footer class="border-t border-black/10 bg-[#faf9f7]">
+        <div class="px-5 pb-10 pt-16 sm:px-8 sm:pt-20 lg:px-12">
+            <div class="grid grid-cols-1 gap-12 lg:grid-cols-12">
+                <div class="lg:col-span-7">
+                    <span class="fd block text-[clamp(2.6rem,6vw,5.5rem)] font-bold leading-[0.95] tracking-[-0.04em] text-[#141414]">
+                        SHOTS<br /><span class="opacity-35">BY MARQUES</span>
+                    </span>
+                    <span class="rule mt-8 block h-px w-24"></span>
+                    <p class="mt-6 max-w-sm text-sm leading-relaxed text-black/45">@SharedLocalizer["FooterTagline"]</p>
                 </div>
-                <div>
-                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/35">@SharedLocalizer["FooterNav"]</p>
-                    <ul class="space-y-3 text-sm text-white/55">
-                        <li><a href="/portfolio" class="u-link transition hover:text-white">@SharedLocalizer["NavPortfolio"]</a></li>
-                        <li><a href="/servicos" class="u-link transition hover:text-white">@SharedLocalizer["NavServices"]</a></li>
-                        <li><a href="/sessoes" class="u-link transition hover:text-white">@SharedLocalizer["NavSessions"]</a></li>
-                        <li><a href="/#contacto" class="u-link transition hover:text-white">@SharedLocalizer["NavContact"]</a></li>
+                <div class="lg:col-span-2 lg:col-start-9">
+                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-black/35">@SharedLocalizer["FooterNav"]</p>
+                    <ul class="space-y-3 text-sm text-black/60">
+                        <li><a href="/portfolio" class="u-link transition hover:text-black">@SharedLocalizer["NavPortfolio"]</a></li>
+                        <li><a href="/servicos" class="u-link transition hover:text-black">@SharedLocalizer["NavServices"]</a></li>
+                        <li><a href="/sessoes" class="u-link transition hover:text-black">@SharedLocalizer["NavSessions"]</a></li>
+                        <li><a href="/#contacto" class="u-link transition hover:text-black">@SharedLocalizer["NavContact"]</a></li>
                     </ul>
                 </div>
-                <div>
-                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/35">@SharedLocalizer["FooterContact"]</p>
-                    <ul class="space-y-3 text-sm text-white/55">
-                        <li><a href="mailto:marquesphotography06@gmail.com" class="u-link transition hover:text-white">marquesphotography06@gmail.com</a></li>
-                        <li><a href="https://www.instagram.com/shots.by.marques/" target="_blank" rel="noopener" class="u-link transition hover:text-white">Instagram — @@shots.by.marques</a></li>
+                <div class="lg:col-span-2 lg:col-start-11">
+                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-black/35">@SharedLocalizer["FooterContact"]</p>
+                    <ul class="space-y-3 text-sm text-black/60">
+                        <li><a href="mailto:marquesphotography06@gmail.com" class="u-link transition hover:text-black">marquesphotography06@gmail.com</a></li>
+                        <li><a href="https://www.instagram.com/shots.by.marques/" target="_blank" rel="noopener" class="u-link transition hover:text-black">Instagram — @@shots.by.marques</a></li>
                     </ul>
                 </div>
             </div>
-            <div class="mt-16 flex flex-col items-center justify-between gap-3 border-t border-white/[0.08] pt-7 text-[11px] text-white/30 sm:flex-row">
+            <div class="mt-16 flex flex-col items-start justify-between gap-3 border-t border-black/10 pt-7 text-[11px] text-black/35 sm:flex-row">
                 <span>© @DateTime.Now.Year Shots By Marques. @SharedLocalizer["FooterRights"]</span>
                 <span>@SharedLocalizer["FooterMade"]</span>
             </div>
@@ -397,9 +436,15 @@
 
     <script>
         (function () {
-            // Header glass-on-scroll
+            var body = document.body;
             var hdr = document.querySelector('[data-header]');
-            var onScroll = function () { if (hdr) hdr.classList.toggle('is-scrolled', window.scrollY > 24); };
+            var mode = body.getAttribute('data-glass-header');
+
+            // Header: papel quando scroll (na Home) / permanente nas restantes páginas
+            var onScroll = function () {
+                if (!hdr) return;
+                hdr.classList.toggle('is-scrolled', mode === 'always' || window.scrollY > 24);
+            };
             onScroll();
             window.addEventListener('scroll', onScroll, { passive: true });
 
