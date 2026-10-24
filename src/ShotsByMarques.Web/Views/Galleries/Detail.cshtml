@@ -16,79 +16,140 @@
 }
 
 <style>
-    /* Restyle do detalhe — compatível com site.css (masonry + lightbox + cart) mas
-       no visual da nova linguagem (painéis escuros, hairlines, dourado). */
-    #gd .gallery-grid { column-gap: .85rem; }
+    /* ============================================================
+       Detalhe da galeria — linguagem editorial CLARA (papel/tinta/camel).
+       Substitui por completo os estilos escuros antigos (#gd dark).
+       Masonry edge-to-edge, gutter 6px, sem caixas, sem painéis.
+       Contratos do site.js preservados: .gallery-item, data-* , chips,
+       .photo-overlay, .bottom-bar, data-toggle, data-cart-count, etc.
+       ============================================================ */
+    #gd .gallery-grid {
+        column-gap: 6px;
+    }
+
+    /* foto nua: sem borda, sem painel escuro, sem arredondado */
     #gd .gallery-item {
-        margin-bottom: .85rem;
-        border-radius: .9rem;
-        border-color: rgba(255, 255, 255, .07);
-        background: #0d0f12;
-        transition: border-color .3s ease;
+        margin-bottom: 6px;
+        border: none;
+        border-radius: 0;
+        background: transparent;
     }
-    #gd .gallery-item img { transition: transform 1s cubic-bezier(.16, 1, .3, 1); }
-    #gd .gallery-item:hover img { transform: scale(1.05); }
-    #gd .gallery-item:hover { border-color: rgba(255, 255, 255, .16); }
+
+        #gd .gallery-item:hover {
+            border-color: transparent;
+        }
+
+        #gd .gallery-item img {
+            transition: transform 1.1s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        #gd .gallery-item:hover img {
+            transform: scale(1.045);
+        }
+
+    /* seleção: anel camel crocante (contraste total no tema claro) */
     #gd .gallery-item.selected {
-        outline: none;
-        border-color: rgba(216, 169, 91, .9);
-        box-shadow: 0 0 0 1px rgba(216, 169, 91, .9);
+        outline: 2px solid #a1843f;
+        outline-offset: -2px;
     }
+
     #gd .photo-overlay {
-        background: linear-gradient(to top, rgba(8, 9, 11, .9), rgba(8, 9, 11, 0) 55%);
-        transition: opacity .35s ease;
+        background: linear-gradient(to top, rgba(0, 0, 0, .58), rgba(0, 0, 0, .06) 46%, transparent 62%);
     }
-    #gd .selection-chip { background: var(--accent); color: #17130a; }
+
+    /* chip de seleção: camel sólido com ✓ branco */
+    #gd .selection-chip {
+        background: #a1843f;
+        color: #fff;
+    }
+
+    /* chip "incluído na sessão": vidro claro frosted */
     #gd .included-chip {
-        top: .7rem;
-        right: .7rem;
-        border-color: rgba(255, 255, 255, .18);
-        background: rgba(8, 9, 11, .55);
-        color: rgba(255, 255, 255, .72);
+        border-color: rgba(20, 20, 20, .12);
+        background: rgba(250, 249, 247, .78);
+        color: rgba(20, 20, 20, .65);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
     }
+
+    /* botão de seleção: pill branca → camel no hover e quando selecionada */
+    #gd [data-toggle] {
+        background: #ffffff;
+        color: #141414;
+        transition: background-color .25s ease, color .25s ease;
+    }
+
+        #gd [data-toggle]:hover,
+        #gd .gallery-item.selected [data-toggle] {
+            background: #a1843f;
+            color: #fff;
+        }
+
+    /* downloads do dono da sessão: pill camel */
+    #gd [data-session-download] button {
+        background: #a1843f;
+        color: #fff;
+        transition: filter .25s ease;
+    }
+
+        #gd [data-session-download] button:hover {
+            filter: brightness(1.08);
+        }
+
+    /* telemóvel: sem hover — legendas e botão sempre visíveis (como na Home) */
     @@media (max-width: 640px) {
-        #gd .gallery-grid { columns: 2 190px; column-gap: .6rem; }
-        #gd .gallery-item { margin-bottom: .6rem; border-radius: .7rem; }
+        #gd .gallery-grid {
+            columns: 2 190px;
+            column-gap: 5px;
+        }
+
+        #gd .gallery-item {
+            margin-bottom: 5px;
+        }
+
+        #gd .photo-overlay {
+            opacity: 1;
+        }
     }
 </style>
 
-<section id="gd" class="mx-auto max-w-7xl px-5 pb-20 pt-14 sm:px-6 sm:pt-20 lg:px-10">
+<section id="gd" class="pb-16 pt-10 sm:pt-14 sm:pb-24">
 
-    <!-- ============ CABEÇALHO ============ -->
-    <div class="rv">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <a href="/portfolio" class="group inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.3em] text-white/45 transition hover:text-white">
+    <!-- ============ CABEÇALHO (papel, tipografia) ============ -->
+    <div class="px-5 sm:px-8 lg:px-12">
+        <div class="rv flex flex-wrap items-center gap-x-4 gap-y-2">
+            <a href="/portfolio" class="group inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.3em] text-black/45 transition hover:text-[#141414]">
                 <span class="inline-block transition-transform duration-300 group-hover:-translate-x-1">←</span>
                 @SharedLocalizer["Back"]
             </a>
-            <span class="h-px w-6 bg-white/15"></span>
-            <span class="text-[11px] font-medium uppercase tracking-[0.3em] text-gold">@(Model.Gallery.IsSession ? "Sessão" : "Evento")</span>
+            <span class="h-px w-6 bg-black/15"></span>
+            <span class="text-[11px] font-medium uppercase tracking-[0.3em] text-[#a1843f]">@(Model.Gallery.IsSession ? "Sessão" : "Evento")</span>
         </div>
 
-        <h1 class="mt-6 font-display text-[clamp(2.6rem,6vw,5rem)] font-bold leading-[0.98] tracking-[-0.03em] text-white">
+        <h1 class="rv rv-d1 mt-6 font-display text-[clamp(2.6rem,6vw,5rem)] font-bold leading-[0.98] tracking-[-0.03em] text-[#141414]">
             @Model.Gallery.Title
         </h1>
-        <div class="mt-6 inline-block h-px w-16 bg-gold"></div>
+        <span class="rule mt-6 block h-px w-16"></span>
 
         @if (!string.IsNullOrEmpty(Model.Gallery.Subtitle))
         {
-            <p class="mt-5 max-w-2xl text-lg leading-relaxed text-white/65">@Model.Gallery.Subtitle</p>
+            <p class="rv mt-5 max-w-2xl text-lg leading-relaxed text-black/60">@Model.Gallery.Subtitle</p>
         }
         @if (!string.IsNullOrEmpty(Model.Gallery.Description))
         {
-            <p class="mt-3 max-w-2xl leading-relaxed text-white/45">@Model.Gallery.Description</p>
+            <p class="rv rv-d1 mt-3 max-w-2xl leading-relaxed text-black/45">@Model.Gallery.Description</p>
         }
 
-        <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-            <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-white/45">@Model.Photos.Count @SharedLocalizer["PhotosCount"]</span>
+        <div class="rv rv-d2 mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-black/45">@Model.Photos.Count @SharedLocalizer["PhotosCount"]</span>
             @if (hasForSalePhotos)
             {
-                <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-white/30">@SharedLocalizer["WatermarkNote"]</span>
+                <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-black/30">@SharedLocalizer["WatermarkNote"]</span>
             }
             else if (isSessionGallery && Model.Photos.Count > 0)
             {
-                <span class="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-gold">
-                    <span class="inline-block h-1 w-1 rotate-45 bg-gold/80"></span>
+                <span class="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-[#a1843f]">
+                    <span class="inline-block h-1 w-1 rotate-45 bg-[#a1843f]"></span>
                     @SharedLocalizer["SessionPhotosIncluded"]
                 </span>
             }
@@ -96,11 +157,11 @@
 
         @if (hasForSalePhotos && packs.Any())
         {
-            <div class="rv rv-d1 mt-6 flex flex-wrap gap-2">
+            <div class="rv rv-d2 mt-6 flex flex-wrap gap-2">
                 @foreach (var pack in packs)
                 {
-                    <span class="inline-flex items-center gap-2.5 rounded-full border border-gold/30 bg-gold/[0.08] px-4 py-2 text-[11px] font-medium tracking-wide text-gold">
-                        <span class="inline-block h-1 w-1 rotate-45 bg-gold/80"></span>
+                    <span class="inline-flex items-center gap-2.5 rounded-full border border-black/10 bg-white/70 px-4 py-2 text-[11px] font-medium tracking-wide text-black/60 backdrop-blur">
+                        <span class="inline-block h-1 w-1 rotate-45 bg-[#a1843f]"></span>
                         @pack.Name — −@pack.DiscountPercent.ToString("0.#")% (@SharedLocalizer["PackFrom"] @pack.MinPhotos+ @SharedLocalizer["PhotosCount"])
                     </span>
                 }
@@ -108,8 +169,8 @@
         }
     </div>
 
-    <!-- ============ GRELHA MASONRY (IDs/classes usados pelo site.js — não alterar) ============ -->
-    <div class="@gridClass mt-14">
+    <!-- ============ GRELHA MASONRY edge-to-edge (IDs/classes usados pelo site.js — não alterar) ============ -->
+    <div class="@gridClass mt-10 sm:mt-14">
         @foreach (var photo in Model.Photos)
         {
             var photoIsForSale = isSessionGallery ? false : photo.IsForSale;
@@ -129,14 +190,14 @@
                     @if (photoIsForSale)
                     {
                         <div class="flex items-end justify-between gap-2">
-                            <div>
-                                <p class="text-sm font-semibold text-white">@photo.Title</p>
-                                <p class="text-sm font-semibold text-gold">@photoPrice</p>
+                            <div class="min-w-0">
+                                <p class="truncate font-display text-sm font-bold text-white">@photo.Title</p>
+                                <p class="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75">@photoPrice</p>
                             </div>
                             <button type="button" data-toggle
                                     data-add-text="+ @SharedLocalizer["AddToSelection"]"
                                     data-remove-text="✓ @SharedLocalizer["RemoveFromSelection"]"
-                                    class="shrink-0 rounded-full bg-gold px-3 py-1.5 text-xs font-semibold text-ink transition hover:brightness-110">
+                                    class="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">
                                 + @SharedLocalizer["AddToSelection"]
                             </button>
                         </div>
@@ -144,21 +205,21 @@
                     else if (canDownload)
                     {
                         <div class="flex items-end justify-between gap-2">
-                            <div>
-                                <p class="text-sm font-semibold text-white">@photo.Title</p>
-                                <p class="mt-1 text-xs text-white/60">@SharedLocalizer["IncludedInSession"]</p>
+                            <div class="min-w-0">
+                                <p class="truncate font-display text-sm font-bold text-white">@photo.Title</p>
+                                <p class="mt-0.5 text-xs text-white/65">@SharedLocalizer["IncludedInSession"]</p>
                             </div>
                             <form asp-controller="Downloads" asp-action="SessionPhoto" asp-route-photoId="@photo.Id" method="post" data-session-download>
                                 @Html.AntiForgeryToken()
-                                <button class="shrink-0 rounded-full bg-gold px-3 py-1.5 text-xs font-semibold text-ink transition hover:brightness-110">↓ @SharedLocalizer["Download"]</button>
+                                <button class="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">↓ @SharedLocalizer["Download"]</button>
                             </form>
                         </div>
                     }
                     else
                     {
-                        <div>
-                            <p class="text-sm font-semibold text-white">@photo.Title</p>
-                            <p class="mt-1 text-xs text-white/60">@SharedLocalizer["IncludedInSession"]</p>
+                        <div class="min-w-0">
+                            <p class="truncate font-display text-sm font-bold text-white">@photo.Title</p>
+                            <p class="mt-0.5 text-xs text-white/65">@SharedLocalizer["IncludedInSession"]</p>
                         </div>
                     }
                 </div>
@@ -168,27 +229,27 @@
 
     @if (Model.Photos.Count == 0)
     {
-        <p class="py-24 text-center font-display text-2xl text-white/40">Esta galeria ainda não tem fotos.</p>
+        <p class="px-5 py-24 text-center font-display text-2xl text-black/35">Esta galeria ainda não tem fotos.</p>
     }
 </section>
 
 @if (hasForSalePhotos)
 {
-    <!-- Barra sticky de checkout (só em galerias com fotos à venda) -->
+    <!-- Barra sticky de checkout (só em galerias com fotos à venda) — vidro claro full-width -->
     <div class="bottom-bar" data-checkout-container>
-        <div class="mx-auto max-w-3xl px-4 sm:px-6">
-            <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-[#101319]/95 px-5 py-4 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+        <div class="border-t border-black/10 bg-[#faf9f7]/90 px-5 py-4 shadow-[0_-14px_44px_-26px_rgba(20,20,20,0.4)] backdrop-blur-xl sm:px-8 lg:px-12">
+            <div class="flex items-center justify-between gap-4">
                 <div class="min-w-0">
-                    <p class="flex items-baseline gap-2 text-sm text-white/60">
-                        <span data-cart-count class="font-display text-xl font-bold tabular-nums text-white">0</span>
+                    <p class="flex items-baseline gap-2 text-sm text-black/55">
+                        <span data-cart-count class="font-display text-xl font-bold tabular-nums text-[#a1843f]">0</span>
                         @SharedLocalizer["SelectedCount"]
                     </p>
                     <div class="mt-1.5 flex items-center gap-4">
-                        <button data-select-all class="text-[11px] font-medium uppercase tracking-[0.16em] text-white/50 transition hover:text-gold">☑ @SharedLocalizer["SelectAll"]</button>
-                        <button data-clear-cart class="text-[11px] font-medium uppercase tracking-[0.16em] text-white/40 transition hover:text-gold">@SharedLocalizer["ClearSelection"]</button>
+                        <button data-select-all class="text-[11px] font-medium uppercase tracking-[0.16em] text-black/50 transition hover:text-[#a1843f]">☑ @SharedLocalizer["SelectAll"]</button>
+                        <button data-clear-cart class="text-[11px] font-medium uppercase tracking-[0.16em] text-black/40 transition hover:text-[#a1843f]">@SharedLocalizer["ClearSelection"]</button>
                     </div>
                 </div>
-                <button data-checkout-continue class="btn-primary hidden shrink-0">@SharedLocalizer["ContinueCheckout"] →</button>
+                <button data-checkout-continue class="hidden shrink-0 rounded-full bg-[#141414] px-6 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-[#a1843f]">@SharedLocalizer["ContinueCheckout"] →</button>
             </div>
         </div>
     </div>
@@ -198,10 +259,10 @@
 {
     <!-- Download all button for session owners (photos already paid with the session) -->
     <div class="bottom-bar">
-        <div class="mx-auto max-w-3xl px-4 sm:px-6">
-            <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-[#101319]/95 px-5 py-4 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl">
-                <p class="text-sm text-white/55">@SharedLocalizer["SessionPhotosHint"]</p>
-                <button data-download-all data-done-text="@SharedLocalizer["DownloadAll"]" class="btn-primary shrink-0">↓ @SharedLocalizer["DownloadAll"]</button>
+        <div class="border-t border-black/10 bg-[#faf9f7]/90 px-5 py-4 shadow-[0_-14px_44px_-26px_rgba(20,20,20,0.4)] backdrop-blur-xl sm:px-8 lg:px-12">
+            <div class="flex items-center justify-between gap-4">
+                <p class="min-w-0 text-sm text-black/55">@SharedLocalizer["SessionPhotosHint"]</p>
+                <button data-download-all data-done-text="@SharedLocalizer["DownloadAll"]" class="shrink-0 rounded-full bg-[#a1843f] px-6 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:brightness-110">↓ @SharedLocalizer["DownloadAll"]</button>
             </div>
         </div>
     </div>
