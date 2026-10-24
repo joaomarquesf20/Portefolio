@@ -63,8 +63,22 @@
         color: #fff;
     }
 
+    /* anti-theft "ghost": transparent div fully covering each photo —
+       right-click / inspect targets the empty div, not the <img>.
+       Layering keeps site.js working: ghost (1) < overlay+buttons (2) < chips (3). */
+    #gd .gallery-ghost {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+    }
+
+    #gd .photo-overlay {
+        z-index: 2;
+    }
+
     /* chip "incluído na sessão": vidro claro frosted */
     #gd .included-chip {
+        z-index: 3;
         border-color: rgba(20, 20, 20, .12);
         background: rgba(250, 249, 247, .78);
         color: rgba(20, 20, 20, .65);
@@ -176,8 +190,10 @@
             var photoIsForSale = isSessionGallery ? false : photo.IsForSale;
             var photoPrice = photoIsForSale ? photo.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT")) : string.Empty;
             <div class="gallery-item rv" data-gallery-id="@Model.Gallery.Id" data-photo-id="@photo.Id"
-                 data-title="@photo.Title" data-price="@photoPrice" data-sale="@photoIsForSale.ToString().ToLowerInvariant()">
-                <img src="@photo.PreviewUrl()" alt="@photo.Title" loading="lazy" />
+                 data-title="@photo.Title" data-price="@photoPrice" data-sale="@photoIsForSale.ToString().ToLowerInvariant()"
+                 data-secure-src="@photo.LargePreviewUrl()">
+                <img src="@photo.ThumbUrl()" alt="@photo.Title" loading="lazy" />
+                <div class="gallery-ghost" aria-hidden="true"></div>
                 @if (photoIsForSale)
                 {
                     <span class="selection-chip">✓</span>

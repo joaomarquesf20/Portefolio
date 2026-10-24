@@ -46,7 +46,38 @@ public sealed class SitePageBackgroundService
             .Select(s => s.ImagePath)
             .FirstOrDefaultAsync();
 
-        return string.IsNullOrWhiteSpace(configured) ? fallback : configured;
+        return await ResolveAsync(configured, fallback);
+    }
+
+    /// <summary>
+    /// Maps any stored image path to a URL the browser can actually load,
+    /// keeping the anti-theft rule: covers and page backgrounds are public,
+    /// "cover-like" imagery so they always render the CLEAN thumb. A raw
+    /// "photos/..." value is never servable (files live outside wwwroot)
+    /// and its preview asset is WATERMARKED — it resolves to the photo's
+    /// clean thumbnail, but only when the photo belongs to a published
+    /// public gallery; anything else falls back to the caller's default.
+    /// </summary>
+    public async Task<string> ResolveAsync(string? path, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            path = fallback;
+
+        if (path is null)
+            return fallback;
+
+        if (path.StartsWith("photos/", StringComparison.OrdinalIgnoreCase))
+        {
+            var photoId = await _db.Photos
+                .AsNoTracking()
+                .Where(p => p.PreviewPath == path && p.Gallery.IsPublished && !p.Gallery.IsPrivate)
+                .Select(p => (int?)p.Id)
+                .FirstOrDefaultAsync();
+
+            return photoId is null ? fallback : $"/Photos/Thumb/{photoId.Value}";
+        }
+
+        return path;
     }
 
     public async Task SaveAsync(string key, IFormFile image)

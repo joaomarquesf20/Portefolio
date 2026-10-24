@@ -20,6 +20,9 @@ public class PhotoStorageService
     /// <summary>Maximum width/height of the watermarked preview (keeps traffic low).</summary>
     private const int PreviewMaxDimension = 1600;
 
+    /// <summary>Maximum width/height of the CLEAN (watermark-free) grid thumbnail.</summary>
+    public const int ThumbMaxDimension = 900;
+
     /// <summary>Watermark text stamped on previews (shown to clients before purchase).</summary>
     public const string WatermarkText = "© Shots By Marques";
 
@@ -119,10 +122,40 @@ public class PhotoStorageService
     }
 
     /// <summary>
+    /// CLEAN (watermark-free) small derivative of the photo, used by grid
+    /// tiles and covers. The full-resolution original and the WATERMARKED
+    /// large preview follow the security split:
+    ///   thumb   → public, clean, small (anti-theft: little value to steal)
+    ///   preview → lightbox only, ALWAYS watermarked, never in a src attr
+    ///   original→ DownloadsController only, after payment/ownership checks
+    /// </summary>
+    public static void GenerateCleanThumb(string sourcePath, string targetPath, int maxDimension = ThumbMaxDimension)
+    {
+        using var source = SKBitmap.Decode(sourcePath)
+            ?? throw new InvalidOperationException("Could not decode image.");
+
+        var scale = Math.Min(1f, maxDimension / (float)Math.Max(source.Width, source.Height));
+        var width = Math.Max(1, (int)Math.Round(source.Width * scale));
+        var height = Math.Max(1, (int)Math.Round(source.Height * scale));
+
+        using var resized = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgb888x, SKAlphaType.Opaque));
+        using (var canvas = new SKCanvas(resized))
+        {
+            canvas.Clear(SKColors.White);
+            var sampling = new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
+            canvas.DrawBitmap(source, new SKRect(0, 0, width, height), sampling);
+        }
+
+        using var image = SKImage.FromBitmap(resized);
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 85);
+        using var output = File.Create(targetPath);
+        data.SaveTo(output);
+    }
+
+    /// <summary>
     /// Saves a public gallery cover into wwwroot (covers are meant to be public).
     /// </summary>
-    public async Task<string> SaveCoverAsync(IFormFile file)
-    {
+    public async Task<string> SaveCoverAsync(IFormFile file)    {
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
         if (extension is not (".jpg" or ".jpeg" or ".png" or ".webp" or ".svg"))
             extension = ".jpg";
@@ -153,12 +186,26 @@ public class PhotoStorageService
     }
 
     /// <summary>
-    /// Deletes both the full-resolution file and its watermarked preview.
+    /// Deletes both the full-resolution file and its watermarked preview —
+    /// plus the on-demand CLEAN thumb cache file if one was generated.
     /// </summary>
     public void Delete(string? relativePath, string? previewPath = null)
     {
         DeleteFile(relativePath);
         DeleteFile(previewPath);
+        DeleteThumb(relativePath);
+    }
+
+    private void DeleteThumb(string? relativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath) || !relativePath.StartsWith("photos/"))
+            return;
+        var fullPath = Path.GetFullPath(Path.Combine(PhotosRoot, relativePath["photos/".Length..]));
+        if (!fullPath.StartsWith(Path.GetFullPath(PhotosRoot) + Path.DirectorySeparatorChar))
+            return;
+        var thumb = Path.Combine(Path.GetDirectoryName(fullPath) ?? string.Empty, Path.GetFileNameWithoutExtension(fullPath) + "-thumb.jpg");
+        if (File.Exists(thumb))
+            File.Delete(thumb);
     }
 
     private void DeleteFile(string? relativePath)

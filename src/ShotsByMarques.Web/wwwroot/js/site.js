@@ -130,16 +130,43 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshCartBadge();
   window.addEventListener("sbm:cart-change", refreshCartBadge);
 
-  // ----- Photo protection: block right-click "Save image as…" and drag -----
-  // This is a deterrent, not real protection — the actual protection is that
-  // previews are watermarked and downscaled; originals are only served after payment.
-  document.addEventListener("contextmenu", (e) => {
-    if (e.target.closest(".gallery-item, #lightbox, .checkout-photo")) e.preventDefault();
-  });
-  document.querySelectorAll(".gallery-item img, #lightbox img").forEach(img => {
-    img.draggable = false;
-    img.addEventListener("dragstart", (e) => e.preventDefault());
-  });
+  // ----- Photo protection / anti-theft -----
+  // Deterrents, not absolute protection — the real protection is the asset
+  // split: grid thumbs are small & watermark-free, the large lightbox preview
+  // is ALWAYS watermarked, and originals are only served after payment.
+  const adminShell = document.body.classList.contains("admin-page");
+  if (!adminShell) {
+    // Global right-click ban on public pages — except inside form fields,
+    // so visitors keep paste/correction menus in booking and contact forms.
+    document.addEventListener("contextmenu", (e) => {
+      if (!e.target.closest("input, textarea, select, [contenteditable]")) e.preventDefault();
+    });
+    // Nobody drags a photo out of the page.
+    document.addEventListener("dragstart", (e) => e.preventDefault());
+    // Hostile shortcuts: F12, Ctrl+Shift+I/J/C (devtools), Ctrl+U (view-source).
+    document.addEventListener("keydown", (e) => {
+      const k = (e.key || "").toUpperCase();
+      if (k === "F12" ||
+          (e.ctrlKey && e.shiftKey && (k === "I" || k === "J" || k === "C")) ||
+          (e.ctrlKey && !e.shiftKey && k === "U")) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    document.querySelectorAll(".gallery-item img, #lightbox img").forEach(img => {
+      img.draggable = false;
+    });
+  } else {
+    // Admin shell: keep the classic per-image guards only (the owner may
+    // want normal browser behaviour and devtools while managing content).
+    document.addEventListener("contextmenu", (e) => {
+      if (e.target.closest(".gallery-item, #lightbox, .checkout-photo")) e.preventDefault();
+    });
+    document.querySelectorAll(".gallery-item img, #lightbox img").forEach(img => {
+      img.draggable = false;
+      img.addEventListener("dragstart", (e) => e.preventDefault());
+    });
+  }
 
   // ----- Gallery page: selection UI -----
   document.querySelectorAll("[data-gallery-id]").forEach(item => {
@@ -251,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ----- Lightbox with zoom -----
   const lb = {
-    box: null, img: null, title: null, index: 0, items: [],
+    box: null, img: null, title: null, index: 0, items: [], currentBlob: null,
     scale: 1, tx: 0, ty: 0, dragging: false, moved: false
   };
 
@@ -288,9 +315,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const lbShow = () => {
     const el = lb.items[lb.index];
-    lb.img.src = el.querySelector("img").src;
     lb.title.textContent = el.dataset.title + (el.dataset.price ? " — " + el.dataset.price : "");
+    // 1) Instant fallback: the clean (watermark-free, low-res) thumb already in the grid.
+    lb.img.src = el.querySelector("img").src;
     lbResetZoom();
+    // 2) Anti-theft: the real (watermarked) high-res path NEVER lives in a src
+    //    attribute. It arrives via data-secure-src and is rendered through a
+    //    blob: URL, so casual DOM inspection can't see the file location.
+    const secure = el.dataset.secureSrc;
+    if (!secure) return;
+    const at = lb.index; // token: ignore stale fetches when navigating fast
+    fetch(secure, { credentials: "same-origin" })
+      .then((r) => { if (!r.ok) throw new Error("secure-src " + r.status); return r.blob(); })
+      .then((blob) => {
+        if (lb.index !== at) return;
+        if (lb.currentBlob) URL.revokeObjectURL(lb.currentBlob);
+        lb.currentBlob = URL.createObjectURL(blob);
+        lb.img.src = lb.currentBlob;
+      })
+      .catch(() => { /* fallback thumb stays */ });
   };
   window.lbNav = (dir) => {
     lb.index = (lb.index + dir + lb.items.length) % lb.items.length;
@@ -361,6 +404,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const box = document.getElementById("lightbox");
     if (box) box.classList.remove("open");
     document.body.style.overflow = "";
+    // Release the fetched secure image — once revoked, the blob: URL in the
+    // DOM is dead and cannot be reopened or "saved as" later.
+    if (lb.currentBlob) { URL.revokeObjectURL(lb.currentBlob); lb.currentBlob = null; }
   };
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { closeLightbox(); return; }
