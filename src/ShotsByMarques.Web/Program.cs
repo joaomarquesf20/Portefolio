@@ -71,25 +71,23 @@ builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<StripeCheckoutService>();
 builder.Services.AddScoped<PhotoStorageService>();
 builder.Services.AddScoped<AvailabilityCalendarService>();
+builder.Services.AddScoped<SitePageBackgroundService>();
+builder.Services.AddSingleton<BookingCalendarService>();
 
 // Travel fee settings (base location, free radius, price per extra km)
 builder.Services.Configure<ShotsByMarques.Web.Models.TravelSettings>(
     builder.Configuration.GetSection("Travel"));
 
+// Applies EF Core Migrations + seeds the database when the host actually starts.
+// Implemented as IHostedService so design-time tooling (`dotnet ef`) — which
+// builds the host without starting it — never performs database operations
+// as a side effect.
+builder.Services.AddHostedService<ShotsByMarques.Web.Data.DatabaseStartupService>();
+
 var app = builder.Build();
 
-// Create DB + seed on startup
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        await DbSeeder.SeedAsync(scope.ServiceProvider);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogError(ex, "Database seeding failed. Check the SQL Server LocalDB connection string in appsettings.json.");
-    }
-}
+// Migrations + seeding run inside DatabaseStartupService (IHostedService) once
+// the host starts for real.
 
 if (!app.Environment.IsDevelopment())
 {

@@ -13,7 +13,7 @@
             <div>
                 <p class="text-white/40 text-xs uppercase tracking-wide">@SharedLocalizer["Date"]</p>
                 <p class="font-semibold text-lg capitalize mt-1">
-                    @Model.Date.ToString("dddd, dd MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture)
+                    @Model.Date.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("pt-PT"))
                 </p>
             </div>
             @if (!string.IsNullOrEmpty(Model.Zone) || !string.IsNullOrEmpty(Model.Location))

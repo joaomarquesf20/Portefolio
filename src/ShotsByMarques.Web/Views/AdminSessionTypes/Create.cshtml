@@ -1,4 +1,4 @@
-@model ShotsByMarques.Web.Models.SessionType
+﻿@model ShotsByMarques.Web.Models.SessionType
 @{
     ViewData["Title"] = SharedLocalizer["NewSessionType"];
 }
@@ -34,14 +34,10 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <input asp-for="IsActive" class="w-4 h-4 rounded accent-[#d9a441]" />
+            <input asp-for="IsActive" class="w-4 h-4 rounded accent-[color:var(--accent)]" />
             <label asp-for="IsActive" class="text-sm">@SharedLocalizer["SessionTypeActive"]</label>
         </div>
 
         <button type="submit" class="btn-primary">@SharedLocalizer["Save"]</button>
     </form>
 </section>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShotsByMarques.Web.Data;
+using ShotsByMarques.Web.Helpers;
+using ShotsByMarques.Web.Services;
 using ShotsByMarques.Web.ViewModels;
 using System.Security.Claims;
 
@@ -9,8 +11,13 @@ namespace ShotsByMarques.Web.Controllers;
 public class GalleriesController : Controller
 {
     private readonly ApplicationDbContext _db;
+    private readonly SitePageBackgroundService _backgrounds;
 
-    public GalleriesController(ApplicationDbContext db) => _db = db;
+    public GalleriesController(ApplicationDbContext db, SitePageBackgroundService backgrounds)
+    {
+        _db = db;
+        _backgrounds = backgrounds;
+    }
 
     [Route("portfolio")]
     public async Task<IActionResult> Index()
@@ -26,6 +33,10 @@ public class GalleriesController : Controller
         // when creating the gallery; galleries without photos use the explicit flag.
         var sessions = galleries.Where(g => g.IsSession).ToList();
         var events = galleries.Where(g => !g.IsSession).ToList();
+
+        var fallback = galleries.Select(g => g.CoverUrl()).FirstOrDefault(c => !string.IsNullOrEmpty(c))
+                       ?? "/sample-photos/cars-cover.svg";
+        ViewData["BgPortfolio"] = await _backgrounds.GetAsync(SitePageBackgroundService.Portfolio, fallback);
 
         return View(new PortfolioViewModel { Sessions = sessions, Events = events });
     }

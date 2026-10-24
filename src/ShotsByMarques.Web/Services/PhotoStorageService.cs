@@ -139,6 +139,19 @@ public class PhotoStorageService
         return $"/uploads/covers/{fileName}";
     }
 
+    /// <summary>Deletes an uploaded public cover/background file.</summary>
+    public void DeletePublicCover(string? publicPath)
+    {
+        if (string.IsNullOrWhiteSpace(publicPath) || !publicPath.StartsWith("/uploads/covers/", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var relative = publicPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        var fullPath = Path.GetFullPath(Path.Combine(_env.WebRootPath, relative));
+        var root = Path.GetFullPath(Path.Combine(_env.WebRootPath, "uploads", "covers"));
+        if (fullPath.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) && File.Exists(fullPath))
+            File.Delete(fullPath);
+    }
+
     /// <summary>
     /// Deletes both the full-resolution file and its watermarked preview.
     /// </summary>

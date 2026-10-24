@@ -1,4 +1,4 @@
-@model ShotsByMarques.Web.Models.Gallery
+﻿@model ShotsByMarques.Web.Models.Gallery
 @{
     ViewData["Title"] = SharedLocalizer["NewGallery"];
 }
@@ -49,8 +49,9 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium mb-2">Capa</label>
+            <label class="block text-sm font-medium mb-2">Capa (opcional)</label>
             <input type="file" name="cover" accept="image/*" class="w-full text-sm text-white/60" />
+            <p class="text-white/40 text-xs mt-1">Podes deixar em branco — depois de carregar as fotos, usa “★ Definir capa” na foto que queres como capa.</p>
         </div>
 
         <div class="flex items-center gap-3">
@@ -79,7 +80,3 @@
         <button type="submit" class="btn-primary">@SharedLocalizer["Save"]</button>
     </form>
 </section>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

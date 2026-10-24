@@ -17,8 +17,9 @@
 
 <section class="max-w-7xl mx-auto px-4 sm:px-6 py-12">
     <div class="mb-10 fade-up">
-        <a href="/portfolio" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
-        <h1 class="font-display text-4xl sm:text-5xl mt-3">@Model.Gallery.Title</h1>
+        <a href="/portfolio" class="text-white/40 hover:text-white text-sm transition">← @SharedLocalizer["Back"]</a>
+        <h1 class="font-display text-4xl sm:text-6xl text-white mt-3">@Model.Gallery.Title</h1>
+        <div class="divider w-16 mt-6"></div>
         @if (!string.IsNullOrEmpty(Model.Gallery.Subtitle))
         {
             <p class="text-white/60 mt-2 text-lg">@Model.Gallery.Subtitle</p>

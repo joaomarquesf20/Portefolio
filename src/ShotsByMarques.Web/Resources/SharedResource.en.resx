@@ -132,6 +132,10 @@
   <data name="Date" xml:space="preserve"><value>Date</value></data>
   <data name="Notes" xml:space="preserve"><value>Notes</value></data>
   <data name="FooterRights" xml:space="preserve"><value>All rights reserved.</value></data>
+  <data name="FooterTagline" xml:space="preserve"><value>Automotive photography — car sessions and event coverage, delivered in an online gallery.</value></data>
+  <data name="FooterNav" xml:space="preserve"><value>Navigation</value></data>
+  <data name="FooterContact" xml:space="preserve"><value>Contact</value></data>
+  <data name="FooterMade" xml:space="preserve"><value>Made with a passion for cars and light.</value></data>
   <data name="LoginTitle" xml:space="preserve"><value>Sign in</value></data>
   <data name="RegisterTitle" xml:space="preserve"><value>Create account</value></data>
   <data name="Email" xml:space="preserve"><value>Email</value></data>

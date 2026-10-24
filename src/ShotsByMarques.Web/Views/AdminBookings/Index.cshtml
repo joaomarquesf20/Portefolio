@@ -47,7 +47,7 @@
                         <p class="text-white/40 text-sm mt-1">
                             @booking.ClientUser?.FullName · @booking.ClientUser?.Email
                         </p>
-                        <p class="text-white/40 text-sm">@booking.Start.ToLocalTime().ToString("dddd, dd 'de' MMMM yyyy 'às' HH:mm", new System.Globalization.CultureInfo("pt-PT"))</p>
+                        <p class="text-white/40 text-sm">@ShotsByMarques.Web.Services.PortugalTime.FromUtc(booking.Start).ToString("dddd, dd 'de' MMMM yyyy 'às' HH:mm", new System.Globalization.CultureInfo("pt-PT"))</p>
                         @if (!string.IsNullOrEmpty(booking.Location))
                         {
                             <p class="text-white/40 text-sm">📍 @booking.Location@(booking.TravelFee > 0 ? $" (+{booking.TravelFee.ToString("C", new System.Globalization.CultureInfo("pt-PT"))} deslocação)" : "")</p>
@@ -105,6 +105,8 @@
                         }
                     }
                     <span class="flex-1"></span>
+                    <a asp-action="AddToGoogleCalendar" asp-route-id="@booking.Id" class="admin-calendar-action" target="_blank" rel="noopener" title="Abrir no Google Calendar">Google</a>
+                    <a asp-action="DownloadCalendarFile" asp-route-id="@booking.Id" class="admin-calendar-action" title="Descarregar ficheiro de calendário">.ics</a>
                     <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@booking.Id" />

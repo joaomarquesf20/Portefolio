@@ -12,11 +12,13 @@ public class AdminBookingsController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly PhotoStorageService _storage;
+    private readonly BookingCalendarService _bookingCalendar;
 
-    public AdminBookingsController(ApplicationDbContext db, PhotoStorageService storage)
+    public AdminBookingsController(ApplicationDbContext db, PhotoStorageService storage, BookingCalendarService bookingCalendar)
     {
         _db = db;
         _storage = storage;
+        _bookingCalendar = bookingCalendar;
     }
 
     public async Task<IActionResult> Index(BookingStatus? status)
@@ -32,6 +34,28 @@ public class AdminBookingsController : Controller
         var bookings = await query.OrderByDescending(b => b.Start).ToListAsync();
         ViewData["Filter"] = status;
         return View(bookings);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AddToGoogleCalendar(int id)
+    {
+        var booking = await _db.Bookings
+            .Include(b => b.SessionType)
+            .FirstOrDefaultAsync(b => b.Id == id);
+        if (booking is null)
+            return NotFound();
+        return Redirect(_bookingCalendar.CreateGoogleCalendarUrl(booking));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DownloadCalendarFile(int id)
+    {
+        var booking = await _db.Bookings
+            .Include(b => b.SessionType)
+            .FirstOrDefaultAsync(b => b.Id == id);
+        if (booking is null)
+            return NotFound();
+        return File(_bookingCalendar.CreateIcs(booking), "text/calendar; charset=utf-8", _bookingCalendar.CreateFileName(booking));
     }
 
     [HttpPost]

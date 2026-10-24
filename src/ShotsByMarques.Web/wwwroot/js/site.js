@@ -373,57 +373,26 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.querySelectorAll("[data-close-lightbox]").forEach(b => b.addEventListener("click", closeLightbox));
 
-  // ----- Booking: availability slots -----
-  const bookingForm = document.getElementById("booking-form");
-  if (bookingForm) {
-    const typeId = bookingForm.dataset.sessionTypeId;
-    const dateInput = document.getElementById("Date");
-    const slotsWrap = document.getElementById("slots");
-    const timeInput = document.getElementById("TimeSlot");
-    const noSlots = document.getElementById("no-slots");
-
-    const loadSlots = async () => {
-      if (!dateInput.value) return;
-      slotsWrap.innerHTML = "";
-      noSlots?.classList.add("hidden");
-      timeInput.value = "";
-      const res = await fetch(`/Bookings/Available?sessionTypeId=${typeId}&date=${dateInput.value}`);
-      const slots = await res.json();
-      const free = (slots || []).filter(s => !s.taken);
-      if (free.length === 0) { noSlots?.classList.remove("hidden"); return; }
-      // Admin-style time bar: click a segment to pick the hour.
-      window.SBM.buildSlotBar(slotsWrap, slots || [], {
-        selected: "",
-        hint: slotsWrap.dataset.hint || "",
-        onSelect: (t) => { timeInput.value = t; }
-      });
-      // Explain why today may offer fewer slots than other days (local date).
-      const hint = document.getElementById("day-note");
-      if (hint && hint.dataset.todayHint) {
-        const now = new Date();
-        const localToday = now.getFullYear() + "-" +
-          String(now.getMonth() + 1).padStart(2, "0") + "-" +
-          String(now.getDate()).padStart(2, "0");
-        if (dateInput.value === localToday) {
-          hint.textContent = hint.dataset.todayHint.replace("{0}", free[0].time);
-          hint.classList.remove("hidden");
+  // ----- Fade-up on scroll -----
+  // If IntersectionObserver is unavailable (some embedded/older browsers),
+  // fall through to the safety net below instead of throwing.
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+          observer.unobserve(entry.target);
         }
-      }
-    };
-    dateInput.addEventListener("change", loadSlots);
-    if (dateInput.value) loadSlots();
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll(".fade-up").forEach(el => observer.observe(el));
   }
 
-  // ----- Fade-up on scroll -----
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("visible");
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.08 });
-  document.querySelectorAll(".fade-up").forEach(el => observer.observe(el));
+  // Safety net: never leave content hidden. If the observer hasn't revealed an
+  // element shortly after load, reveal it anyway so no section stays invisible.
+  setTimeout(() => {
+    document.querySelectorAll(".fade-up:not(.visible)").forEach(el => el.classList.add("visible"));
+  }, 1200);
 
   // ----- Mobile menu -----
   const menuBtn = document.getElementById("menu-btn");

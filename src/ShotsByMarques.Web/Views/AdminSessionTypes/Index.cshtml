@@ -1,16 +1,31 @@
 @model List<ShotsByMarques.Web.Models.SessionType>
 @{
     ViewData["Title"] = SharedLocalizer["SessionTypes"];
+    var activeCount = Model.Count(s => s.IsActive);
+    var inactiveCount = Model.Count - activeCount;
 }
 
-<section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
-        <h1 class="font-display text-4xl fade-up">@SharedLocalizer["SessionTypes"]</h1>
-        <a href="/AdminSessionTypes/Create" class="btn-primary fade-up">+ @SharedLocalizer["NewSessionType"]</a>
+<section class="admin-session-types-page max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <div class="admin-page-heading">
+        <div>
+            <p class="admin-section-eyebrow">Conteúdo / Serviços</p>
+            <h1 class="font-display text-4xl fade-up">@SharedLocalizer["SessionTypes"]</h1>
+            <p class="admin-page-intro">Define os serviços que aparecem na página de sessões e controla os respetivos preços.</p>
+        </div>
+        <a href="/AdminSessionTypes/Create" class="btn-primary admin-heading-action fade-up">+ @SharedLocalizer["NewSessionType"]</a>
     </div>
 
-    <div id="bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
+    <div class="admin-session-summary fade-up" aria-label="Resumo dos tipos de sessão">
+        <div><strong>@Model.Count</strong><span>serviços criados</span></div>
+        <div><strong>@activeCount</strong><span>visíveis para clientes</span></div>
+        @if (inactiveCount > 0)
+        {
+            <div><strong>@inactiveCount</strong><span>inativos</span></div>
+        }
+        <p>Os serviços são apresentados pela ordem definida com as setas.</p>
+    </div>
+
+    <div id="bulk-bar" class="hidden admin-bulk-bar card p-4 mb-5 flex flex-wrap items-center gap-4 text-sm fade-up">
         <label class="flex items-center gap-2 text-white/70 cursor-pointer">
             <input type="checkbox" id="select-all" class="accent-[color:var(--accent)] w-4 h-4" />
             <span>Selecionar todas</span>
@@ -20,64 +35,81 @@
         <form asp-action="BulkDelete" method="post" class="inline">
             @Html.AntiForgeryToken()
             <input type="hidden" name="ids" id="bulk-ids" value="" />
-            <button type="submit" id="bulk-delete-btn" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled
-                    onclick="return bulkSubmit()">
+            <button type="submit" id="bulk-delete-btn" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled onclick="return bulkSubmit()">
                 🗑 Eliminar selecionadas
             </button>
         </form>
     </div>
 
-    <div class="space-y-4">
+    <div class="admin-session-type-list">
         @for (var i = 0; i < Model.Count; i++)
         {
             var session = Model[i];
-            <div class="card p-5 flex flex-wrap items-center gap-5 fade-up @(!session.IsActive ? "opacity-60" : "")">
-                <input type="checkbox" class="session-check accent-[color:var(--accent)] w-4 h-4" value="@session.Id"
-                       aria-label="@session.Name" />
-                <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name"
-                     class="w-28 h-20 object-cover rounded-lg border border-[color:var(--border)]" loading="lazy" />
-                <div class="flex-1 min-w-[200px]">
-                    <p class="font-semibold">@session.Name
-                        @if (!session.IsActive)
-                        {
-                            <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">inativo</span>
-                        }
-                    </p>
-                    <p class="text-white/40 text-sm mt-0.5">@(i + 1)º na lista</p>
+            <article class="admin-session-type-row @(session.IsActive ? "" : "is-inactive") fade-up">
+                <div class="admin-session-type-main">
+                    <input type="checkbox" class="session-check accent-[color:var(--accent)] w-4 h-4" value="@session.Id" aria-label="@session.Name" />
+                    <div class="admin-session-type-cover-wrap">
+                        <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name" class="admin-session-type-cover" loading="lazy" />
+                        <span class="admin-session-type-order">@(i + 1).º</span>
+                    </div>
+                    <div class="admin-session-type-info">
+                        <div class="admin-session-type-title-line">
+                            <h2>@session.Name</h2>
+                            @if (session.IsActive)
+                            {
+                                <span class="admin-state-pill is-active">Ativo</span>
+                            }
+                            else
+                            {
+                                <span class="admin-state-pill">Inativo</span>
+                            }
+                        </div>
+                        <p class="admin-session-type-description">@(string.IsNullOrWhiteSpace(session.Description) ? "Sem descrição definida." : session.Description)</p>
+                        <p class="admin-session-type-meta">@(session.IsMiniSessionType ? "Mini sessão disponível em eventos" : "Sessão normal")</p>
+                    </div>
                 </div>
-                <span class="text-accent font-semibold">@session.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
-                <div class="flex items-center gap-3 text-sm">
-                    <form asp-action="MoveUp" method="post" class="inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@session.Id" />
-                        <button class="px-2 py-1 rounded-lg border border-[color:var(--border)] hover:border-accent transition"
-                                title="Subir" @(i == 0 ? "disabled" : "")>↑</button>
-                    </form>
-                    <form asp-action="MoveDown" method="post" class="inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@session.Id" />
-                        <button class="px-2 py-1 rounded-lg border border-[color:var(--border)] hover:border-accent transition"
-                                title="Descer" @(i == Model.Count - 1 ? "disabled" : "")>↓</button>
-                    </form>
-                    <a href="/AdminSessionTypes/Edit/@session.Id" class="text-white/60 hover:text-accent transition">@SharedLocalizer["Edit"]</a>
+
+                <div class="admin-session-type-price">
+                    <span>Preço</span>
+                    <strong>@session.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</strong>
+                </div>
+
+                <div class="admin-session-type-actions" aria-label="Ações para @session.Name">
+                    <div class="admin-order-actions" aria-label="Alterar ordem">
+                        <form asp-action="MoveUp" method="post" class="inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@session.Id" />
+                            <button class="admin-icon-button" title="Subir na lista" aria-label="Subir na lista" @(i == 0 ? "disabled" : "")>↑</button>
+                        </form>
+                        <form asp-action="MoveDown" method="post" class="inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@session.Id" />
+                            <button class="admin-icon-button" title="Descer na lista" aria-label="Descer na lista" @(i == Model.Count - 1 ? "disabled" : "")>↓</button>
+                        </form>
+                    </div>
+                    <a href="/AdminSessionTypes/Edit/@session.Id" class="admin-row-action">Editar</a>
                     <form asp-action="ToggleActive" method="post" class="inline">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@session.Id" />
-                        <button class="text-white/60 hover:text-accent transition">@(session.IsActive ? SharedLocalizer["Deactivate"] : SharedLocalizer["Activate"])</button>
+                        <button class="admin-row-action">@(session.IsActive ? "Desativar" : "Ativar")</button>
                     </form>
-                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                    <form asp-action="Delete" method="post" class="inline" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@session.Id" />
-                        <button class="text-red-400 hover:text-red-300 transition">@SharedLocalizer["Delete"]</button>
+                        <button class="admin-row-action danger">Eliminar</button>
                     </form>
                 </div>
-            </div>
+            </article>
         }
     </div>
 
     @if (Model.Count == 0)
     {
-        <p class="text-white/40 py-16 text-center">Ainda não há tipos de sessão.</p>
+        <div class="admin-empty-state">
+            <strong>Ainda não tens serviços criados.</strong>
+            <span>Cria o primeiro tipo de sessão para começar a receber marcações.</span>
+            <a href="/AdminSessionTypes/Create" class="btn-primary mt-5 inline-block">+ Novo tipo de sessão</a>
+        </div>
     }
 </section>
 

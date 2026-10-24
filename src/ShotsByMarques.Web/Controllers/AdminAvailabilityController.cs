@@ -24,7 +24,7 @@ public class AdminAvailabilityController : Controller
 
     public async Task<IActionResult> Index(int? year, int? month)
     {
-        var today = DateTime.Today;
+        var today = PortugalTime.Today;
         var y = Math.Clamp(year ?? today.Year, 2020, 2100);
         var m = Math.Clamp(month ?? today.Month, 1, 12);
 
@@ -121,7 +121,7 @@ public class AdminAvailabilityController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> BulkSet(string[] dates, string status, string? dayStart, string? dayEnd, int? year, int? month)
     {
-        var today = DateTime.Today;
+        var today = PortugalTime.Today;
         int? statusValue = string.IsNullOrWhiteSpace(status) ? null : (int?)int.Parse(status);
 
         TimeSpan? ws = null, we = null;

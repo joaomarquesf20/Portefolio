@@ -5,8 +5,8 @@ using ShotsByMarques.Web.Models;
 namespace ShotsByMarques.Web.Data;
 
 /// <summary>
-/// Creates the database, seeds roles/users and sample content
-/// (session types, galleries with placeholder images).
+/// Applies EF Core Migrations (creates/updates the database) and seeds
+/// roles/users and sample content (session types, galleries with images).
 /// </summary>
 public static class DbSeeder
 {
@@ -22,73 +22,14 @@ public static class DbSeeder
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var env = services.GetRequiredService<IWebHostEnvironment>();
 
-        await db.Database.EnsureCreatedAsync();
+        // Applies pending EF Core Migrations — creates the DB on first run and
+        // any schema change afterwards. All schema evolution must go through
+        // `dotnet ef migrations add ...` (no more manual SQL patches here).
+        await db.Database.MigrateAsync();
 
-        // ---- Idempotent schema sync for existing dev databases ----
-        // The weekly template (AvailabilityWindows) was removed: days are only
-        // bookable when the admin explicitly marks them. Drop the legacy table
-        // for existing databases (fresh ones never create it).
-        await db.Database.ExecuteSqlRawAsync("""
-            IF OBJECT_ID('AvailabilityWindows') IS NOT NULL
-            DROP TABLE AvailabilityWindows
-            """);
-
-        // Calendar overrides (DayAvailability) + the mini-session flag on SessionType
-        // — created manually for existing databases (EnsureCreated does not add
-        // new tables/columns once the DB exists; this preserves all existing data).
-        await db.Database.ExecuteSqlRawAsync("""
-            IF OBJECT_ID('DayAvailability') IS NULL
-            CREATE TABLE DayAvailability (
-                Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                [Date] DATETIME2 NOT NULL,
-                [Status] INT NOT NULL,
-                MaxMiniSessions INT NULL,
-                Title NVARCHAR(200) NULL,
-                CONSTRAINT UQ_DayAvailability_Date UNIQUE ([Date])
-            )
-            """);
-        await db.Database.ExecuteSqlRawAsync("""
-            IF COL_LENGTH('SessionTypes', 'IsMiniSessionType') IS NULL
-            ALTER TABLE SessionTypes ADD IsMiniSessionType BIT NOT NULL DEFAULT 0
-            """);
-        // DayAvailability gained Zone/Location (event location + per-day photographer zone).
-        await db.Database.ExecuteSqlRawAsync("""
-            IF COL_LENGTH('DayAvailability', 'Zone') IS NULL
-            ALTER TABLE DayAvailability ADD Zone NVARCHAR(100) NULL;
-            IF COL_LENGTH('DayAvailability', 'Location') IS NULL
-            ALTER TABLE DayAvailability ADD Location NVARCHAR(200) NULL;
-            """);
-        // Event days gained a mini-session time window (admin defines the available hours).
-        await db.Database.ExecuteSqlRawAsync("""
-            IF COL_LENGTH('DayAvailability', 'MiniStart') IS NULL
-            ALTER TABLE DayAvailability ADD MiniStart TIME NULL;
-            IF COL_LENGTH('DayAvailability', 'MiniEnd') IS NULL
-            ALTER TABLE DayAvailability ADD MiniEnd TIME NULL;
-            """);
-        // Available/Maybe days gained their own start/end hours (per-day override
-        // of the weekly template — e.g. only 14:00–18:00 on a specific day).
-        await db.Database.ExecuteSqlRawAsync("""
-            IF COL_LENGTH('DayAvailability', 'WindowStart') IS NULL
-            ALTER TABLE DayAvailability ADD WindowStart TIME NULL;
-            IF COL_LENGTH('DayAvailability', 'WindowEnd') IS NULL
-            ALTER TABLE DayAvailability ADD WindowEnd TIME NULL;
-            """);
-
-        // Booking payment/travel columns — new for existing databases.
-        await db.Database.ExecuteSqlRawAsync("""
-            IF COL_LENGTH('Bookings', 'Location') IS NULL
-            ALTER TABLE Bookings ADD Location NVARCHAR(200) NULL;
-            IF COL_LENGTH('Bookings', 'TravelFee') IS NULL
-            ALTER TABLE Bookings ADD TravelFee DECIMAL(18,2) NOT NULL DEFAULT 0;
-            IF COL_LENGTH('Bookings', 'DepositPaid') IS NULL
-            ALTER TABLE Bookings ADD DepositPaid BIT NOT NULL DEFAULT 0;
-            IF COL_LENGTH('Bookings', 'BalancePaid') IS NULL
-            ALTER TABLE Bookings ADD BalancePaid BIT NOT NULL DEFAULT 0;
-            IF COL_LENGTH('Bookings', 'DepositSessionId') IS NULL
-            ALTER TABLE Bookings ADD DepositSessionId NVARCHAR(200) NULL;
-            IF COL_LENGTH('Bookings', 'BalanceSessionId') IS NULL
-            ALTER TABLE Bookings ADD BalanceSessionId NVARCHAR(200) NULL;
-            """);
+        // Legacy manually-patched schema blocks were removed — the EF model is
+        // the single source of truth and the InitialCreate migration keeps the
+        // database in sync with it.
 
         // ---- Cleanup on every startup (keeps existing dev databases in sync) ----
         // Only car photography is offered — portrait/lifestyle sessions are no longer available.
@@ -154,7 +95,8 @@ public static class DbSeeder
 
         // Mini-session type — required for event-day mini bookings (created on
         // fresh and existing databases). Price/duration are editable in the admin.
-        if (!await db.SessionTypes.AnyAsync(s => s.IsMiniSessionType))
+        var miniSessionType = await db.SessionTypes.FirstOrDefaultAsync(s => s.IsMiniSessionType);
+        if (miniSessionType is null)
         {
             db.SessionTypes.Add(new SessionType
             {
@@ -166,6 +108,12 @@ public static class DbSeeder
                 IsActive = true,
                 IsMiniSessionType = true
             });
+            await db.SaveChangesAsync();
+        }
+        else if (miniSessionType.Description.Contains("30 min", StringComparison.OrdinalIgnoreCase)
+                 || miniSessionType.Description.Contains("≈30", StringComparison.OrdinalIgnoreCase))
+        {
+            miniSessionType.Description = "Mini sessão no dia de um evento, só para o teu carro. As fotos ficam incluídas no preço.";
             await db.SaveChangesAsync();
         }
     }

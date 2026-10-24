@@ -132,6 +132,10 @@
   <data name="Date" xml:space="preserve"><value>Data</value></data>
   <data name="Notes" xml:space="preserve"><value>Notas</value></data>
   <data name="FooterRights" xml:space="preserve"><value>Todos os direitos reservados.</value></data>
+  <data name="FooterTagline" xml:space="preserve"><value>Fotografia automóvel — sessões de carros e cobertura de eventos, com entrega em galeria online.</value></data>
+  <data name="FooterNav" xml:space="preserve"><value>Navegação</value></data>
+  <data name="FooterContact" xml:space="preserve"><value>Contacto</value></data>
+  <data name="FooterMade" xml:space="preserve"><value>Feito com paixão por carros e luz.</value></data>
   <data name="LoginTitle" xml:space="preserve"><value>Iniciar sessão</value></data>
   <data name="RegisterTitle" xml:space="preserve"><value>Criar conta</value></data>
   <data name="Email" xml:space="preserve"><value>Email</value></data>
@@ -238,7 +242,6 @@
   <data name="MakePrivate" xml:space="preserve"><value>Privar</value></data>
   <data name="MakePrivateSelected" xml:space="preserve"><value>Privar selecionadas</value></data>
   <data name="DeleteSelected" xml:space="preserve"><value>Eliminar selecionadas</value></data>
-  <data name="SelectAll" xml:space="preserve"><value>Selecionar todas</value></data>
   <data name="DeselectAll" xml:space="preserve"><value>Desmarcar todas</value></data>
   <data name="Selected" xml:space="preserve"><value>selecionadas</value></data>
   <data name="ConfirmBulkDelete" xml:space="preserve"><value>Tens a certeza que queres eliminar as galerias selecionadas? Esta ação não pode ser desfeita.</value></data>

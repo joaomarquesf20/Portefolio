@@ -1,3 +1,8 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var isAdminArea = User.IsInRole("Admin") &&
+        (Context.Request.Path.StartsWithSegments("/admin", StringComparison.OrdinalIgnoreCase) || currentController.StartsWith("Admin", StringComparison.OrdinalIgnoreCase));
+}
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
@@ -6,7 +11,7 @@
     <title>@ViewData["Title"] — Shots By Marques</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @if (ViewData["MetaRefresh"] is string refresh && !string.IsNullOrEmpty(refresh))
@@ -14,19 +19,19 @@
         <meta http-equiv="refresh" content="@refresh" />
     }
 </head>
-<body class="min-h-screen antialiased">
-    <nav class="nav-glass fixed top-0 inset-x-0 z-50">
+<body class="min-h-screen antialiased @(isAdminArea ? "admin-page" : "")">
+    <nav class="nav-glass fixed top-0 inset-x-0 z-50 @(isAdminArea ? "admin-site-nav" : "")">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-            <a href="/" class="font-display text-xl tracking-wide">Shots <span class="text-accent">By Marques</span></a>
+            <a href="/" class="font-display text-xl tracking-tight">Shots <span class="text-white/60">By Marques</span></a>
 
-            <div class="hidden md:flex items-center gap-7 text-sm text-white/80">
-                <a href="/portfolio" class="hover:text-accent transition">@SharedLocalizer["NavPortfolio"]</a>
-                <a href="/servicos" class="hover:text-accent transition">@SharedLocalizer["NavServices"]</a>
-                <a href="/sessoes" class="hover:text-accent transition">@SharedLocalizer["NavSessions"]</a>
-                <a href="/#contacto" class="hover:text-accent transition">@SharedLocalizer["NavContact"]</a>
+            <div class="hidden md:flex items-center gap-8 text-sm">
+                <a href="/portfolio" class="nav-link">@SharedLocalizer["NavPortfolio"]</a>
+                <a href="/servicos" class="nav-link">@SharedLocalizer["NavServices"]</a>
+                <a href="/sessoes" class="nav-link">@SharedLocalizer["NavSessions"]</a>
+                <a href="/#contacto" class="nav-link">@SharedLocalizer["NavContact"]</a>
                 @if (User.IsInRole("Admin"))
                 {
-                    <a href="/admin" class="hover:text-accent transition">@SharedLocalizer["NavDashboard"]</a>
+                    <a href="/admin" class="nav-link">@SharedLocalizer["NavDashboard"]</a>
                 }
             </div>
 
@@ -91,7 +96,7 @@
         </div>
     </nav>
 
-    <main class="pt-16">
+    <main class="@(isAdminArea ? "admin-main" : "pt-16")">
         @if (TempData["Success"] is not null)
         {
             <div class="max-w-3xl mx-auto mt-6 px-4">
@@ -104,17 +109,47 @@
                 <div class="rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 px-4 py-3 text-sm">@TempData["Error"]</div>
             </div>
         }
-        @RenderBody()
+        @if (isAdminArea)
+        {
+            <div class="admin-shell">
+                <partial name="_AdminSidebar" />
+                <div class="admin-content">@RenderBody()</div>
+            </div>
+        }
+        else
+        {
+            @RenderBody()
+        }
     </main>
 
     <footer class="border-t border-[color:var(--border)] mt-20">
-        <div class="max-w-7xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-white/50">
-            <span class="font-display text-lg text-white/80">Shots <span class="text-accent">By Marques</span></span>
-            <span>© @DateTime.Now.Year Shots By Marques. @SharedLocalizer["FooterRights"]</span>
-            <span class="flex items-center gap-4">
-                <a href="https://www.instagram.com/shots.by.marques/" target="_blank" class="hover:text-accent transition">Instagram</a>
-                <a href="mailto:marquesphotography06@gmail.com" class="hover:text-accent transition">Email</a>
-            </span>
+        <div class="max-w-7xl mx-auto px-6 py-16">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+                <div>
+                    <span class="font-display text-2xl text-white">Shots <span class="text-white/50">By Marques</span></span>
+                    <p class="text-white/40 text-sm mt-4 max-w-xs leading-relaxed">@SharedLocalizer["FooterTagline"]</p>
+                </div>
+                <div>
+                    <p class="text-white/35 text-xs uppercase tracking-[0.2em] mb-4">@SharedLocalizer["FooterNav"]</p>
+                    <ul class="space-y-2.5 text-sm">
+                        <li><a href="/portfolio" class="nav-link">@SharedLocalizer["NavPortfolio"]</a></li>
+                        <li><a href="/servicos" class="nav-link">@SharedLocalizer["NavServices"]</a></li>
+                        <li><a href="/sessoes" class="nav-link">@SharedLocalizer["NavSessions"]</a></li>
+                        <li><a href="/#contacto" class="nav-link">@SharedLocalizer["NavContact"]</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="text-white/35 text-xs uppercase tracking-[0.2em] mb-4">@SharedLocalizer["FooterContact"]</p>
+                    <ul class="space-y-2.5 text-sm">
+                        <li><a href="mailto:marquesphotography06@gmail.com" class="nav-link">marquesphotography06@gmail.com</a></li>
+                        <li><a href="https://www.instagram.com/shots.by.marques/" target="_blank" class="nav-link">Instagram — @@shots.by.marques</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-[color:var(--border)] mt-14 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/35">
+                <span>© @DateTime.Now.Year Shots By Marques. @SharedLocalizer["FooterRights"]</span>
+                <span>@SharedLocalizer["FooterMade"]</span>
+            </div>
         </div>
     </footer>
 

@@ -2,52 +2,63 @@
     ViewData["Title"] = SharedLocalizer["NavServices"];
 }
 
-<section class="max-w-4xl mx-auto px-4 sm:px-6 py-16 text-center fade-up">
-    <h1 class="font-display text-4xl sm:text-5xl">@SharedLocalizer["ServicesPageTitle"]</h1>
-    <p class="text-white/60 mt-6 leading-relaxed">@SharedLocalizer["ServicesIntro"]</p>
-    <blockquote class="mt-10 font-display italic text-xl text-white/70 leading-relaxed">
-        "@SharedLocalizer["ServicesQuote"]"
-    </blockquote>
-    <p class="text-accent mt-3 text-sm">@SharedLocalizer["ServicesQuoteAuthor"]</p>
-</section>
+<div class="relative overflow-hidden">
+    <img src="@(ViewData["BgServices"] ?? "/sample-photos/cars-cover.svg")" alt="" class="absolute inset-0 w-full h-full object-cover" />
+    <div class="absolute inset-0 page-photo-overlay"></div>
 
-<!-- PRICES & FORMATS -->
-<section class="bg-[color:var(--bg-soft)] border-y border-[color:var(--border)] py-20">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6">
-        <div class="text-center mb-12 fade-up">
-            <h2 class="font-display text-2xl tracking-[0.2em] text-accent">@SharedLocalizer["PricingTitle"]</h2>
+    <section class="relative overflow-hidden">
+        <div class="relative max-w-4xl mx-auto px-4 sm:px-6 py-16 text-center fade-up">
+            <h1 class="font-display text-4xl sm:text-5xl text-white">@SharedLocalizer["ServicesPageTitle"]</h1>
+            <p class="text-white/60 mt-6 leading-relaxed">@SharedLocalizer["ServicesIntro"]</p>
+            <blockquote class="mt-10 font-display italic text-xl text-white/70 leading-relaxed">
+                "@SharedLocalizer["ServicesQuote"]"
+            </blockquote>
+            <p class="text-accent mt-3 text-sm">@SharedLocalizer["ServicesQuoteAuthor"]</p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- NR 01 -->
-            <div class="card p-8 flex flex-col fade-up">
-                <span class="text-accent text-xs tracking-[0.25em]">NR 01</span>
-                <h3 class="font-display text-3xl mt-3 uppercase">@SharedLocalizer["Nr01Title"]</h3>
-                <p class="text-white/50 text-sm mt-4 leading-relaxed flex-1">@SharedLocalizer["Nr01Desc"]</p>
-                <p class="text-accent font-semibold text-xl mt-6">@SharedLocalizer["Nr01Price"]</p>
-                <a href="/portfolio#eventos" class="btn-outline !text-center mt-5">@SharedLocalizer["Nr01Cta"]</a>
-            </div>
-            <!-- NR 02 -->
-            <div class="card p-8 flex flex-col fade-up">
-                <span class="text-accent text-xs tracking-[0.25em]">NR 02</span>
-                <h3 class="font-display text-3xl mt-3 uppercase">@SharedLocalizer["Nr02Title"]</h3>
-                <p class="text-white/50 text-sm mt-4 leading-relaxed flex-1">@SharedLocalizer["Nr02Desc"]</p>
-                <p class="text-accent font-semibold text-xl mt-6">@SharedLocalizer["Nr02Price"]</p>
-                <a href="/sessoes" class="btn-primary !text-center mt-5">@SharedLocalizer["Nr02Cta"]</a>
-            </div>
-            <!-- NR 03 -->
-            <div class="card p-8 flex flex-col fade-up">
-                <span class="text-accent text-xs tracking-[0.25em]">NR 03</span>
-                <h3 class="font-display text-3xl mt-3 uppercase">@SharedLocalizer["Nr03Title"]</h3>
-                <p class="text-white/50 text-sm mt-4 leading-relaxed flex-1">@SharedLocalizer["Nr03Desc"]</p>
-                <p class="text-accent font-semibold text-xl mt-6">@SharedLocalizer["Nr03Price"]</p>
-                <a href="mailto:marquesphotography06@gmail.com?subject=Orçamento%20—%20Stands" class="btn-outline !text-center mt-5">@SharedLocalizer["Nr03Cta"]</a>
-            </div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<!-- LATEST WORK -->
-<section class="max-w-4xl mx-auto px-6 py-20 text-center fade-up">
-    <h2 class="font-display text-3xl">@SharedLocalizer["LatestWorkTitle"]</h2>
-    <a href="/portfolio" class="btn-primary mt-8">@SharedLocalizer["SeeMore"]</a>
-</section>
+    <!-- PRICES & FORMATS -->
+    <section class="relative overflow-hidden border-y border-[color:var(--border)]">
+        <div class="relative py-20">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6">
+                <div class="text-center mb-12 fade-up">
+                    <h2 class="font-display text-2xl tracking-[0.2em] text-white/80">@SharedLocalizer["PricingTitle"]</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- NR 01 -->
+                    <div class="card p-8 flex flex-col fade-up">
+                        <span class="text-accent text-xs tracking-[0.25em]">NR 01</span>
+                        <h3 class="font-display text-3xl mt-3 uppercase">@SharedLocalizer["Nr01Title"]</h3>
+                        <p class="text-white/50 text-sm mt-4 leading-relaxed flex-1">@SharedLocalizer["Nr01Desc"]</p>
+                        <p class="text-accent font-semibold text-xl mt-6">@SharedLocalizer["Nr01Price"]</p>
+                        <a href="/portfolio#eventos" class="btn-outline !text-center mt-5">@SharedLocalizer["Nr01Cta"]</a>
+                    </div>
+                    <!-- NR 02 -->
+                    <div class="card p-8 flex flex-col fade-up">
+                        <span class="text-accent text-xs tracking-[0.25em]">NR 02</span>
+                        <h3 class="font-display text-3xl mt-3 uppercase">@SharedLocalizer["Nr02Title"]</h3>
+                        <p class="text-white/50 text-sm mt-4 leading-relaxed flex-1">@SharedLocalizer["Nr02Desc"]</p>
+                        <p class="text-accent font-semibold text-xl mt-6">@SharedLocalizer["Nr02Price"]</p>
+                        <a href="/sessoes" class="btn-primary !text-center mt-5">@SharedLocalizer["Nr02Cta"]</a>
+                    </div>
+                    <!-- NR 03 -->
+                    <div class="card p-8 flex flex-col fade-up">
+                        <span class="text-accent text-xs tracking-[0.25em]">NR 03</span>
+                        <h3 class="font-display text-3xl mt-3 uppercase">@SharedLocalizer["Nr03Title"]</h3>
+                        <p class="text-white/50 text-sm mt-4 leading-relaxed flex-1">@SharedLocalizer["Nr03Desc"]</p>
+                        <p class="text-accent font-semibold text-xl mt-6">@SharedLocalizer["Nr03Price"]</p>
+                        <a href="mailto:marquesphotography06@gmail.com?subject=Orçamento%20—%20Stands" class="btn-outline !text-center mt-5">@SharedLocalizer["Nr03Cta"]</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LATEST WORK -->
+    <section class="relative overflow-hidden">
+        <div class="relative max-w-4xl mx-auto px-6 py-20 text-center fade-up">
+            <h2 class="font-display text-3xl text-white">@SharedLocalizer["LatestWorkTitle"]</h2>
+            <a href="/portfolio" class="btn-primary mt-8">@SharedLocalizer["SeeMore"]</a>
+        </div>
+    </section>
+</div>

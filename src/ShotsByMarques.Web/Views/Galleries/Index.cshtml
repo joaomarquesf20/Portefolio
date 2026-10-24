@@ -1,33 +1,45 @@
 @model ShotsByMarques.Web.ViewModels.PortfolioViewModel
 @{
     ViewData["Title"] = SharedLocalizer["NavPortfolio"];
+    var pageCover = Model.Sessions.Concat(Model.Events)
+        .Select(g => g.CoverUrl())
+        .FirstOrDefault(c => !string.IsNullOrEmpty(c)) ?? "/sample-photos/cars-cover.svg";
 }
 
-<section class="max-w-7xl mx-auto px-4 sm:px-6 py-14">
-    <div class="text-center mb-14 fade-up">
-        <h1 class="font-display text-4xl sm:text-5xl">@SharedLocalizer["NavPortfolio"]</h1>
-        <p class="text-white/50 mt-3">@SharedLocalizer["PortfolioSubtitle"]</p>
+<section class="relative overflow-hidden min-h-screen">
+    <img src="@(ViewData["BgPortfolio"] ?? pageCover)" alt="" class="absolute inset-0 w-full h-full object-cover" />
+    <div class="absolute inset-0 page-photo-overlay"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+    <div class="mb-14 fade-up">
+        <h1 class="font-display text-4xl sm:text-6xl text-white">@SharedLocalizer["NavPortfolio"]</h1>
+        <p class="text-white/50 mt-4">@SharedLocalizer["PortfolioSubtitle"]</p>
     </div>
 
     @if (Model.Sessions.Any())
     {
-        <div id="sessoes" class="mb-14 fade-up scroll-mt-24">
-            <h2 class="font-display text-2xl sm:text-3xl mb-1">@SharedLocalizer["SessionsTitle"]</h2>
-            <div class="h-px w-16 bg-[color:var(--accent)] mb-8"></div>
+        <div id="sessoes" class="mb-16 fade-up scroll-mt-24">
+            <div class="flex items-end justify-between mb-8">
+                <h2 class="font-display text-2xl sm:text-3xl text-white">@SharedLocalizer["SessionsTitle"]</h2>
+                <div class="divider w-16 mb-2"></div>
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach (var gallery in Model.Sessions)
                 {
                     <a href="/galeria/@gallery.Id" class="card group overflow-hidden fade-up">
-                        <div class="aspect-[4/3] overflow-hidden">
-                            <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        <div class="aspect-[4/3] overflow-hidden relative">
+                            <img src="@gallery.CoverUrl()" alt="@gallery.Title" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300"></div>
                         </div>
-                        <div class="p-5">
-                            <h3 class="font-display text-xl">@gallery.Title</h3>
+                        <div class="p-6">
+                            <div class="flex items-start justify-between gap-3">
+                                <h3 class="font-display text-lg text-white">@gallery.Title</h3>
+                                <span class="card-arrow text-white/40">→</span>
+                            </div>
                             @if (!string.IsNullOrEmpty(gallery.Subtitle))
                             {
-                                <p class="text-white/50 text-sm mt-1">@gallery.Subtitle</p>
+                                <p class="text-white/45 text-sm mt-1">@gallery.Subtitle</p>
                             }
-                            <span class="inline-block mt-4 text-accent text-sm font-medium">@SharedLocalizer["ViewGallery"] →</span>
+                            <p class="text-white/35 text-xs mt-3 uppercase tracking-wide">@gallery.Photos.Count @SharedLocalizer["PhotosCount"]</p>
                         </div>
                     </a>
                 }
@@ -38,22 +50,28 @@
     @if (Model.Events.Any())
     {
         <div id="eventos" class="fade-up scroll-mt-24">
-            <h2 class="font-display text-2xl sm:text-3xl mb-1">@SharedLocalizer["EventsTitle"]</h2>
-            <div class="h-px w-16 bg-[color:var(--accent)] mb-8"></div>
+            <div class="flex items-end justify-between mb-8">
+                <h2 class="font-display text-2xl sm:text-3xl text-white">@SharedLocalizer["EventsTitle"]</h2>
+                <div class="divider w-16 mb-2"></div>
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach (var gallery in Model.Events)
                 {
                     <a href="/galeria/@gallery.Id" class="card group overflow-hidden fade-up">
-                        <div class="aspect-[4/3] overflow-hidden">
-                            <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        <div class="aspect-[4/3] overflow-hidden relative">
+                            <img src="@gallery.CoverUrl()" alt="@gallery.Title" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300"></div>
                         </div>
-                        <div class="p-5">
-                            <h3 class="font-display text-xl">@gallery.Title</h3>
+                        <div class="p-6">
+                            <div class="flex items-start justify-between gap-3">
+                                <h3 class="font-display text-lg text-white">@gallery.Title</h3>
+                                <span class="card-arrow text-white/40">→</span>
+                            </div>
                             @if (!string.IsNullOrEmpty(gallery.Subtitle))
                             {
-                                <p class="text-white/50 text-sm mt-1">@gallery.Subtitle</p>
+                                <p class="text-white/45 text-sm mt-1">@gallery.Subtitle</p>
                             }
-                            <span class="inline-block mt-4 text-accent text-sm font-medium">@SharedLocalizer["ViewGallery"] →</span>
+                            <p class="text-white/35 text-xs mt-3 uppercase tracking-wide">@gallery.Photos.Count @SharedLocalizer["PhotosCount"]</p>
                         </div>
                     </a>
                 }
@@ -65,4 +83,5 @@
     {
         <p class="text-center text-white/50 py-20">Sem galerias publicadas.</p>
     }
+    </div>
 </section>

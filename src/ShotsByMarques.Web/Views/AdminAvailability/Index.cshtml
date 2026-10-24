@@ -1,653 +1,320 @@
 @model ShotsByMarques.Web.ViewModels.AvailabilityCalendarViewModel
+@using ShotsByMarques.Web.Models
 @{
     ViewData["Title"] = SharedLocalizer["Availability"];
-    var fmt = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat;
+    var culture = System.Globalization.CultureInfo.CurrentCulture;
     var first = new DateTime(Model.Year, Model.Month, 1);
-    var prev = first.AddMonths(-1);
+    var previous = first.AddMonths(-1);
     var next = first.AddMonths(1);
-    var regions = Model.Days.Select(d => d.Zone).Where(z => !string.IsNullOrEmpty(z)).Distinct().OrderBy(z => z).ToList();
+    var timeOptions = Enumerable.Range(0, 48)
+        .Select(i => TimeSpan.FromMinutes(i * 30))
+        .ToList();
+    var localities = ShotsByMarques.Web.Services.PortugalCities.All
+        .GroupBy(c => c.Region)
+        .Select(group => new { Region = group.Key, Cities = group.Select(c => c.Name).ToList() });
 }
 
 @functions {
-    string CellBg(ShotsByMarques.Web.ViewModels.CalendarDay d)
+    string DayClass(CalendarDay day)
     {
-        if (!d.InMonth) return "bg-transparent border-white/5";
-        if (d.IsPast) return "bg-white/[0.02] border-white/5";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Available) return "bg-emerald-500/15 border-emerald-400/40";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Unavailable) return "bg-red-500/10 border-red-400/40";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Maybe) return "bg-amber-500/15 border-amber-400/40";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Event) return "bg-violet-500/15 border-violet-400/40";
-        return "bg-white/[0.03] border-white/10";
+        if (!day.InMonth) return "availability-day is-outside";
+        if (day.IsPast) return "availability-day is-past";
+        return day.Status switch
+        {
+            DayStatus.Available => "availability-day is-available",
+            DayStatus.Unavailable => "availability-day is-unavailable",
+            DayStatus.Maybe => "availability-day is-maybe",
+            DayStatus.Event => "availability-day is-event",
+            _ => "availability-day is-open"
+        };
     }
 
-    string CellGlyph(ShotsByMarques.Web.ViewModels.CalendarDay d)
+    string StatusText(CalendarDay day)
     {
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Available) return "✓";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Unavailable) return "✕";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Maybe) return "?";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Event) return "🎪";
-        return "";
+        return day.Status switch
+        {
+            DayStatus.Available => "Disponível",
+            DayStatus.Unavailable => "Indisponível",
+            DayStatus.Maybe => "Talvez",
+            DayStatus.Event => "Evento",
+            _ => "Sem definição"
+        };
     }
 
-    string GlyphClass(ShotsByMarques.Web.ViewModels.CalendarDay d)
-    {
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Available) return "text-emerald-300";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Unavailable) return "text-red-300";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Maybe) return "text-amber-300";
-        if (d.Status == ShotsByMarques.Web.Models.DayStatus.Event) return "text-violet-300";
-        return "text-white/25";
-    }
+    string TimeText(TimeSpan? time) => time?.ToString(@"hh\:mm") ?? "";
 }
 
-<section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
-    <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+<section class="admin-availability-page max-w-7xl mx-auto px-4 sm:px-6 py-10">
+    <a href="/admin" class="admin-back-link">← @SharedLocalizer["BackToDashboard"]</a>
+
+    <header class="availability-header mt-6">
         <div>
-            <h1 class="font-display text-4xl fade-up">@SharedLocalizer["AvailabilityCalendar"]</h1>
-            <p class="text-white/50 text-sm mt-3 max-w-2xl fade-up">@SharedLocalizer["AvailabilityCalendarHint"]</p>
+            <p class="admin-section-eyebrow">Agenda</p>
+            <h1 class="font-display text-4xl">Disponibilidade</h1>
+            <p class="availability-intro">Marca no calendário os dias em que aceitas sessões. Cada dia pode ter horários próprios.</p>
         </div>
+        <div class="availability-summary">
+            <span><b>@Model.Days.Count(d => d.InMonth && d.Status == DayStatus.Available)</b> disponíveis</span>
+            <span><b>@Model.Days.Count(d => d.InMonth && d.Status == DayStatus.Event)</b> eventos</span>
+        </div>
+    </header>
+
+    <div class="availability-guide">
+        <span class="guide-item"><i class="guide-dot available"></i><b>Disponível</b><small>aceita sessões</small></span>
+        <span class="guide-item"><i class="guide-dot maybe"></i><b>Talvez</b><small>não aceita reservas</small></span>
+        <span class="guide-item"><i class="guide-dot event"></i><b>Evento</b><small>mini sessões no local</small></span>
+        <span class="guide-item"><i class="guide-dot unavailable"></i><b>Indisponível</b><small>dia bloqueado</small></span>
+        <span class="guide-item"><i class="guide-dot open"></i><b>Sem definição</b><small>não aparece ao cliente</small></span>
     </div>
 
-    <div class="card p-6 mb-12 fade-up">
-        <div class="flex items-center justify-between mb-6">
-            <a href="/AdminAvailability?year=@prev.Year&month=@prev.Month" class="btn-outline !px-4 !py-2" aria-label="Mês anterior">←</a>
-            <h2 class="font-display text-2xl">@fmt.GetMonthName(Model.Month) @Model.Year</h2>
-            <div class="flex items-center gap-2">
-                <a href="/AdminAvailability?year=@next.Year&month=@next.Month" class="btn-outline !px-4 !py-2" aria-label="Mês seguinte">→</a>
-                <button type="button" id="bulk-toggle" class="btn-outline !px-3 !py-2 !text-xs">☑ @SharedLocalizer["BulkToggle"]</button>
-            </div>
-        </div>
-
-        @* Bulk marking panel: select several days, set one status + shared hours *@
-        <div id="bulk-panel" class="hidden rounded-xl border border-accent/40 bg-accent/5 p-4 mb-4">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-                <p class="text-sm font-semibold text-accent">☑ <span id="bulk-count">0</span> @SharedLocalizer["DaysSelected"]</p>
-                <button type="button" id="bulk-cancel" class="text-xs text-white/50 hover:text-white transition">✕ @SharedLocalizer["BulkCancel"]</button>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <button type="button" data-bulk-status="1" class="bulk-status on">✓ @SharedLocalizer["StatusAvailable"]</button>
-                <button type="button" data-bulk-status="3" class="bulk-status">? @SharedLocalizer["StatusMaybe"]</button>
-                <button type="button" data-bulk-status="2" class="bulk-status">✕ @SharedLocalizer["StatusUnavailable"]</button>
-                <button type="button" data-bulk-status="0" class="bulk-status">— @SharedLocalizer["BulkClearMark"]</button>
-            </div>
-            <div id="bulk-hours-wrap" class="mt-3">
-                <div class="rounded-xl border border-white/10 bg-[color:var(--bg)] p-3"
-                     data-hour-bar data-start-input="bulk-start" data-end-input="bulk-end"></div>
-                <input type="hidden" id="bulk-start" name="bulkStart" />
-                <input type="hidden" id="bulk-end" name="bulkEnd" />
-            </div>
-            <button type="button" id="bulk-apply" class="btn-primary w-full mt-3 !py-2.5" disabled>@SharedLocalizer["BulkApply"]</button>
-        </div>
-
-        <div class="grid grid-cols-7 gap-1.5">
-            @for (int i = 1; i <= 7; i++)
-            {
-                <div class="text-center text-xs uppercase tracking-wide text-white/40 py-1">
-                    @fmt.GetAbbreviatedDayName((System.DayOfWeek)(i % 7))
+    <div class="availability-layout">
+        <section class="availability-calendar-panel">
+            <div class="availability-calendar-toolbar">
+                <a href="/AdminAvailability?year=@previous.Year&month=@previous.Month" class="calendar-nav-button" aria-label="Mês anterior">‹</a>
+                <div class="text-center">
+                    <h2 class="font-display text-2xl capitalize">@culture.DateTimeFormat.GetMonthName(Model.Month) @Model.Year</h2>
+                    <p class="text-xs text-white/35 mt-1">Clica num dia para o editar</p>
                 </div>
-            }
-            @foreach (var d in Model.Days)
-            {
-                var dayHoursOverride = d.InMonth && !d.IsPast && d.WindowStart is not null && d.WindowEnd is not null
-                    ? $"{d.WindowStart:hh\\:mm}–{d.WindowEnd:hh\\:mm}" : null;
-                <button type="button"
-                        data-calendar-day
-                        data-date="@d.Date.ToString("yyyy-MM-dd")"
-                        data-status="@((int?)d.Status ?? 0)"
-                        data-max="@(d.MaxMiniSessions ?? 4)"
-                        data-title="@(d.EventTitle ?? "")"
-                        data-zone="@(d.Zone ?? "")"
-                        data-location="@(d.Location ?? "")"
-                        data-mini-start="@(d.MiniStart?.ToString(@"hh\:mm") ?? "")"
-                        data-mini-end="@(d.MiniEnd?.ToString(@"hh\:mm") ?? "")"
-                        data-day-start="@(d.WindowStart?.ToString(@"hh\:mm") ?? "")"
-                        data-day-end="@(d.WindowEnd?.ToString(@"hh\:mm") ?? "")"
-                        data-in-month="@(d.InMonth ? "true" : "false")"
-                        data-past="@(d.IsPast ? "true" : "false")"
-                        class="relative rounded-lg border p-1.5 sm:p-2 flex flex-col justify-between gap-1 min-h-[4.2rem] sm:min-h-[4.8rem] text-left transition
-                               @CellBg(d)
-                               @(d.InMonth && !d.IsPast ? "hover:scale-[1.03] hover:ring-2 hover:ring-accent/60 cursor-pointer" : "cursor-default")
-                               @(d.InMonth ? "text-white/70" : "text-white/20")
-                               @(d.Date == DateTime.Today ? "ring-2 ring-accent/70" : "")">
-                    <span class="flex items-start justify-between w-full">
-                        <span class="font-semibold leading-none text-sm">@d.Date.Day</span>
-                        @if (d.InMonth && d.Status is not null)
+                <a href="/AdminAvailability?year=@next.Year&month=@next.Month" class="calendar-nav-button" aria-label="Mês seguinte">›</a>
+            </div>
+
+            <div class="availability-weekdays">
+                @foreach (var name in new[] { "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom" })
+                {
+                    <span>@name</span>
+                }
+            </div>
+            <div class="availability-grid">
+                @foreach (var day in Model.Days)
+                {
+                    <button type="button"
+                            class="@DayClass(day)"
+                            data-availability-day
+                            data-date="@day.Date.ToString("yyyy-MM-dd")"
+                            data-status="@((int?)day.Status ?? 0)"
+                            data-title="@(day.EventTitle ?? "")"
+                            data-zone="@(day.Zone ?? "")"
+                            data-location="@(day.Location ?? "")"
+                            data-max="@(day.MaxMiniSessions ?? 4)"
+                            data-window-start="@TimeText(day.WindowStart)"
+                            data-window-end="@TimeText(day.WindowEnd)"
+                            data-mini-start="@TimeText(day.MiniStart)"
+                            data-mini-end="@TimeText(day.MiniEnd)"
+                            data-in-month="@(day.InMonth ? "true" : "false")"
+                            data-past="@(day.IsPast ? "true" : "false")"
+                            @if (!day.InMonth || day.IsPast)
+                            {
+                                <text>disabled</text>
+                            }>
+                        <span class="availability-day-top"><b>@day.Date.Day</b><em>@(day.Status is null ? "" : StatusText(day))</em></span>
+                        @if (day.InMonth && !day.IsPast)
                         {
-                            <span class="text-[11px] leading-none @GlyphClass(d)">@CellGlyph(d)</span>
-                        }
-                    </span>
-                    @if (d.InMonth && !d.IsPast)
-                    {
-                        <span class="text-[9px] sm:text-[10px] leading-tight space-y-0.5 block">
-                            @if (d.Status == ShotsByMarques.Web.Models.DayStatus.Event)
+                            if (day.Status == DayStatus.Available || day.Status == DayStatus.Maybe)
                             {
-                                <span class="block truncate @(d.Zone is null ? "text-violet-300" : "text-violet-200")">@(d.Zone ?? SharedLocalizer["StatusEvent"])</span>
-                                <span class="block @(d.MiniStart is null ? "text-red-300/80" : "text-violet-200/70")">
-                                    @if (d.MiniStart is not null && d.MiniEnd is not null)
-                                    {
-                                        <text>mini @d.MiniStart.Value.ToString(@"hh\:mm")–@d.MiniEnd.Value.ToString(@"hh\:mm")</text>
-                                    }
-                                    else
-                                    {
-                                        <text>@SharedLocalizer["NoMiniHours"]</text>
-                                    }
-                                </span>
-                                <span class="block text-violet-200/80">@d.MiniBooked/@(d.MaxMiniSessions ?? 4) @SharedLocalizer["MiniShort"]</span>
+                                <span class="availability-day-detail">@(day.WindowStart is not null ? $"{TimeText(day.WindowStart)} – {TimeText(day.WindowEnd)}" : "09:00 – 20:00")</span>
+                                <span class="availability-day-place">@(day.Zone ?? "Qualquer zona")@(day.BookedCount > 0 ? $" · {day.BookedCount} reserva(s)" : "")</span>
                             }
-                            else if (d.Status == ShotsByMarques.Web.Models.DayStatus.Unavailable)
+                            else if (day.Status == DayStatus.Event)
                             {
-                                <span class="block text-red-300/90">@SharedLocalizer["ClosedDay"]</span>
+                                <span class="availability-day-detail">@(day.Zone ?? "Local por definir")</span>
+                                <span class="availability-day-place">@(day.MiniStart is not null ? $"{TimeText(day.MiniStart)} – {TimeText(day.MiniEnd)}" : "Horário por definir") · @day.MiniBooked/@(day.MaxMiniSessions ?? 4)</span>
+                            }
+                            else if (day.Status == DayStatus.Unavailable)
+                            {
+                                <span class="availability-day-detail">Dia bloqueado</span>
                             }
                             else
                             {
-                                @if (dayHoursOverride is not null)
-                                {
-                                    <span class="block text-accent font-medium">⏱ @dayHoursOverride</span>
-                                }
-                                else if (d.Status is not null)
-                                {
-                                    // Marked day without explicit hours: standard 09:00–20:00 applies.
-                                    <span class="block text-emerald-200/90">09:00–20:00</span>
-                                }
-                                else
-                                {
-                                    <span class="block text-white/30">@SharedLocalizer["NoWindowDay"]</span>
-                                }
-                                @if (!string.IsNullOrEmpty(d.Zone) || d.BookedCount > 0)
-                                {
-                                    <span class="block truncate text-white/55">
-                                        @d.Zone@(d.BookedCount > 0 ? $" · {d.BookedCount} {SharedLocalizer["BookedShort"]}" : "")
-                                    </span>
-                                }
+                                <span class="availability-day-detail muted">Ainda não marcado</span>
                             }
-                        </span>
-                    }
-                </button>
-            }
-        </div>
+                        }
+                    </button>
+                }
+            </div>
 
-        <div class="flex flex-wrap gap-x-5 gap-y-2 text-xs text-white/60 mt-5">
-            <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-white/[0.03] border border-white/10"></i> @SharedLocalizer["NoOverride"]</span>
-            <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-emerald-500/15 border border-emerald-400/40 text-emerald-300"></i> ✓ @SharedLocalizer["StatusAvailable"]</span>
-            <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-red-500/10 border border-red-400/40 text-red-300"></i> ✕ @SharedLocalizer["StatusUnavailable"]</span>
-            <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-amber-500/15 border border-amber-400/40 text-amber-300"></i> ? @SharedLocalizer["StatusMaybe"]</span>
-            <span class="flex items-center gap-1.5"><i class="inline-block w-3 h-3 rounded bg-violet-500/15 border border-violet-400/40 text-violet-300"></i> 🎪 @SharedLocalizer["StatusEvent"]</span>
-        </div>
+            <div class="availability-calendar-footer">
+                <button type="button" id="bulk-open" class="btn-outline">☑ Selecionar vários dias</button>
+                <span class="text-xs text-white/35">Os dias passados não podem ser alterados.</span>
+            </div>
+        </section>
+
+        <aside id="bulk-panel" class="availability-bulk-panel hidden">
+            <div class="panel-heading">
+                <div><p class="admin-section-eyebrow">Ação em lote</p><h2 class="font-display text-xl"><span id="bulk-count">0</span> dias selecionados</h2></div>
+                <button type="button" id="bulk-close" class="icon-close" aria-label="Fechar">×</button>
+            </div>
+            <p class="text-sm text-white/50">Seleciona os dias no calendário e aplica o mesmo estado e horário a todos.</p>
+            <div class="bulk-status-grid">
+                <button type="button" data-bulk-status="1" class="bulk-choice available">✓ Disponível</button>
+                <button type="button" data-bulk-status="3" class="bulk-choice maybe">? Talvez</button>
+                <button type="button" data-bulk-status="2" class="bulk-choice unavailable">× Indisponível</button>
+                <button type="button" data-bulk-status="0" class="bulk-choice clear">− Limpar</button>
+            </div>
+            <div id="bulk-hours" class="space-y-3">
+                <div class="time-select-row">
+                    <label>Das<select id="bulk-start"><option value="">Escolhe</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
+                    <span>até</span>
+                    <label>Às<select id="bulk-end"><option value="">Escolhe</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
+                </div>
+            </div>
+            <button type="button" id="bulk-apply" class="btn-primary w-full" disabled>Aplicar aos dias selecionados</button>
+        </aside>
     </div>
 </section>
 
-<!-- Day marking modal -->
-<div id="day-modal" class="hidden fixed inset-0 z-50 flex items-start justify-center bg-black/70 backdrop-blur-sm p-4 pt-10">
-    <div class="card w-full max-w-md p-6 fade-up max-h-[calc(100vh-5rem)] overflow-y-auto">
-        <div class="flex items-center justify-between mb-5">
-            <h3 class="font-display text-xl">@SharedLocalizer["MarkDay"] — <span id="modal-date-label" class="text-accent"></span></h3>
-            <button type="button" id="modal-close" class="text-white/50 hover:text-white text-2xl leading-none transition">×</button>
+<div id="availability-modal" class="availability-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="availability-modal-card">
+        <div class="panel-heading">
+            <div><p class="admin-section-eyebrow">Configurar dia</p><h2 id="modal-title" class="font-display text-2xl"></h2></div>
+            <button type="button" id="modal-close" class="icon-close" aria-label="Fechar">×</button>
         </div>
-        <form method="post" action="/AdminAvailability/SetStatus" class="space-y-4">
+        <form method="post" action="/AdminAvailability/SetStatus" id="availability-form" class="space-y-5">
             @Html.AntiForgeryToken()
             <input type="hidden" name="date" id="modal-date" />
-            <div class="space-y-2.5 text-sm">
-                <label class="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 cursor-pointer hover:bg-white/5 transition">
-                    <input type="radio" name="status" value="" class="accent-[#d9a441]" />
-                    <span class="text-white/60">@SharedLocalizer["NoOverride"]</span>
-                </label>
-                <p id="no-mark-note" class="hidden text-xs text-white/55 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5"></p>
-                <label class="flex items-center gap-3 rounded-xl border border-emerald-400/30 px-4 py-3 cursor-pointer hover:bg-emerald-500/10 transition">
-                    <input type="radio" name="status" value="1" class="accent-[#d9a441]" />
-                    <span class="text-emerald-300">✓ @SharedLocalizer["StatusAvailable"]</span>
-                </label>
-                <label class="flex items-center gap-3 rounded-xl border border-red-400/30 px-4 py-3 cursor-pointer hover:bg-red-500/10 transition">
-                    <input type="radio" name="status" value="2" class="accent-[#d9a441]" />
-                    <span class="text-red-300">✕ @SharedLocalizer["StatusUnavailable"]</span>
-                </label>
-                <label class="flex items-center gap-3 rounded-xl border border-amber-400/30 px-4 py-3 cursor-pointer hover:bg-amber-500/10 transition">
-                    <input type="radio" name="status" value="3" class="accent-[#d9a441]" />
-                    <span class="text-amber-300">? @SharedLocalizer["StatusMaybe"]</span>
-                </label>
-                <label class="flex items-center gap-3 rounded-xl border border-violet-400/30 px-4 py-3 cursor-pointer hover:bg-violet-500/10 transition">
-                    <input type="radio" name="status" value="4" class="accent-[#d9a441]" />
-                    <span class="text-violet-300">🎪 @SharedLocalizer["StatusEvent"]</span>
-                </label>
-            </div>
-            <div id="event-fields" class="hidden space-y-3 border-t border-white/10 pt-4">
-                <div>
-                    <label class="block text-sm font-medium mb-2">@SharedLocalizer["EventName"]</label>
-                    <input id="event-title" name="title" maxlength="200" placeholder="Ex.: Night Run Lisboa"
-                           class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-2">@SharedLocalizer["EventLocation"]</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <select id="event-zone" name="zone"
-                                class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-3 py-3 focus:outline-none focus:border-accent transition">
-                            <option value="">@SharedLocalizer["ChooseZone"]</option>
-                            @foreach (var r in Model.Regions)
-                            {
-                                <option value="@r">@r</option>
-                            }
-                        </select>
-                        <select id="event-locality" name="location" disabled
-                                class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-3 py-3 focus:outline-none focus:border-accent transition disabled:opacity-50">
-                            <option value="">@SharedLocalizer["ChooseLocality"]</option>
-                        </select>
-                    </div>
-                    <p class="text-white/40 text-xs mt-1.5">@SharedLocalizer["EventLocationHint"]</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-2">@SharedLocalizer["MaxMiniSessions"]</label>
-                    <select id="max-mini" name="maxMiniSessions"
-                            class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition">
-                        @for (int i = 1; i <= 10; i++)
-                        {
-                            <option value="@i">@i</option>
-                        }
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-2">@SharedLocalizer["MiniSessionHours"]</label>
-                    <div class="rounded-xl border border-white/10 bg-[color:var(--bg)] p-3"
-                         data-hour-bar data-start-input="mini-start" data-end-input="mini-end"></div>
-                    <input type="hidden" id="mini-start" name="miniStart" />
-                    <input type="hidden" id="mini-end" name="miniEnd" />
-                    <p class="text-white/40 text-xs mt-2">@SharedLocalizer["MiniSessionHoursHint"]</p>
+            <div>
+                <p class="field-label">Como está este dia?</p>
+                <div class="status-radio-grid">
+                    <label><input type="radio" name="status" value="1" /><span class="status-radio available">✓<b>Disponível</b><small>aceitar sessões</small></span></label>
+                    <label><input type="radio" name="status" value="3" /><span class="status-radio maybe">?<b>Talvez</b><small>não reservar</small></span></label>
+                    <label><input type="radio" name="status" value="2" /><span class="status-radio unavailable">×<b>Indisponível</b><small>bloquear o dia</small></span></label>
+                    <label><input type="radio" name="status" value="4" /><span class="status-radio event">★<b>Evento</b><small>mini sessões</small></span></label>
+                    <label class="status-clear"><input type="radio" name="status" value="" /><span class="status-radio clear"><b>Limpar marcação</b><small>o dia fica sem definição</small></span></label>
                 </div>
             </div>
-            <div id="zone-fields" class="hidden space-y-3 border-t border-white/10 pt-4">
+
+            <div id="regular-fields" class="availability-fields hidden">
+                <div class="field-section-heading"><b>Horário para sessões</b><small>Este horário substitui o padrão 09:00 – 20:00 apenas neste dia.</small></div>
+                <div class="time-select-row">
+                    <label>Das<select name="dayStart" id="day-start"><option value="">Padrão (09:00)</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
+                    <span>até</span>
+                    <label>Às<select name="dayEnd" id="day-end"><option value="">Padrão (20:00)</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
+                </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2">@SharedLocalizer["DayZone"]</label>
-                    <select id="day-zone" name="zone"
-                            class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition">
-                        <option value="">@SharedLocalizer["DayZoneAny"]</option>
-                        @foreach (var r in Model.Regions)
-                        {
-                            <option value="@r">@r</option>
-                        }
-                    </select>
-                    <p class="text-white/40 text-xs mt-1.5">@SharedLocalizer["DayZoneHint"]</p>
+                    <label class="field-label" for="day-zone">Zona onde estarás <span>(opcional)</span></label>
+                    <select name="zone" id="day-zone"><option value="">Qualquer zona</option>@foreach (var region in Model.Regions) { <option value="@region">@region</option> }</select>
+                    <small class="field-hint">Se definires uma zona, o cliente só poderá escolher uma localidade dessa zona.</small>
                 </div>
             </div>
-            <div id="day-hours-fields" class="hidden space-y-3 border-t border-white/10 pt-4">
-                <div>
-                    <label class="block text-sm font-medium mb-2">@SharedLocalizer["DayHours"]</label>
-                    <div class="rounded-xl border border-white/10 bg-[color:var(--bg)] p-3"
-                         data-hour-bar data-start-input="day-start" data-end-input="day-end"></div>
-                    <input type="hidden" id="day-start" name="dayStart" />
-                    <input type="hidden" id="day-end" name="dayEnd" />
-                    <p class="text-white/40 text-xs mt-2">@SharedLocalizer["DayHoursHint"]</p>
+
+            <div id="event-fields" class="availability-fields hidden">
+                <div class="field-section-heading"><b>Dados do evento</b><small>O cliente vê este local e não pode alterá-lo.</small></div>
+                <label class="field-label" for="event-title">Nome do evento <span>(opcional)</span></label>
+                <input name="title" id="event-title" maxlength="200" placeholder="Ex.: Encontro de carros clássicos" />
+                <label class="field-label" for="event-zone">Zona e local do evento</label>
+                <div class="form-grid-2">
+                    <select name="zone" id="event-zone"><option value="">Escolher zona</option>@foreach (var region in Model.Regions) { <option value="@region">@region</option> }</select>
+                    <select name="location" id="event-location" disabled><option value="">Escolher localidade</option></select>
+                </div>
+                <label class="field-label" for="max-mini">Lugares de mini sessão</label>
+                <select name="maxMiniSessions" id="max-mini">@for (var i = 1; i <= 10; i++) { <option value="@i">@i lugares</option> }</select>
+                <div class="field-section-heading"><b>Horário das mini sessões</b><small>Define quando os clientes podem escolher um horário.</small></div>
+                <div class="time-select-row">
+                    <label>Das<select name="miniStart" id="mini-start"><option value="">Escolher</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
+                    <span>até</span>
+                    <label>Às<select name="miniEnd" id="mini-end"><option value="">Escolher</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
                 </div>
             </div>
-            <button class="btn-primary w-full">@SharedLocalizer["Save"]</button>
+
+            <div class="modal-actions"><button type="button" id="modal-cancel" class="btn-outline">Cancelar</button><button type="submit" class="btn-primary">Guardar dia</button></div>
         </form>
     </div>
 </div>
 
-@section Scripts {        <script>
-        (function () {
-            var modal = document.getElementById('day-modal');
-            var modalDate = document.getElementById('modal-date');
-            var modalDateLabel = document.getElementById('modal-date-label');
-            var eventTitle = document.getElementById('event-title');
-            var noMarkNote = document.getElementById('no-mark-note');
-            var maxMini = document.getElementById('max-mini');
-            var miniStart = document.getElementById('mini-start');
-            var miniEnd = document.getElementById('mini-end');
-            var eventFields = document.getElementById('event-fields');
-            var zoneFields = document.getElementById('zone-fields');
-            var dayHoursFields = document.getElementById('day-hours-fields');
-            var dayStart = document.getElementById('day-start');
-            var dayEnd = document.getElementById('day-end');
-            var eventZone = document.getElementById('event-zone');
-            var eventLocality = document.getElementById('event-locality');
-            var dayZone = document.getElementById('day-zone');
-            var radios = document.querySelectorAll('input[name="status"]');
-            var localities = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                Model.Regions.Select(r => new
-                {
-                    Region = r,
-                    Cities = ShotsByMarques.Web.Services.PortugalCities.All
-                        .Where(c => c.Region == r)
-                        .Select(c => c.Name)
-                        .ToList()
-                })));
+@section Scripts {
+<script>
+(function () {
+    const modal = document.getElementById('availability-modal');
+    const form = document.getElementById('availability-form');
+    const bulkPanel = document.getElementById('bulk-panel');
+    const dayButtons = Array.from(document.querySelectorAll('[data-availability-day]'));
+    const radios = Array.from(document.querySelectorAll('input[name="status"]'));
+    const regularFields = document.getElementById('regular-fields');
+    const eventFields = document.getElementById('event-fields');
+    const dayZone = document.getElementById('day-zone');
+    const eventZone = document.getElementById('event-zone');
+    const eventLocation = document.getElementById('event-location');
+    const localities = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(localities));
+    let multiSelect = false;
+    let selectedDates = new Set();
+    let bulkStatus = '1';
 
-            function fillLocalities(zoneSelect, locSelect, keep) {
-                locSelect.innerHTML = '';
-                var ph = document.createElement('option');
-                ph.value = '';
-                ph.textContent = '@SharedLocalizer["ChooseLocality"]';
-                locSelect.appendChild(ph);
-                if (!zoneSelect.value) { locSelect.disabled = true; return; }
-                var group = localities.find(function (g) { return g.Region === zoneSelect.value; });
-                (group ? group.Cities : []).forEach(function (name) {
-                    var o = document.createElement('option');
-                    o.value = name;
-                    o.textContent = name;
-                    locSelect.appendChild(o);
-                });
-                locSelect.disabled = false;
-                if (keep && Array.from(locSelect.options).some(function (o) { return o.value === keep; })) {
-                    locSelect.value = keep;
-                }
-            }
-            eventZone.addEventListener('change', function () { fillLocalities(eventZone, eventLocality, ''); });
+    function fillEventLocations(keep) {
+        eventLocation.innerHTML = '<option value="">Escolher localidade</option>';
+        const group = localities.find(item => item.Region === eventZone.value);
+        (group ? group.Cities : []).forEach(name => {
+            const option = document.createElement('option'); option.value = name; option.textContent = name; eventLocation.appendChild(option);
+        });
+        eventLocation.disabled = !eventZone.value;
+        if (keep && Array.from(eventLocation.options).some(option => option.value === keep)) eventLocation.value = keep;
+    }
+    eventZone.addEventListener('change', () => fillEventLocations(''));
 
-            // ---- Hour range bar: drag on the 24h strip or tap a preset ----
-            var HOUR_PRESETS = [
-                { range: '09:00-20:00', label: '☀️ @Html.Raw(SharedLocalizer["PresetFullDay"])' },
-                { range: '09:00-13:00', label: '🌅 @Html.Raw(SharedLocalizer["PresetMorning"])' },
-                { range: '14:00-19:00', label: '🌤 @Html.Raw(SharedLocalizer["PresetAfternoon"])' },
-                { range: '20:00-23:00', label: '🌙 @Html.Raw(SharedLocalizer["PresetNight"])' }
-            ];
+    function setFields() {
+        const checked = radios.find(radio => radio.checked);
+        const status = checked ? checked.value : '';
+        regularFields.classList.toggle('hidden', status !== '1' && status !== '3');
+        eventFields.classList.toggle('hidden', status !== '4');
+        dayZone.disabled = status !== '1' && status !== '3';
+        eventZone.disabled = status !== '4';
+        eventLocation.disabled = status !== '4' || !eventZone.value;
+    }
+    radios.forEach(radio => radio.addEventListener('change', setFields));
 
-            function initHourBar(el) {
-                var startInput = document.getElementById(el.dataset.startInput);
-                var endInput = document.getElementById(el.dataset.endInput);
-                var HOURS = 24;
+    function openDay(button) {
+        const data = button.dataset;
+        document.getElementById('modal-title').textContent = new Date(data.date + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        document.getElementById('modal-date').value = data.date;
+        radios.forEach(radio => { radio.checked = (radio.value === (data.status === '0' ? '' : data.status)); });
+        document.getElementById('event-title').value = data.title || '';
+        document.getElementById('max-mini').value = data.max || '4';
+        document.getElementById('day-start').value = data.windowStart || '';
+        document.getElementById('day-end').value = data.windowEnd || '';
+        document.getElementById('mini-start').value = data.miniStart || '';
+        document.getElementById('mini-end').value = data.miniEnd || '';
+        dayZone.value = data.zone || '';
+        eventZone.value = data.zone || '';
+        fillEventLocations(data.location || '');
+        setFields();
+        modal.classList.remove('hidden');
+    }
 
-                var header = document.createElement('div');
-                header.className = 'flex items-center justify-between mb-2 text-xs gap-2';
-                var labelWrap = document.createElement('span');
-                labelWrap.className = 'text-white/60 flex items-center gap-2 min-w-0';
-                var rangeLabel = document.createElement('span');
-                rangeLabel.className = 'text-accent font-semibold whitespace-nowrap';
-                rangeLabel.setAttribute('data-range-label', '');
-                rangeLabel.textContent = '—';
-                var dragHint = document.createElement('span');
-                dragHint.className = 'text-white/35 hidden sm:inline truncate';
-                dragHint.textContent = '@SharedLocalizer["DragHoursHint"]';
-                labelWrap.append(rangeLabel, dragHint);
-                var clearBtn = document.createElement('button');
-                clearBtn.type = 'button';
-                clearBtn.setAttribute('data-clear', '');
-                clearBtn.className = 'text-white/40 hover:text-white transition whitespace-nowrap';
-                clearBtn.textContent = '✕ @SharedLocalizer["ClearHours"]';
-                header.append(labelWrap, clearBtn);
+    function updateBulk() {
+        document.getElementById('bulk-count').textContent = selectedDates.size;
+        document.getElementById('bulk-apply').disabled = selectedDates.size === 0;
+        dayButtons.forEach(button => button.classList.toggle('is-selected', selectedDates.has(button.dataset.date)));
+    }
+    dayButtons.forEach(button => button.addEventListener('click', () => {
+        if (!multiSelect) { openDay(button); return; }
+        const date = button.dataset.date;
+        if (selectedDates.has(date)) selectedDates.delete(date); else selectedDates.add(date);
+        updateBulk();
+    }));
 
-                var track = document.createElement('div');
-                track.setAttribute('data-track', '');
-                track.className = 'flex items-stretch gap-[3px]';
-                var cells = [];
-                for (var h = 0; h < HOURS; h++) {
-                    var cell = document.createElement('div');
-                    cell.className = 'hour-cell' + (h >= 20 || h < 6 ? ' night' : '');
-                    cell.dataset.hour = h;
-                    track.appendChild(cell);
-                    cells.push(cell);
-                }
-
-                var ticks = document.createElement('div');
-                ticks.className = 'flex justify-between text-[10px] text-white/35 mt-1.5 px-0.5';
-                [0, 3, 6, 9, 12, 15, 18, 21, 24].forEach(function (t) {
-                    var s = document.createElement('span');
-                    s.textContent = String(t).padStart(2, '0');
-                    ticks.appendChild(s);
-                });
-
-                var presets = document.createElement('div');
-                presets.className = 'flex flex-wrap gap-2 mt-3';
-                var presetBtns = [];
-                HOUR_PRESETS.forEach(function (p) {
-                    var b = document.createElement('button');
-                    b.type = 'button';
-                    b.className = 'hour-preset';
-                    b.textContent = p.label;
-                    b.dataset.range = p.range;
-                    presets.appendChild(b);
-                    presetBtns.push(b);
-                });
-
-                el.append(header, track, ticks, presets);
-
-                var start = null, end = null, drag = null;
-
-                function fmt(h) {
-                    var m = Math.round(h * 60);
-                    return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
-                }
-                function parse(v) {
-                    if (!v) return null;
-                    var p = v.split(':');
-                    return Number(p[0]) + Number(p[1] || 0) / 60;
-                }
-                function render() {
-                    for (var i = 0; i < HOURS; i++) {
-                        var c = cells[i];
-                        var selected = start !== null && i >= start && i <= end;
-                        c.classList.toggle('sel', selected);
-                        c.classList.toggle('night-sel', selected && (i >= 20 || i < 6));
-                        c.classList.toggle('edge', selected && (i === start || i === end));
-                        c.innerHTML = '';
-                        if (selected && (i === start || i === end)) {
-                            var grip = document.createElement('span');
-                            grip.className = 'absolute inset-y-1 left-1/2 -translate-x-1/2 w-[3px] rounded bg-white/90';
-                            c.appendChild(grip);
-                        }
-                    }
-                    rangeLabel.textContent = start === null ? '—' : fmt(start) + ' – ' + fmt(end);
-                    startInput.value = start === null ? '' : fmt(start);
-                    endInput.value = end === null ? '' : fmt(end);
-                    presetBtns.forEach(function (b) {
-                        var r = b.dataset.range.split('-');
-                        b.classList.toggle('on', start !== null && fmt(start) === r[0] && fmt(end) === r[1]);
-                    });
-                }
-                function idxAt(e) {
-                    var rect = track.getBoundingClientRect();
-                    var w = rect.width / HOURS;
-                    return Math.max(0, Math.min(HOURS - 1, Math.floor((e.clientX - rect.left) / w)));
-                }
-                track.addEventListener('pointerdown', function (e) {
-                    e.preventDefault();
-                    var i = idxAt(e);
-                    if (start === null) { start = i; end = i; drag = 'end'; }
-                    else if (i < start) { start = i; drag = 'start'; }
-                    else if (i > end) { end = i; drag = 'end'; }
-                    else if (i - start < end - i) { start = i; drag = 'start'; }
-                    else { end = i; drag = 'end'; }
-                    render();
-                    try { track.setPointerCapture(e.pointerId); } catch (_) { }
-                });
-                track.addEventListener('pointermove', function (e) {
-                    if (drag === null) return;
-                    var i = idxAt(e);
-                    if (drag === 'start') {
-                        if (i > end) { start = end; end = i; drag = 'end'; } else { start = i; }
-                    } else {
-                        if (i < start) { end = start; start = i; drag = 'start'; } else { end = i; }
-                    }
-                    render();
-                });
-                ['pointerup', 'pointercancel'].forEach(function (ev) {
-                    track.addEventListener(ev, function () { drag = null; });
-                });
-                clearBtn.addEventListener('click', function () { start = null; end = null; render(); });
-                presetBtns.forEach(function (b) {
-                    b.addEventListener('click', function () {
-                        var r = b.dataset.range.split('-');
-                        start = parse(r[0]); end = parse(r[1]);
-                        render();
-                    });
-                });
-                function readInputs() {
-                    start = parse(startInput.value);
-                    end = parse(endInput.value);
-                    if (start !== null && end !== null && end < start) { var t = start; start = end; end = t; }
-                    render();
-                }
-                readInputs();
-                return { readInputs: readInputs };
-            }
-
-            var hourBars = [];
-            document.querySelectorAll('[data-hour-bar]').forEach(function (el) {
-                hourBars.push(initHourBar(el));
-            });
-            function refreshHourBars() {
-                hourBars.forEach(function (b) { b.readInputs(); });
-            }
-
-            // ---- Bulk marking: select several days, apply one status + shared hours ----
-            var bulkToggle = document.getElementById('bulk-toggle');
-            var bulkPanel = document.getElementById('bulk-panel');
-            var bulkCount = document.getElementById('bulk-count');
-            var bulkApply = document.getElementById('bulk-apply');
-            var bulkCancel = document.getElementById('bulk-cancel');
-            var bulkStatusBtns = document.querySelectorAll('.bulk-status');
-            var bulkHoursWrap = document.getElementById('bulk-hours-wrap');
-            var bulkStart = document.getElementById('bulk-start');
-            var bulkEnd = document.getElementById('bulk-end');
-            var multi = false;
-            var selectedDates = new Set();
-            var bulkStatus = '1';
-
-            function updateBulk() {
-                bulkCount.textContent = selectedDates.size;
-                bulkApply.disabled = selectedDates.size === 0;
-                bulkApply.textContent = '@SharedLocalizer["BulkApply"]' + (selectedDates.size ? ' (' + selectedDates.size + ')' : '');
-            }
-            function toggleSelect(btn) {
-                var date = btn.dataset.date;
-                if (selectedDates.has(date)) {
-                    selectedDates.delete(date);
-                    btn.classList.remove('cal-sel');
-                    var chk = btn.querySelector('.sel-check');
-                    if (chk) chk.remove();
-                } else {
-                    selectedDates.add(date);
-                    btn.classList.add('cal-sel');
-                    var chk = document.createElement('span');
-                    chk.className = 'sel-check absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent text-black text-[10px] font-bold flex items-center justify-center';
-                    chk.textContent = '✓';
-                    btn.appendChild(chk);
-                }
-                updateBulk();
-            }
-            function setBulkStatus(v) {
-                bulkStatus = v;
-                bulkStatusBtns.forEach(function (b) { b.classList.toggle('on', b.dataset.bulkStatus === v); });
-                var needsHours = v === '1' || v === '3';
-                bulkHoursWrap.classList.toggle('hidden', !needsHours);
-                if (needsHours && !bulkStart.value && !bulkEnd.value) {
-                    bulkStart.value = '09:00';
-                    bulkEnd.value = '20:00';
-                    refreshHourBars();
-                }
-            }
-            function exitBulk() {
-                multi = false;
-                bulkToggle.classList.remove('!border-accent', '!text-accent');
-                bulkPanel.classList.add('hidden');
-                selectedDates.forEach(function (d) {
-                    var btn = Array.from(document.querySelectorAll('[data-calendar-day]'))
-                        .find(function (b) { return b.dataset.date === d; });
-                    if (btn) {
-                        btn.classList.remove('cal-sel');
-                        var chk = btn.querySelector('.sel-check');
-                        if (chk) chk.remove();
-                    }
-                });
-                selectedDates.clear();
-                updateBulk();
-            }
-            bulkToggle.addEventListener('click', function () {
-                multi = !multi;
-                if (multi) {
-                    bulkToggle.classList.add('!border-accent', '!text-accent');
-                    bulkPanel.classList.remove('hidden');
-                    setBulkStatus(bulkStatus);
-                    refreshHourBars();
-                } else {
-                    exitBulk();
-                }
-            });
-            bulkCancel.addEventListener('click', exitBulk);
-            bulkStatusBtns.forEach(function (b) {
-                b.addEventListener('click', function () { setBulkStatus(b.dataset.bulkStatus); });
-            });
-            bulkApply.addEventListener('click', function () {
-                if (selectedDates.size === 0) return;
-                var form = document.createElement('form');
-                form.method = 'post';
-                form.action = '/AdminAvailability/BulkSet';
-                function add(name, value) {
-                    var i = document.createElement('input');
-                    i.type = 'hidden';
-                    i.name = name;
-                    i.value = value;
-                    form.appendChild(i);
-                }
-                var token = document.querySelector('input[name="__RequestVerificationToken"]');
-                if (token) add('__RequestVerificationToken', token.value);
-                selectedDates.forEach(function (d) { add('dates', d); });
-                add('status', bulkStatus);
-                add('dayStart', document.getElementById('bulk-start').value);
-                add('dayEnd', document.getElementById('bulk-end').value);
-                add('year', @Model.Year);
-                add('month', @Model.Month);
-                document.body.appendChild(form);
-                form.submit();
-            });
-
-            function toggleEventFields() {
-                var checked = document.querySelector('input[name="status"]:checked');
-                var isEvent = checked && checked.value === '4';
-                var isAvail = checked && (checked.value === '1' || checked.value === '3');
-                var isNoMark = checked && checked.value === '';
-                eventFields.classList.toggle('hidden', !isEvent);
-                zoneFields.classList.toggle('hidden', !isAvail);
-                dayHoursFields.classList.toggle('hidden', !isAvail);
-                noMarkNote.classList.toggle('hidden', !isNoMark);
-                if (isNoMark) {
-                    noMarkNote.textContent = '💡 @Html.Raw(SharedLocalizer["NoMarkFollows"])';
-                }
-                // Only one of the two zone selects may be submitted (same name="zone").
-                eventZone.disabled = !isEvent;
-                eventLocality.disabled = !isEvent;
-                dayZone.disabled = !isAvail;
-                // Marking a day Available/Talvez opens it with the standard hours
-                // (adjustable in the bar); empty would mean a closed day.
-                if (isAvail && !dayStart.value && !dayEnd.value) {
-                    dayStart.value = '09:00';
-                    dayEnd.value = '20:00';
-                    refreshHourBars();
-                }
-            }
-            radios.forEach(function (r) { r.addEventListener('change', toggleEventFields); });
-
-            document.querySelectorAll('[data-calendar-day]').forEach(function (btn) {
-                // Only days of the current month that are not in the past can be marked.
-                if (btn.dataset.inMonth === 'false' || btn.dataset.past === 'true') return;
-                btn.addEventListener('click', function () {
-                    if (multi) { toggleSelect(btn); return; }
-                    modalDate.value = btn.dataset.date;
-                    modalDateLabel.textContent = btn.dataset.date;
-                    var status = btn.dataset.status; // "0" = no marking
-                    radios.forEach(function (r) {
-                        r.checked = (r.value === status) || (status === '0' && r.value === '');
-                    });
-                    eventTitle.value = btn.dataset.title || '';
-                    maxMini.value = btn.dataset.max || '4';
-                    // Default the mini-session hours to the standard 09:00–20:00;
-                    // keep saved values when the event already has a window.
-                    miniStart.value = btn.dataset.miniStart || (btn.dataset.status === '4' ? '09:00' : '');
-                    miniEnd.value = btn.dataset.miniEnd || (btn.dataset.status === '4' ? '20:00' : '');
-                    eventZone.value = btn.dataset.zone || '';
-                    fillLocalities(eventZone, eventLocality, btn.dataset.location || '');
-                    dayZone.value = btn.dataset.zone || '';
-                    dayStart.value = btn.dataset.dayStart || '';
-                    dayEnd.value = btn.dataset.dayEnd || '';
-                    toggleEventFields();
-                    refreshHourBars();
-                    modal.classList.remove('hidden');
-                });
-            });
-
-            document.getElementById('modal-close').addEventListener('click', function () {
-                modal.classList.add('hidden');
-            });
-            modal.addEventListener('click', function (e) {
-                if (e.target === modal) modal.classList.add('hidden');
-            });
-        })();
-    </script>
+    document.getElementById('bulk-open').addEventListener('click', () => {
+        multiSelect = true; selectedDates.clear(); bulkPanel.classList.remove('hidden'); updateBulk();
+    });
+    function closeBulk() {
+        multiSelect = false; selectedDates.clear(); bulkPanel.classList.add('hidden'); updateBulk();
+    }
+    document.getElementById('bulk-close').addEventListener('click', closeBulk);
+    document.querySelectorAll('[data-bulk-status]').forEach(button => button.addEventListener('click', () => {
+        bulkStatus = button.dataset.bulkStatus;
+        document.querySelectorAll('[data-bulk-status]').forEach(item => item.classList.toggle('is-active', item.dataset.bulkStatus === bulkStatus));
+        document.getElementById('bulk-hours').classList.toggle('hidden', bulkStatus !== '1' && bulkStatus !== '3');
+    }));
+    document.getElementById('bulk-apply').addEventListener('click', () => {
+        if (!selectedDates.size) return;
+        const post = document.createElement('form'); post.method = 'post'; post.action = '/AdminAvailability/BulkSet';
+        const add = (name, value) => { const input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value || ''; post.appendChild(input); };
+        add('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+        selectedDates.forEach(date => add('dates', date)); add('status', bulkStatus); add('dayStart', document.getElementById('bulk-start').value); add('dayEnd', document.getElementById('bulk-end').value); add('year', '@Model.Year'); add('month', '@Model.Month');
+        document.body.appendChild(post); post.submit();
+    });
+    document.getElementById('modal-close').addEventListener('click', () => modal.classList.add('hidden'));
+    document.getElementById('modal-cancel').addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', event => { if (event.target === modal) modal.classList.add('hidden'); });
+    document.querySelector('[data-bulk-status="1"]').classList.add('is-active');
+    document.getElementById('bulk-start').value = '09:00'; document.getElementById('bulk-end').value = '20:00';
+})();
+</script>
 }

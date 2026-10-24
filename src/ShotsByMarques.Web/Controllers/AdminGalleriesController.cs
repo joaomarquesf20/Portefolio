@@ -78,14 +78,18 @@ public class AdminGalleriesController : Controller
             }
             _db.Galleries.Add(gallery);
             await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            TempData["Success"] = "Galeria criada. Carrega agora as fotos — depois escolhe qualquer uma como capa.";
+            // Go straight into the photo manager: upload folder → set cover → done.
+            return RedirectToAction(nameof(Photos), new { id = gallery.Id });
         }
         return View(gallery);
     }
 
     public async Task<IActionResult> Edit(int id)
     {
-        var gallery = await _db.Galleries.FindAsync(id);
+        var gallery = await _db.Galleries
+            .Include(g => g.Photos.OrderBy(p => p.SortOrder))
+            .FirstOrDefaultAsync(g => g.Id == id);
         if (gallery is null)
             return NotFound();
         ViewData["Bookings"] = await BookingsAsync();
@@ -430,5 +434,34 @@ public class AdminGalleriesController : Controller
         if (samples.Count > 0)
             TempData["Success"] = $"Removidas {samples.Count} foto(s) de exemplo.";
         return RedirectToAction(nameof(Photos), new { id });
+    }
+
+    /// <summary>
+    /// Sets one of the gallery's uploaded photos as the gallery cover — no
+    /// separate cover file needed. Uses the photo's WATERMARKED preview path,
+    /// so the cover is public-safe and works on every page that renders it.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetCover(int id, string? from)
+    {
+        var photo = await _db.Photos.Include(p => p.Gallery).FirstOrDefaultAsync(p => p.Id == id);
+        if (photo?.Gallery is null)
+            return NotFound();
+
+        var gallery = photo.Gallery;
+        var oldCover = gallery.CoverPath;
+        gallery.CoverPath = photo.PreviewPath;
+        await _db.SaveChangesAsync();
+
+        // Keep wwwroot tidy: if the previous cover was an uploaded file, remove it.
+        if (oldCover is not null && oldCover != gallery.CoverPath)
+            _storage.DeletePublicCover(oldCover);
+
+        TempData["Success"] = $"Capa atualizada — \"{photo.Title}\" é a nova capa da galeria.";
+
+        if (string.Equals(from, "edit", StringComparison.OrdinalIgnoreCase))
+            return RedirectToAction(nameof(Edit), new { id = gallery.Id });
+        return RedirectToAction(nameof(Photos), new { id = gallery.Id });
     }
 }

@@ -78,8 +78,9 @@
                     <input asp-for="EventDate" type="date" class="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-2">Capa</label>
+                    <label class="block text-sm font-medium mb-2">Capa (ficheiro — opcional)</label>
                     <input type="file" name="cover" accept="image/*" class="text-sm text-white/60" />
+                    <p class="text-white/40 text-xs mt-1">Dica: carrega as fotos e depois usa “★ Definir capa” em qualquer foto — nem precisas de ficheiro extra.</p>
                 </div>
                 <div class="pt-6">
                     <label class="flex items-center gap-3 text-sm cursor-pointer">
@@ -118,9 +119,18 @@
             <input type="hidden" name="id" value="@Model.Id" />
             <div class="flex flex-wrap items-end gap-4">
                 <div class="flex-1 min-w-[220px]">
-                    <label class="block text-sm font-medium mb-2">Ficheiros (podes escolher vários)</label>
-                    <input type="file" name="files" accept="image/*" multiple
-                           class="w-full text-sm text-white/60" />
+                    <label class="block text-sm font-medium mb-2">Ficheiros ou pasta inteira</label>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label class="btn-outline !py-2 !px-4 !text-sm cursor-pointer">
+                            🖼️ Escolher fotos
+                            <input type="file" name="files" id="upload-files" accept="image/jpeg,image/png,image/webp" multiple class="hidden" />
+                        </label>
+                        <label class="btn-outline !py-2 !px-4 !text-sm cursor-pointer">
+                            📁 Escolher pasta
+                            <input type="file" name="files" id="upload-folder" accept="image/jpeg,image/png,image/webp" multiple webkitdirectory directory class="hidden" />
+                        </label>
+                        <span id="upload-count" class="text-sm text-white/50"></span>
+                    </div>
                 </div>
                 @if (isEvent)
                 {
@@ -133,7 +143,7 @@
                         <label class="block text-sm font-medium mb-2">Venda</label>
                         <label class="flex items-center gap-2 text-sm text-white/70 cursor-pointer select-none">
                             <input type="checkbox" name="forSale" value="true" checked
-                                   class="w-4 h-4 rounded accent-[#d9a441]" />
+                                   class="w-4 h-4 rounded accent-[color:var(--accent)]" />
                             <input type="hidden" name="forSale" value="false" />
                             Fotos à venda (com preço)
                         </label>
@@ -228,6 +238,10 @@
                                    aria-label="@photo.Title" />
                         }
                         <img src="@photo.PreviewUrl()" alt="@photo.Title" class="aspect-[3/2] w-full object-cover" />
+                        @if (Model.CoverPath == photo.PreviewPath)
+                        {
+                            <span class="absolute top-2 right-2 z-10 text-[11px] font-semibold bg-accent text-black rounded-full px-2.5 py-0.5">★ Capa</span>
+                        }
                     </div>
                     <div class="p-4">
                         <p class="text-sm font-medium truncate">@photo.Title</p>
@@ -251,6 +265,14 @@
                                     <button class="text-xs text-white/60 hover:text-accent transition">@(photo.IsForSale ? "Incluir na sessão" : "Marcar à venda")</button>
                                 </form>
                             }
+                            <form asp-action="SetCover" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@photo.Id" />
+                                <input type="hidden" name="from" value="photos" />
+                                <button class="text-xs @(Model.CoverPath == photo.PreviewPath ? "text-accent" : "text-white/60 hover:text-accent") transition">
+                                    @(Model.CoverPath == photo.PreviewPath ? "★ É a capa" : "★ Definir capa")
+                                </button>
+                            </form>
                             <form asp-action="DeletePhoto" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@photo.Id" />
@@ -325,6 +347,49 @@
         if (eventRadio) eventRadio.addEventListener('change', update);
 
         update();
+    })();
+</script>
+
+<script>
+    (function () {
+        // ----- Folder / multi-file upload UX -----
+        // Two pickers feed the same `files` form field: plain photos or an
+        // entire folder (webkitdirectory). Non-image files (DS_Store, Thumbs.db…)
+        // are filtered out client-side; the two pickers are mutually exclusive.
+        var filesIn = document.getElementById('upload-files');
+        var folderIn = document.getElementById('upload-folder');
+        var countEl = document.getElementById('upload-count');
+        if (!filesIn && !folderIn) return;
+
+        var IMAGE_EXT = /\.(jpe?g|png|webp|avif)$/i;
+
+        function pickFolder(input) {
+            if (!input.files || input.files.length === 0) return null;
+            var dt = new DataTransfer();
+            var folder = null;
+            Array.from(input.files).forEach(function (f) {
+                if (IMAGE_EXT.test(f.name)) {
+                    dt.items.add(f);
+                    if (!folder && f.webkitRelativePath) folder = f.webkitRelativePath.split('/')[0];
+                }
+            });
+            input.files = dt.files;
+            return folder;
+        }
+
+        function update(input) {
+            var folder = pickFolder(input);
+            var other = input === filesIn ? folderIn : filesIn;
+            if (other && input.files.length > 0 && other.files.length > 0) other.value = '';
+            if (!countEl) return;
+            if (!input.files.length) { countEl.textContent = ''; return; }
+            var label = input === folderIn && folder ? ' (pasta "' + folder + '")' : '';
+            countEl.textContent = input.files.length + (input.files.length === 1 ? ' foto selecionada' : ' fotos selecionadas') + label;
+        }
+
+        [filesIn, folderIn].forEach(function (el) {
+            if (el) el.addEventListener('change', function () { update(el); });
+        });
     })();
 </script>
 

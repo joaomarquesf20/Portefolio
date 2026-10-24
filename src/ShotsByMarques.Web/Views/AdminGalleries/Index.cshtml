@@ -47,7 +47,7 @@
             <div class="card p-5 flex flex-wrap items-center gap-5 fade-up">
                 <input type="checkbox" class="gallery-check accent-[color:var(--accent)] w-4 h-4" value="@gallery.Id"
                        aria-label="@gallery.Title" />
-                <img src="@gallery.CoverPath" alt="@gallery.Title" class="w-24 h-16 object-cover rounded-lg" />
+                <img src="@gallery.CoverUrl()" alt="@gallery.Title" class="w-24 h-16 object-cover rounded-lg" />
                 <div class="flex-1 min-w-[200px]">
                     <div class="flex flex-wrap items-center gap-2">
                         <p class="font-semibold">@gallery.Title</p>

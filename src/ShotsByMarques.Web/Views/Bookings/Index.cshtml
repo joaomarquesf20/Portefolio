@@ -1,23 +1,30 @@
 @model ShotsByMarques.Web.ViewModels.BookingsIndexViewModel
 @{
     ViewData["Title"] = SharedLocalizer["NavSessions"];
+    var pageCover = "/sample-photos/cars-cover.svg";
 }
 
-<section class="max-w-7xl mx-auto px-4 sm:px-6 py-14">
+<section class="relative overflow-hidden min-h-screen">
+    <img src="@(ViewData["BgSessions"] ?? pageCover)" alt="" class="absolute inset-0 w-full h-full object-cover" />
+    <div class="absolute inset-0 page-photo-overlay"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-14">
     <div class="text-center mb-12 fade-up">
-        <h1 class="font-display text-4xl sm:text-5xl">@SharedLocalizer["NavSessions"]</h1>
+        <h1 class="font-display text-4xl sm:text-5xl text-white">@SharedLocalizer["NavSessions"]</h1>
         <p class="text-white/50 mt-3">@SharedLocalizer["ServicesSubtitle"]</p>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         @foreach (var session in Model.SessionTypes)
         {
-            <div class="card overflow-hidden fade-up">
-                <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name" class="h-48 w-full object-cover" loading="lazy" />
-                <div class="p-7">
-                    <h2 class="font-display text-2xl">@session.Name</h2>
-                    <p class="text-white/50 text-sm mt-3">@session.Description</p>
-                    <p class="text-accent font-semibold text-lg mt-6">@session.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+            <div class="card overflow-hidden fade-up flex flex-col">
+                <div class="h-52 overflow-hidden relative">
+                    <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-[color:var(--card)] via-transparent to-transparent"></div>
+                </div>
+                <div class="p-7 flex flex-col flex-1">
+                    <h2 class="font-display text-2xl text-white">@session.Name</h2>
+                    <p class="text-white/50 text-sm mt-3 leading-relaxed">@session.Description</p>
+                    <p class="font-display text-2xl text-white mt-6">@session.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
                     <a href="/sessoes/marcar/@session.Id" class="btn-primary w-full text-center mt-6">@SharedLocalizer["BookNow"]</a>
                 </div>
             </div>
@@ -28,14 +35,14 @@
     {
         <div class="mt-20 fade-up">
             <div class="text-center mb-10">
-                <h2 class="font-display text-3xl sm:text-4xl">🎪 @SharedLocalizer["MiniSessionsTitle"]</h2>
+                <h2 class="font-display text-3xl sm:text-4xl text-white">🎪 @SharedLocalizer["MiniSessionsTitle"]</h2>
                 <p class="text-white/50 mt-3 max-w-2xl mx-auto">@SharedLocalizer["MiniSessionsSubtitle"]</p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 @foreach (var m in Model.MiniDays)
                 {
                     <div class="card p-7 fade-up">
-                        <h3 class="font-display text-2xl">@m.Title</h3>
+                        <h3 class="font-display text-2xl text-white">@m.Title</h3>
                         <p class="text-white/50 text-sm mt-3 capitalize">
                             @m.Date.ToString("dddd, dd MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture)
                         </p>
@@ -43,7 +50,7 @@
                         {
                             <p class="text-sm mt-2">📍 <span class="text-white/80">@m.Zone</span>@(string.IsNullOrEmpty(m.Location) ? "" : $" — {m.Location}")</p>
                         }
-                        <p class="text-accent font-semibold text-lg mt-4">@m.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+                        <p class="font-display text-xl text-white mt-4">@m.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
                         <div class="flex flex-wrap items-center justify-between gap-3 mt-6">
                             @if (m.Remaining > 0)
                             {
@@ -62,4 +69,5 @@
             </div>
         </div>
     }
+    </div>
 </section>

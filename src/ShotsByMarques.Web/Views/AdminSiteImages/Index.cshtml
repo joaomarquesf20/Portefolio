@@ -1,0 +1,105 @@
+@model ShotsByMarques.Web.ViewModels.SitePageBackgroundIndexViewModel
+@{
+    ViewData["Title"] = "Imagens do site";
+    var groups = new[] { "Página inicial", "Páginas principais" };
+}
+
+<section class="admin-images-page px-4 sm:px-8 lg:px-10 py-10 sm:py-14">
+    <div class="admin-images-header">
+        <div>
+            <p class="admin-dashboard-eyebrow">Conteúdo visual</p>
+            <h1 class="font-display text-4xl sm:text-5xl text-white">Imagens do site</h1>
+            <p class="admin-images-lead">Controla os fundos fotográficos sem misturar as imagens da página inicial com as páginas principais.</p>
+        </div>
+        <a href="/" target="_blank" rel="noopener" class="admin-images-preview-link">
+            <span aria-hidden="true">↗</span> Ver site público
+        </a>
+    </div>
+
+    <div class="admin-images-guide" aria-label="Estado das imagens">
+        <div class="admin-images-guide-item">
+            <span class="admin-images-dot custom"></span>
+            <span><strong>Personalizada</strong><small>Imagem escolhida por ti</small></span>
+        </div>
+        <div class="admin-images-guide-item">
+            <span class="admin-images-dot automatic"></span>
+            <span><strong>Automática</strong><small>Capa de uma galeria publicada</small></span>
+        </div>
+        <span class="admin-images-guide-note">Cada alteração aplica-se apenas ao local indicado.</span>
+    </div>
+
+    @foreach (var group in groups)
+    {
+        var groupItems = Model.Items.Where(item => item.Section == group).ToList();
+        <section class="admin-images-group" aria-labelledby="@group.Replace(" ", "-").ToLowerInvariant()">
+            <div class="admin-images-group-header">
+                <div>
+                    <h2 id="@group.Replace(" ", "-").ToLowerInvariant()" class="font-display text-2xl text-white">@group</h2>
+                    <p>@(group == "Página inicial" ? "Quatro imagens para as diferentes zonas da página de entrada." : "Uma imagem para cada página pública independente.")</p>
+                </div>
+                <span class="admin-images-count">@groupItems.Count imagens</span>
+            </div>
+
+            <div class="admin-images-grid @(group == "Página inicial" ? "home-grid" : "main-grid")">
+                @foreach (var item in groupItems)
+                {
+                    <article class="admin-image-card" data-image-card>
+                        <div class="admin-image-card-media">
+                            <img src="@item.ImagePath" alt="@item.Label" data-image-preview />
+                            <span class="admin-image-status @(item.IsCustom ? "is-custom" : "is-automatic")">
+                                <span class="admin-images-dot"></span>
+                                @(item.IsCustom ? "Personalizada" : "Automática")
+                            </span>
+                        </div>
+                        <div class="admin-image-card-body">
+                            <div class="admin-image-card-title-row">
+                                <div>
+                                    <h3>@item.Label</h3>
+                                    <p>@item.Description</p>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(item.PageUrl))
+                                {
+                                    <a href="@item.PageUrl" target="_blank" rel="noopener" class="admin-image-open" title="Abrir página">↗</a>
+                                }
+                            </div>
+
+                            <form asp-action="Upload" method="post" enctype="multipart/form-data" class="admin-image-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="key" value="@item.Key" />
+                                <label class="admin-image-file-label">
+                                    <span class="admin-image-file-text" data-file-name>Escolher fotografia</span>
+                                    <input type="file" name="image" accept="image/jpeg,image/png,image/webp" required data-image-input />
+                                </label>
+                                <button type="submit" class="btn-primary admin-image-save">
+                                    <span aria-hidden="true">↑</span> Guardar imagem
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+    }
+</section>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('[data-image-card]').forEach(function (card) {
+            var input = card.querySelector('[data-image-input]');
+            var preview = card.querySelector('[data-image-preview]');
+            var fileName = card.querySelector('[data-file-name]');
+
+            input.addEventListener('change', function () {
+                var file = input.files && input.files[0];
+                if (!file) return;
+
+                fileName.textContent = file.name;
+                if (file.type.startsWith('image/')) {
+                    var reader = new FileReader();
+                    reader.onload = function (event) { preview.src = event.target.result; };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    </script>
+}

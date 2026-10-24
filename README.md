@@ -30,21 +30,19 @@ Projeto final de curso · ASP.NET Core (.NET 10) + EF Core + SQL Server LocalDB 
 - Email: `marquesphotography06@gmail.com`
 - Instagram: `https://www.instagram.com/shots.by.marques/`
 
-> Nota: a base de dados é criada com `EnsureCreatedAsync` no arranque (bom para o scaffold).
-> Para produção, usa **Migrations**: `dotnet ef migrations add InitialCreate` e depois `dotnet ef database update`.
+> Nota: a base de dados é gerida com **EF Core Migrations** — o arranque aplica as migrations pendentes
+> (`MigrateAsync`) e cria a base de dados na primeira execução. Para evoluir o modelo:
+> `dotnet ef migrations add <NomeDaMigration>` e depois `dotnet ef database update` (ou reinicia o site).
 
 ## 💳 Pagamentos com Stripe (cartão + MB Way)
 
 1. Cria conta em **https://dashboard.stripe.com** → *Developers → API keys* → copia as chaves de **teste** (`sk_test_...` e `pk_test_...`)
-2. Cola-as em `appsettings.json`:
-   ```json
-   "Stripe": {
-     "SecretKey": "sk_test_...",
-     "PublishableKey": "pk_test_...",
-     "WebhookSecret": "",
-     "PaymentMethods": "card,mb_way"
-   }
+2. Guarda a chave secreta em **user-secrets** (nunca no `appsettings.json` — fica fora do git). Na pasta
+   `src/ShotsByMarques.Web`:
+   ```powershell
+   dotnet user-secrets set "Stripe:SecretKey" "sk_test_..."
    ```
+   (a PublishableKey pode ficar em `appsettings.json`)
 3. **MB Way**: ativa o método de pagamento MB Way no Dashboard do Stripe (*Settings → Payment methods* — requer conta Stripe em Portugal). No Checkout, o cliente escolhe cartão ou MB Way (telemóvel + aprovação na app).
    - Em modo de teste usa os números de telemóvel de teste indicados pela Stripe.
    - A confirmação do MB Way é **assíncrona**: o cliente volta à página de sucesso com estado *processamento* e as fotos ficam disponíveis assim que o pagamento é confirmado (webhook).

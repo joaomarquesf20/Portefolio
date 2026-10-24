@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<PhotoPack> PhotoPacks => Set<PhotoPack>();
+    public DbSet<SitePageSetting> SitePageSettings => Set<SitePageSetting>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -67,11 +68,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         // Decimal precision for money values
         builder.Entity<SessionType>().Property(s => s.Price).HasPrecision(18, 2);
         builder.Entity<Booking>().Property(b => b.Price).HasPrecision(18, 2);
+        builder.Entity<Booking>().Property(b => b.TravelFee).HasPrecision(18, 2);
         builder.Entity<Photo>().Property(p => p.Price).HasPrecision(18, 2);
         builder.Entity<Order>().Property(o => o.Total).HasPrecision(18, 2);
         builder.Entity<Order>().Property(o => o.Subtotal).HasPrecision(18, 2);
         builder.Entity<Order>().Property(o => o.DiscountAmount).HasPrecision(18, 2);
         builder.Entity<OrderItem>().Property(i => i.Price).HasPrecision(18, 2);
         builder.Entity<PhotoPack>().Property(p => p.DiscountPercent).HasPrecision(5, 2);
+        builder.Entity<SitePageSetting>().HasIndex(s => s.PageKey).IsUnique();
     }
 }

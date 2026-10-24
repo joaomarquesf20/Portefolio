@@ -35,7 +35,7 @@
             @foreach (var gallery in Model.Galleries)
             {
                 <a href="/galeria/@gallery.Id" class="card overflow-hidden group fade-up">
-                    <img src="@gallery.CoverPath" alt="@gallery.Title" class="h-36 w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                    <img src="@gallery.CoverUrl()" alt="@gallery.Title" class="h-36 w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
                     <div class="p-5">
                         <h3 class="font-semibold">@gallery.Title</h3>
                         <p class="text-white/40 text-sm mt-1">@gallery.Photos.Count fotos</p>
@@ -54,7 +54,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <p class="font-semibold">@(isMini ? "🎪 " : "")@booking.SessionType?.Name</p>
-                        <p class="text-white/40 text-sm mt-1">@booking.Start.ToLocalTime().ToString("dddd, dd 'de' MMMM yyyy 'às' HH:mm", pt)</p>
+                        <p class="text-white/40 text-sm mt-1">@ShotsByMarques.Web.Services.PortugalTime.FromUtc(booking.Start).ToString("dddd, dd 'de' MMMM yyyy 'às' HH:mm", pt)</p>
                         @if (!string.IsNullOrEmpty(booking.Location))
                         {
                             <p class="text-white/40 text-sm mt-0.5">📍 @booking.Location@(booking.TravelFee > 0 ? $" (+{booking.TravelFee.ToString("C", pt)} deslocação)" : "")</p>
@@ -72,6 +72,12 @@
                             <p class="text-xs text-white/40 mt-0.5">@SharedLocalizer["Deposit"]: @booking.DepositAmount.ToString("C", pt) · @SharedLocalizer["Balance"]: @booking.BalanceAmount.ToString("C", pt)</p>
                         }
                     </div>
+                </div>
+
+                <div class="booking-calendar-actions mt-4 pt-4 border-t border-[color:var(--border)]">
+                    <span class="booking-calendar-label">Adicionar ao calendário</span>
+                    <a href="/sessoes/calendario/google/@booking.Id" class="booking-calendar-link" target="_blank" rel="noopener">Google Calendar</a>
+                    <a href="/sessoes/calendario/ficheiro/@booking.Id" class="booking-calendar-link">iPhone / Android (.ics)</a>
                 </div>
 
                 @if (!isMini)
