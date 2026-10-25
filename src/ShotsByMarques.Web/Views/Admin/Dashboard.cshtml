@@ -4,114 +4,127 @@
     var recentOrders = ViewData["RecentOrders"] as List<ShotsByMarques.Web.Models.Order> ?? new();
     var revenue = (decimal?)ViewData["Revenue"] ?? 0m;
     var currency = new System.Globalization.CultureInfo("pt-PT");
+
+    string BookingChip(ShotsByMarques.Web.Models.BookingStatus s) => s switch
+    {
+        ShotsByMarques.Web.Models.BookingStatus.Pending => "border-amber-500/25 bg-amber-500/10 text-amber-800",
+        ShotsByMarques.Web.Models.BookingStatus.Confirmed => "border-emerald-500/25 bg-emerald-500/10 text-emerald-700",
+        ShotsByMarques.Web.Models.BookingStatus.Completed => "border-black/10 bg-black/[0.03] text-black/55",
+        _ => "border-red-500/25 bg-red-500/10 text-red-700"
+    };
 }
 
-<section class="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-12">
-    <div class="admin-dashboard-header fade-up">
+<section class="px-6 pb-24 pt-12 sm:px-10">
+    <!-- ============ cabeçalho ============ -->
+    <div class="admin-dashboard-header">
         <div>
             <p class="admin-dashboard-eyebrow">Área de gestão</p>
-            <h1 class="font-display text-4xl sm:text-5xl">Olá, João</h1>
-            <p class="text-white/45 text-sm mt-3">Aqui tens o estado atual do teu portefólio e das operações.</p>
+            <h1 class="rv font-display text-4xl sm:text-5xl text-[#141414]">Olá, João</h1>
+            <p class="rv rv-d1 text-black/50 text-sm mt-3 max-w-xl">Aqui tens o estado atual do teu portefólio e das operações.</p>
         </div>
-        <a href="/" class="btn-outline !px-4 !py-2.5 !text-sm">↗ Ver site</a>
+        <a href="/" class="rv rv-d2 inline-flex items-center gap-2 border border-black/15 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#141414] transition hover:border-black/40 hover:bg-black/[0.03]">↗ Ver site</a>
     </div>
 
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-10">
+    <!-- ============ estatísticas ============ -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-14">
         @{
-            (string Label, string Value, string Accent, string Link)[] stats =
+            (string Label, string Value, string ValueClass, string Link)[] stats =
             {
-                (SharedLocalizer["Galleries"], ViewData["GalleryCount"]?.ToString() ?? "0", "text-white/80", "/AdminGalleries"),
-                (SharedLocalizer["Photos"], ViewData["PhotoCount"]?.ToString() ?? "0", "text-white/80", "/AdminGalleries"),
-                ("Pendentes", ViewData["BookingCount"]?.ToString() ?? "0", "text-amber-300", "/AdminBookings"),
-                (SharedLocalizer["Orders"], ViewData["OrderCount"]?.ToString() ?? "0", "text-white/80", "/AdminOrders"),
-                ("Receita", revenue.ToString("C", currency), "text-accent", "/AdminOrders")
+                (SharedLocalizer["Galleries"], ViewData["GalleryCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminGalleries"),
+                (SharedLocalizer["Photos"], ViewData["PhotoCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminGalleries"),
+                ("Pendentes", ViewData["BookingCount"]?.ToString() ?? "0", "text-amber-700", "/AdminBookings"),
+                (SharedLocalizer["Orders"], ViewData["OrderCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminOrders"),
+                ("Receita", revenue.ToString("C", currency), "text-[#a1843f]", "/AdminOrders")
             };
         }
-        @foreach (var (label, value, accent, link) in stats)
+        @for (var i = 0; i < stats.Length; i++)
         {
-            <a href="@link" class="card admin-stat p-4 sm:p-5 fade-up">
-                <p class="text-white/45 text-[10px] uppercase tracking-[0.14em]">@label</p>
-                <p class="font-display text-xl sm:text-2xl mt-2 @accent">@value</p>
+            var (label, value, valueClass, link) = stats[i];
+            <a href="@link" class="rv @(i % 2 == 1 ? "rv-d1" : "") group card admin-stat p-4 sm:p-5">
+                <p class="text-black/45 text-[10px] uppercase tracking-[0.18em]">@label</p>
+                <p class="font-display text-xl sm:text-2xl mt-2 tabular-nums @valueClass">@value</p>
             </a>
         }
     </div>
 
-    <div class="mb-10 fade-up">
-        <div class="flex items-end justify-between gap-4 mb-4">
+    <!-- ============ atalhos ============ -->
+    <div class="mb-14">
+        <div class="rv flex items-end justify-between gap-4 mb-5">
             <div>
                 <p class="admin-dashboard-eyebrow">Atalhos</p>
-                <h2 class="font-display text-2xl">O que precisas de fazer?</h2>
+                <h2 class="font-display text-2xl text-[#141414]">O que precisas de fazer?</h2>
             </div>
         </div>
         <div class="admin-quick-actions">
-            <a href="/AdminGalleries/Create" class="admin-quick-action">
+            <a href="/AdminGalleries/Create" class="rv group admin-quick-action">
                 <span class="admin-quick-icon">＋</span>
                 <span><strong class="admin-quick-title block">Nova galeria</strong><small class="admin-quick-note">Criar evento ou sessão</small></span>
             </a>
-            <a href="/AdminAvailability" class="admin-quick-action">
+            <a href="/AdminAvailability" class="rv rv-d1 group admin-quick-action">
                 <span class="admin-quick-icon">▦</span>
                 <span><strong class="admin-quick-title block">Disponibilidade</strong><small class="admin-quick-note">Marcar dias e horários</small></span>
             </a>
-            <a href="/AdminBookings" class="admin-quick-action">
+            <a href="/AdminBookings" class="rv rv-d2 group admin-quick-action">
                 <span class="admin-quick-icon">◷</span>
                 <span><strong class="admin-quick-title block">Marcações</strong><small class="admin-quick-note">Ver pedidos dos clientes</small></span>
             </a>
-            <a href="/AdminSiteImages" class="admin-quick-action">
+            <a href="/AdminSiteImages" class="rv rv-d3 group admin-quick-action">
                 <span class="admin-quick-icon">▨</span>
                 <span><strong class="admin-quick-title block">Imagens do site</strong><small class="admin-quick-note">Trocar fundos públicos</small></span>
             </a>
         </div>
     </div>
 
+    <!-- ============ operação + vendas ============ -->
     <div class="grid xl:grid-cols-[1.15fr_.85fr] gap-8">
-        <div class="fade-up">
-            <div class="flex items-end justify-between gap-4 mb-4">
+        <div>
+            <div class="rv flex items-end justify-between gap-4 mb-5">
                 <div>
                     <p class="admin-dashboard-eyebrow">Operação</p>
-                    <h2 class="font-display text-2xl">Marcações recentes</h2>
+                    <h2 class="font-display text-2xl text-[#141414]">Marcações recentes</h2>
                 </div>
-                <a href="/AdminBookings" class="text-accent text-sm hover:underline">Ver todas →</a>
+                <a href="/AdminBookings" class="text-[#a1843f] text-sm hover:underline">Ver todas →</a>
             </div>
-            <div class="card overflow-hidden">
+            <div class="rv rv-d1 card overflow-hidden">
                 @foreach (var b in recentBookings)
                 {
-                    <div class="p-4 sm:p-5 flex justify-between items-center gap-4 border-b border-[color:var(--border)] last:border-0">
+                    <div class="p-4 sm:p-5 flex justify-between items-center gap-4 border-b border-black/10 last:border-0">
                         <div class="min-w-0">
-                            <p class="font-medium text-sm truncate">@b.SessionType?.Name</p>
-                            <p class="text-white/40 text-xs mt-1 truncate">@b.ClientUser?.FullName · @b.Start.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                            <p class="font-medium text-sm truncate text-[#141414]">@b.SessionType?.Name</p>
+                            <p class="text-black/45 text-xs mt-1 truncate">@b.ClientUser?.FullName · @b.Start.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
                         </div>
-                        <span class="shrink-0 text-[11px] px-2.5 py-1 rounded-full bg-yellow-500/15 text-yellow-300">@b.Status</span>
+                        <span class="shrink-0 text-[11px] px-2.5 py-1 rounded-full border @BookingChip(b.Status)">@b.Status</span>
                     </div>
                 }
                 @if (recentBookings.Count == 0)
                 {
-                    <p class="text-white/40 text-sm p-6">Não existem marcações recentes.</p>
+                    <p class="text-black/40 text-sm p-6">Não existem marcações recentes.</p>
                 }
             </div>
         </div>
 
-        <div class="fade-up">
-            <div class="flex items-end justify-between gap-4 mb-4">
+        <div>
+            <div class="rv flex items-end justify-between gap-4 mb-5">
                 <div>
                     <p class="admin-dashboard-eyebrow">Vendas</p>
-                    <h2 class="font-display text-2xl">Encomendas recentes</h2>
+                    <h2 class="font-display text-2xl text-[#141414]">Encomendas recentes</h2>
                 </div>
-                <a href="/AdminOrders" class="text-accent text-sm hover:underline">Ver todas →</a>
+                <a href="/AdminOrders" class="text-[#a1843f] text-sm hover:underline">Ver todas →</a>
             </div>
-            <div class="card overflow-hidden">
+            <div class="rv rv-d1 card overflow-hidden">
                 @foreach (var o in recentOrders)
                 {
-                    <div class="p-4 sm:p-5 flex justify-between items-center gap-4 border-b border-[color:var(--border)] last:border-0">
+                    <div class="p-4 sm:p-5 flex justify-between items-center gap-4 border-b border-black/10 last:border-0">
                         <div class="min-w-0">
-                            <p class="font-medium text-sm truncate">@o.OrderNumber</p>
-                            <p class="text-white/40 text-xs mt-1 truncate">@o.ClientUser?.FullName · @o.Items.Count fotos</p>
+                            <p class="font-medium text-sm truncate text-[#141414]">@o.OrderNumber</p>
+                            <p class="text-black/45 text-xs mt-1 truncate">@o.ClientUser?.FullName · @o.Items.Count fotos</p>
                         </div>
-                        <span class="shrink-0 font-semibold text-sm @(o.Status == ShotsByMarques.Web.Models.OrderStatus.Paid ? "text-emerald-300" : "text-yellow-300")">@o.Total.ToString("C", currency)</span>
+                        <span class="shrink-0 font-semibold text-sm tabular-nums @(o.Status == ShotsByMarques.Web.Models.OrderStatus.Paid ? "text-emerald-700" : "text-amber-700")">@o.Total.ToString("C", currency)</span>
                     </div>
                 }
                 @if (recentOrders.Count == 0)
                 {
-                    <p class="text-white/40 text-sm p-6">Não existem encomendas recentes.</p>
+                    <p class="text-black/40 text-sm p-6">Não existem encomendas recentes.</p>
                 }
             </div>
         </div>

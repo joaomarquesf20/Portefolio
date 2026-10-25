@@ -22,37 +22,37 @@
         <nav class="admin-nav">
             <p class="admin-nav-label">Operação</p>
             <a href="/admin" class="admin-nav-link @(IsActive("/admin", "Admin") ? "active" : "")">
-                <span class="admin-nav-icon">⌂</span><span>Resumo</span>
+                <span class="admin-nav-num">01</span><span>Resumo</span>
             </a>
             <a href="/AdminBookings" class="admin-nav-link @(IsActive("/AdminBookings", "AdminBookings") ? "active" : "")">
-                <span class="admin-nav-icon">◷</span><span>Marcações</span>
+                <span class="admin-nav-num">02</span><span>Marcações</span>
             </a>
             <a href="/AdminAvailability" class="admin-nav-link @(IsActive("/AdminAvailability", "AdminAvailability") ? "active" : "")">
-                <span class="admin-nav-icon">▦</span><span>Disponibilidade</span>
+                <span class="admin-nav-num">03</span><span>Disponibilidade</span>
             </a>
 
             <p class="admin-nav-label">Conteúdo</p>
             <a href="/AdminGalleries" class="admin-nav-link @(IsActive("/AdminGalleries", "AdminGalleries") ? "active" : "")">
-                <span class="admin-nav-icon">▧</span><span>Galerias</span>
+                <span class="admin-nav-num">04</span><span>Galerias</span>
             </a>
             <a href="/AdminSessionTypes" class="admin-nav-link @(IsActive("/AdminSessionTypes", "AdminSessionTypes") ? "active" : "")">
-                <span class="admin-nav-icon">◇</span><span>Tipos de sessão</span>
+                <span class="admin-nav-num">05</span><span>Tipos de sessão</span>
             </a>
             <a href="/AdminSiteImages" class="admin-nav-link @(IsActive("/AdminSiteImages", "AdminSiteImages") ? "active" : "")">
-                <span class="admin-nav-icon">▨</span><span>Imagens do site</span>
+                <span class="admin-nav-num">06</span><span>Imagens do site</span>
             </a>
 
             <p class="admin-nav-label">Comércio</p>
             <a href="/AdminOrders" class="admin-nav-link @(IsActive("/AdminOrders", "AdminOrders") ? "active" : "")">
-                <span class="admin-nav-icon">▤</span><span>Encomendas</span>
+                <span class="admin-nav-num">07</span><span>Encomendas</span>
             </a>
             <a href="/AdminPhotoPacks" class="admin-nav-link @(IsActive("/AdminPhotoPacks", "AdminPhotoPacks") ? "active" : "")">
-                <span class="admin-nav-icon">▥</span><span>Packs de fotos</span>
+                <span class="admin-nav-num">08</span><span>Packs de fotos</span>
             </a>
         </nav>
 
         <div class="admin-sidebar-foot">
-            <a href="/" class="admin-site-link"><span>↗</span> Ver site público</a>
+            <a href="/" class="admin-site-link">↗ Ver site público</a>
             <span class="admin-user-label">@User.Identity?.Name</span>
         </div>
     </div>
