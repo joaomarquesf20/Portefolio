@@ -9,110 +9,149 @@
         ShotsByMarques.Web.Models.BookingStatus.Completed => SharedLocalizer["BookingStatusCompleted"],
         _ => SharedLocalizer["BookingStatusPending"]
     };
-    string StatusColor(ShotsByMarques.Web.Models.BookingStatus s) => s switch
+    string StatusChip(ShotsByMarques.Web.Models.BookingStatus s) => s switch
     {
-        ShotsByMarques.Web.Models.BookingStatus.Confirmed => "bg-emerald-500/15 text-emerald-300",
-        ShotsByMarques.Web.Models.BookingStatus.Cancelled => "bg-red-500/15 text-red-300",
-        ShotsByMarques.Web.Models.BookingStatus.Completed => "bg-sky-500/15 text-sky-300",
-        _ => "bg-yellow-500/15 text-yellow-300"
+        ShotsByMarques.Web.Models.BookingStatus.Confirmed => "border-emerald-600/25 bg-emerald-600/10 text-emerald-700",
+        ShotsByMarques.Web.Models.BookingStatus.Cancelled => "border-red-600/25 bg-red-600/10 text-red-700",
+        ShotsByMarques.Web.Models.BookingStatus.Completed => "border-black/10 bg-black/[0.03] text-black/55",
+        _ => "border-amber-600/25 bg-amber-600/10 text-amber-800"
     };
 }
 
-<section class="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-    <h1 class="font-display text-4xl mb-8 fade-up">@SharedLocalizer["NavMyBookings"]</h1>
+<section class="px-5 pb-24 pt-16 sm:px-8 lg:px-12">
+    <!-- ============ cabeçalho ============ -->
+    <p class="rv inline-flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.4em] text-black/50">
+        <span class="rule inline-block h-px w-10"></span>
+        A tua área
+    </p>
+    <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.4rem,5vw,4rem)] font-bold leading-[0.95] tracking-[-0.04em] text-[#141414]">@SharedLocalizer["NavMyBookings"]</h1>
+    <p class="rv rv-d2 mt-4 max-w-xl text-black/55">Aqui tens as tuas sessões, os pagamentos e os downloads — tudo num só sítio.</p>
 
     @if (Model.Bookings.Count == 0)
     {
-        <p class="text-white/60">Ainda não tens marcações.</p>
-        <a href="/sessoes" class="btn-primary mt-6 inline-block">@SharedLocalizer["BookNow"]</a>
-    }
-
-    @if (Model.Galleries.Count > 0)
-    {
-        <h2 class="font-display text-2xl mt-12 mb-5 fade-up">As minhas galerias de sessão 🔒</h2>
-        <p class="text-white/40 text-sm mb-6 fade-up">Estas galerias são privadas — só tu consegues ver e comprar as fotos da tua sessão.</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            @foreach (var gallery in Model.Galleries)
-            {
-                <a href="/galeria/@gallery.Id" class="card overflow-hidden group fade-up">
-                    <img src="@gallery.CoverUrl()" alt="@gallery.Title" class="h-36 w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-                    <div class="p-5">
-                        <h3 class="font-semibold">@gallery.Title</h3>
-                        <p class="text-white/40 text-sm mt-1">@gallery.Photos.Count fotos</p>
-                        <span class="inline-block mt-3 text-accent text-sm font-medium">Ver galeria →</span>
-                    </div>
-                </a>
-            }
+        <div class="rv rv-d2 mt-10 border border-dashed border-black/15 p-10 text-center">
+            <p class="text-black/50">Ainda não tens marcações.</p>
+            <a href="/sessoes" class="btn-primary mt-6 inline-block">@SharedLocalizer["BookNow"]</a>
         </div>
     }
 
-    <div class="space-y-4">
-        @foreach (var booking in Model.Bookings)
-        {
-            var isMini = booking.SessionType?.IsMiniSessionType == true;
-            <div class="card p-6 fade-up">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <p class="font-semibold">@(isMini ? "🎪 " : "")@booking.SessionType?.Name</p>
-                        <p class="text-white/40 text-sm mt-1">@ShotsByMarques.Web.Services.PortugalTime.FromUtc(booking.Start).ToString("dddd, dd 'de' MMMM yyyy 'às' HH:mm", pt)</p>
-                        @if (!string.IsNullOrEmpty(booking.Location))
-                        {
-                            <p class="text-white/40 text-sm mt-0.5">📍 @booking.Location@(booking.TravelFee > 0 ? $" (+{booking.TravelFee.ToString("C", pt)} deslocação)" : "")</p>
-                        }
-                        @if (!string.IsNullOrEmpty(booking.Notes))
-                        {
-                            <p class="text-white/40 text-xs mt-1">“@booking.Notes”</p>
-                        }
-                    </div>
-                    <div class="text-right">
-                        <span class="text-xs font-semibold px-3 py-1 rounded-full @StatusColor(booking.Status)">@StatusLabel(booking.Status)</span>
-                        <p class="text-accent font-semibold mt-2">@booking.Price.ToString("C", pt)</p>
+    <!-- ============ galerias privadas ============ -->
+    @if (Model.Galleries.Count > 0)
+    {
+        <div class="rv rv-d3 mt-20">
+            <div class="flex items-end justify-between gap-4 border-b border-black/10 pb-5">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/40">Galerias privadas</p>
+                    <h2 class="mt-2 font-display text-2xl text-[#141414]">As tuas fotos</h2>
+                </div>
+                <span class="text-[10px] font-medium uppercase tracking-[0.24em] tabular-nums text-black/35">@Model.Galleries.Count</span>
+            </div>
+            <p class="text-black/45 text-sm mt-4 mb-6">Estas galerias são privadas — só tu consegues ver e comprar as fotos da tua sessão.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                @foreach (var gallery in Model.Galleries)
+                {
+                    <a href="/galeria/@gallery.Id" class="card group overflow-hidden">
+                        <div class="relative overflow-hidden">
+                            <img src="@gallery.CoverUrl()" alt="@gallery.Title" class="h-44 w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-display font-semibold text-[#141414]">@gallery.Title</h3>
+                            <p class="text-black/45 text-sm mt-1">@gallery.Photos.Count fotos</p>
+                            <span class="inline-block mt-3 text-[#a1843f] text-sm font-medium transition group-hover:text-[#8a7034]">Ver galeria →</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- ============ marcações ============ -->
+    @if (Model.Bookings.Count > 0)
+    {
+        <div class="rv mt-20">
+            <div class="flex items-end justify-between gap-4 mb-5">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/40">Sessões</p>
+                    <h2 class="mt-2 font-display text-2xl text-[#141414]">Detalhe e pagamentos</h2>
+                </div>
+            </div>
+
+            <div class="card overflow-hidden">
+                @foreach (var booking in Model.Bookings)
+                {
+                    var isMini = booking.SessionType?.IsMiniSessionType == true;
+                    <div class="p-5 sm:p-6 border-b border-black/10 last:border-0">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="font-display font-semibold text-[#141414]">
+                                    @booking.SessionType?.Name
+                                    @if (isMini)
+                                    {
+                                        <span class="ml-2 inline-block align-middle rounded-full border border-[#a1843f]/35 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#a1843f]">Mini</span>
+                                    }
+                                </p>
+                                <p class="text-black/50 text-sm mt-1.5">@ShotsByMarques.Web.Services.PortugalTime.FromUtc(booking.Start).ToString("dddd, dd 'de' MMMM yyyy 'às' HH:mm", pt)</p>
+                                @if (!string.IsNullOrEmpty(booking.Location))
+                                {
+                                    <p class="text-black/45 text-sm mt-0.5">@booking.Location@(booking.TravelFee > 0 ? $" (+{booking.TravelFee.ToString("C", pt)} de deslocação)" : "")</p>
+                                }
+                                @if (!string.IsNullOrEmpty(booking.Notes))
+                                {
+                                    <p class="text-black/45 text-xs mt-1.5">“@booking.Notes”</p>
+                                }
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-block text-[11px] font-semibold px-3 py-1 rounded-full border @StatusChip(booking.Status)">@StatusLabel(booking.Status)</span>
+                                <p class="text-[#a1843f] font-display font-semibold mt-2 tabular-nums">@booking.Price.ToString("C", pt)</p>
+                                @if (!isMini)
+                                {
+                                    <p class="text-xs text-black/40 mt-0.5 tabular-nums">@SharedLocalizer["Deposit"]: @booking.DepositAmount.ToString("C", pt) · @SharedLocalizer["Balance"]: @booking.BalanceAmount.ToString("C", pt)</p>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="booking-calendar-actions mt-4 pt-4 border-t border-black/10">
+                            <span class="booking-calendar-label">Adicionar ao calendário</span>
+                            <a href="/sessoes/calendario/google/@booking.Id" class="booking-calendar-link" target="_blank" rel="noopener">Google Calendar</a>
+                            <a href="/sessoes/calendario/ficheiro/@booking.Id" class="booking-calendar-link">iPhone / Android (.ics)</a>
+                        </div>
+
                         @if (!isMini)
                         {
-                            <p class="text-xs text-white/40 mt-0.5">@SharedLocalizer["Deposit"]: @booking.DepositAmount.ToString("C", pt) · @SharedLocalizer["Balance"]: @booking.BalanceAmount.ToString("C", pt)</p>
-                        }
-                    </div>
-                </div>
+                            <div class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-black/10 text-sm">
+                                @if (booking.DepositPaid)
+                                {
+                                    <span class="text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-600/25 bg-emerald-600/10 text-emerald-700">✓ @SharedLocalizer["DepositPaid"]</span>
+                                }
+                                else
+                                {
+                                    <form asp-action="PayDeposit" asp-route-id="@booking.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn-primary !py-2 !px-4 !text-xs">@SharedLocalizer["PayDeposit"] — @booking.DepositAmount.ToString("C", pt)</button>
+                                    </form>
+                                }
 
-                <div class="booking-calendar-actions mt-4 pt-4 border-t border-[color:var(--border)]">
-                    <span class="booking-calendar-label">Adicionar ao calendário</span>
-                    <a href="/sessoes/calendario/google/@booking.Id" class="booking-calendar-link" target="_blank" rel="noopener">Google Calendar</a>
-                    <a href="/sessoes/calendario/ficheiro/@booking.Id" class="booking-calendar-link">iPhone / Android (.ics)</a>
-                </div>
-
-                @if (!isMini)
-                {
-                    <div class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-[color:var(--border)] text-sm">
-                        @if (booking.DepositPaid)
-                        {
-                            <span class="text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300">✓ @SharedLocalizer["DepositPaid"]</span>
-                        }
-                        else
-                        {
-                            <form asp-action="PayDeposit" asp-route-id="@booking.Id" method="post">
-                                @Html.AntiForgeryToken()
-                                <button class="btn-primary !py-2 !px-4 !text-xs">@SharedLocalizer["PayDeposit"] — @booking.DepositAmount.ToString("C", pt)</button>
-                            </form>
-                        }
-
-                        @if (booking.BalancePaid)
-                        {
-                            <span class="text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300">✓ @SharedLocalizer["BalancePaid"]</span>
-                        }
-                        else if (booking.DepositPaid)
-                        {
-                            <form asp-action="PayBalance" asp-route-id="@booking.Id" method="post">
-                                @Html.AntiForgeryToken()
-                                <button class="btn-outline !py-2 !px-4 !text-xs">@SharedLocalizer["PayBalance"] — @booking.BalanceAmount.ToString("C", pt)</button>
-                            </form>
-                        }
-                        else
-                        {
-                            <span class="text-white/40 text-xs">@SharedLocalizer["BookingNeedsDeposit"]</span>
+                                @if (booking.BalancePaid)
+                                {
+                                    <span class="text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-600/25 bg-emerald-600/10 text-emerald-700">✓ @SharedLocalizer["BalancePaid"]</span>
+                                }
+                                else if (booking.DepositPaid)
+                                {
+                                    <form asp-action="PayBalance" asp-route-id="@booking.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button class="btn-outline !py-2 !px-4 !text-xs">@SharedLocalizer["PayBalance"] — @booking.BalanceAmount.ToString("C", pt)</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-black/40 text-xs">@SharedLocalizer["BookingNeedsDeposit"]</span>
+                                }
+                            </div>
                         }
                     </div>
                 }
             </div>
-        }
-    </div>
+        </div>
+    }
 </section>
