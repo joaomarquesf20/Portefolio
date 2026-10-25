@@ -236,6 +236,11 @@ public class AdminGalleriesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    // Large multi-file uploads (Render/Linux): restate the 2 GB body + multipart
+    // limits at the endpoint so no hosting-level default can shrink them, and
+    // allow hundreds of files in one request.
+    [RequestSizeLimit(2L * 1024 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 2L * 1024 * 1024 * 1024, ValueCountLimit = 4096)]
     public async Task<IActionResult> UploadPhotos(int id, List<IFormFile> files, decimal price, bool forSale = true)
     {
         var gallery = await _db.Galleries.FindAsync(id);

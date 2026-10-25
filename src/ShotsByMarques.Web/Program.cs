@@ -64,6 +64,7 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = 2L * 1024 * 1024 * 1024; // 2 GB
+    options.ValueCountLimit = 4096; // many files in one multipart upload
 });
 
 // ---- Application services ----
