@@ -3,80 +3,108 @@
     ViewData["Title"] = SharedLocalizer["NewGallery"];
 }
 
-<section class="max-w-2xl mx-auto px-4 sm:px-6 py-12">
-    <a href="/AdminGalleries" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
-    <h1 class="font-display text-4xl mt-3 mb-8 fade-up">@SharedLocalizer["NewGallery"]</h1>
+<section class="px-6 py-12 sm:px-10">
+    <div class="w-full max-w-[46rem]">
+        <a href="/AdminGalleries" class="inline-flex items-center gap-2 text-sm text-black/50 transition hover:text-[#a1843f]">← @SharedLocalizer["Back"]</a>
 
-    <form asp-action="Create" method="post" enctype="multipart/form-data" class="card p-8 space-y-5 fade-up">
-        @Html.AntiForgeryToken()
-        <div asp-validation-summary="ModelOnly" class="text-red-400 text-sm"></div>
-
-        <div>
-            <label class="block text-sm font-medium mb-2">@SharedLocalizer["GalleryType"]</label>
-            <div class="grid grid-cols-2 gap-3">
-                <label class="card p-4 cursor-pointer transition hover:border-accent has-[:checked]:ring-2 has-[:checked]:ring-[color:var(--accent)]">
-                    <input type="radio" name="IsSession" value="false" @(!Model.IsSession ? "checked" : "") class="sr-only" />
-                    <p class="font-semibold">📷 @SharedLocalizer["GalleryTypeEvent"]</p>
-                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["GalleryTypeEventHint"]</p>
-                </label>
-                <label class="card p-4 cursor-pointer transition hover:border-accent has-[:checked]:ring-2 has-[:checked]:ring-[color:var(--accent)]">
-                    <input type="radio" name="IsSession" value="true" @(Model.IsSession ? "checked" : "") class="sr-only" />
-                    <p class="font-semibold">🚗 @SharedLocalizer["GalleryTypeSession"]</p>
-                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["GalleryTypeSessionHint"]</p>
-                </label>
-            </div>
+        <div class="rv mt-4 mb-10">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#a1843f]">Passo 1 de 2</p>
+            <h1 class="mt-2 font-display text-4xl font-bold tracking-[-0.03em] text-[#141414]">@SharedLocalizer["NewGallery"]</h1>
+            <p class="mt-3 text-sm text-black/50">Cria a galeria em segundos — no passo seguinte entras logo no gestor para carregar as fotos.</p>
         </div>
 
-        <div>
-            <label asp-for="Title" class="block text-sm font-medium mb-2"></label>
-            <input asp-for="Title" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
-            <span asp-validation-for="Title" class="text-red-400 text-xs"></span>
-        </div>
+        <form asp-action="Create" method="post" enctype="multipart/form-data" class="rv rv-d1 card space-y-8 p-8">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm"></div>
 
-        <div>
-            <label asp-for="Subtitle" class="block text-sm font-medium mb-2"></label>
-            <input asp-for="Subtitle" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
-        </div>
-
-        <div>
-            <label asp-for="Description" class="block text-sm font-medium mb-2"></label>
-            <textarea asp-for="Description" rows="3" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition"></textarea>
-        </div>
-
-        <div>
-            <label asp-for="EventDate" class="block text-sm font-medium mb-2"></label>
-            <input asp-for="EventDate" type="date" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition" />
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium mb-2">Capa (opcional)</label>
-            <input type="file" name="cover" accept="image/*" class="w-full text-sm text-white/60" />
-            <p class="text-white/40 text-xs mt-1">Podes deixar em branco — depois de carregar as fotos, usa “★ Definir capa” na foto que queres como capa.</p>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <input asp-for="IsPublished" class="accent-[color:var(--accent)]" />
-            <label asp-for="IsPublished" class="text-sm"></label>
-        </div>
-
-        <div class="rounded-xl border border-[color:var(--border)] p-5 space-y-4">
-            <label class="flex items-center gap-3">
-                <input asp-for="IsPrivate" class="accent-[color:var(--accent)]" />
-                <span class="text-sm">🔒 Galeria privada — fotos da sessão entregues a um cliente específico</span>
-            </label>
+            <!-- ======== 1. Título ======== -->
             <div>
-                <label asp-for="BookingId" class="block text-sm font-medium mb-2">Marcação associada (cliente)</label>
-                <select asp-for="BookingId" class="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-3 focus:outline-none focus:border-accent transition">
-                    <option value="">— Nenhuma (galeria pública de portefólio) —</option>
-                    @foreach (var b in ViewData["Bookings"] as List<ShotsByMarques.Web.Models.Booking> ?? new())
-                    {
-                        <option value="@b.Id">@b.SessionType?.Name — @b.ClientUser?.FullName — @b.Start.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</option>
-                    }
-                </select>
+                <label for="Title" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-black/50">Título da galeria</label>
+                <input asp-for="Title" placeholder="Ex.: Sessão de Carros — Faro" class="w-full rounded-md border border-black/15 bg-white px-4 py-3 text-sm text-[#141414] outline-none transition placeholder:text-black/25 focus:border-[#a1843f] focus:shadow-[0_0_0_3px_rgba(161,132,63,0.12)]" />
+                <span asp-validation-for="Title" class="text-red-700 text-xs"></span>
             </div>
-            <p class="text-xs text-white/40">Ao escolheres uma marcação, a galeria passa a ser privada: só esse cliente vê e compra as fotos.</p>
-        </div>
 
-        <button type="submit" class="btn-primary">@SharedLocalizer["Save"]</button>
-    </form>
+            <!-- ======== 2. Tipo ======== -->
+            <div>
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-black/50">@SharedLocalizer["GalleryType"]</p>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label class="cursor-pointer rounded-lg border border-black/10 bg-white p-4 transition has-[:checked]:border-[#a1843f]/50 has-[:checked]:bg-[#a1843f]/[0.04] hover:border-black/30">
+                        <input type="radio" name="IsSession" value="false" @(!Model.IsSession ? "checked" : "") class="sr-only" />
+                        <p class="font-semibold text-sm text-[#141414]">@SharedLocalizer["GalleryTypeEvent"]</p>
+                        <p class="text-black/45 text-xs mt-1">@SharedLocalizer["GalleryTypeEventHint"]</p>
+                    </label>
+                    <label class="cursor-pointer rounded-lg border border-black/10 bg-white p-4 transition has-[:checked]:border-[#a1843f]/50 has-[:checked]:bg-[#a1843f]/[0.04] hover:border-black/30">
+                        <input type="radio" name="IsSession" value="true" @(Model.IsSession ? "checked" : "") class="sr-only" />
+                        <p class="font-semibold text-sm text-[#141414]">@SharedLocalizer["GalleryTypeSession"]</p>
+                        <p class="text-black/45 text-xs mt-1">@SharedLocalizer["GalleryTypeSessionHint"]</p>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ======== 3. Capa (opcional) ======== -->
+            <div>
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-black/50">Capa (opcional)</p>
+                <label class="flex cursor-pointer items-center gap-3 rounded-md border border-black/15 bg-white px-4 py-3 transition hover:border-black/35">
+                    <input type="file" name="cover" accept="image/*" class="min-w-0 flex-1 text-sm text-black/60 file:mr-3 file:rounded-full file:border-0 file:bg-[#a1843f]/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#8a7034] hover:file:bg-[#a1843f]/20" />
+                </label>
+                <p class="text-black/40 text-xs mt-1.5">Podes deixar em branco — depois de carregar as fotos, usa “★ Definir capa” na foto que queres como capa.</p>
+            </div>
+
+            <!-- ======== 4. Publicação ======== -->
+            <div class="border border-black/10 bg-black/[0.015] p-5">
+                <label class="flex cursor-pointer items-center gap-4">
+                    <input asp-for="IsPublished" class="peer sr-only" />
+                    <span class="relative h-6 w-11 shrink-0 rounded-full border border-black/15 bg-black/[0.06] transition-all after:absolute after:left-[2px] after:top-1/2 after:h-5 after:w-5 after:-translate-y-1/2 after:rounded-full after:bg-black/40 after:transition-all peer-checked:border-[#a1843f]/45 peer-checked:bg-[#a1843f]/20 peer-checked:after:left-[calc(100%-1.375rem)] peer-checked:after:bg-[#a1843f]"></span>
+                    <span>
+                        <span class="block text-sm font-semibold text-[#141414]">Publicar galeria <span class="font-normal text-black/45">(visível no site)</span></span>
+                        <span class="block text-black/40 text-xs mt-0.5">Podes ativar ou desativar depois, em qualquer altura — Galerias → Publicar.</span>
+                    </span>
+                </label>
+            </div>
+
+            <!-- ======== 5. Associação a cliente (opcional) ======== -->
+            <div class="rounded-lg border border-dashed border-black/20 p-5">
+                <div class="flex items-center justify-between gap-4">
+                    <p class="text-sm font-semibold text-[#141414]">Associação a Cliente <span class="font-normal text-black/40">(Opcional)</span></p>
+                    <span id="assoc-status" class="hidden shrink-0 rounded-full border border-[#a1843f]/35 bg-[#a1843f]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a7034]">Privada · cliente ligado</span>
+                </div>
+                <div class="mt-3">
+                    <label asp-for="BookingId" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-black/50">Marcação associada</label>
+                    <select asp-for="BookingId" id="assoc-select" class="w-full rounded-md border border-black/15 bg-white px-4 py-3 text-sm text-[#141414] outline-none transition focus:border-[#a1843f] focus:shadow-[0_0_0_3px_rgba(161,132,63,0.12)]">
+                        <option value="">— Nenhuma (galeria pública de portefólio) —</option>
+                        @foreach (var b in ViewData["Bookings"] as List<ShotsByMarques.Web.Models.Booking> ?? new())
+                        {
+                            <option value="@b.Id">@b.SessionType?.Name — @b.ClientUser?.FullName — @b.Start.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</option>
+                        }
+                    </select>
+                </div>
+                <p class="text-black/40 text-xs mt-2.5">Se escolheres uma marcação, a galeria fica automaticamente <span class="font-semibold text-[#8a7034]">privada</span>: só esse cliente vê e compra as fotos — sem checkboxes nem passos extra.</p>
+            </div>
+
+            <!-- ======== Submit ======== -->
+            <div class="border-t border-black/10 pt-6">
+                <button type="submit" class="btn-primary w-full sm:w-auto sm:min-w-[18rem]">Criar Galeria e Adicionar Fotos →</button>
+                <p class="text-black/40 text-xs mt-2.5">Passo seguinte: gestão de fotos para carregar imagens e escolher a capa.</p>
+            </div>
+        </form>
+    </div>
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var sel = document.getElementById("assoc-select");
+            var chip = document.getElementById("assoc-status");
+            if (!sel || !chip) return;
+            var update = function () {
+                if (sel.value) {
+                    chip.classList.remove("hidden");
+                } else {
+                    chip.classList.add("hidden");
+                }
+            };
+            sel.addEventListener("change", update);
+            update();
+        })();
+    </script>
+}
