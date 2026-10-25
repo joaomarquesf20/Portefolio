@@ -133,3 +133,31 @@ public class MiniSessionBookingViewModel
     /// <summary>The other half, charged when the photos are delivered.</summary>
     public decimal BalanceAmount { get; set; }
 }
+
+/// <summary>
+/// Confirmation shown after a Stripe deposit/balance payment. Carries the
+/// booking reference and details so the page can render a real receipt and
+/// offer the "Adicionar ao Calendário" (.ics / Google Calendar) actions —
+/// the calendar endpoints stay owner-gated, exactly as before.
+/// </summary>
+public class PaymentResultViewModel
+{
+    /// <summary>"paid" | "processing" | "unpaid" — mirrors the controller's payment states.</summary>
+    public string State { get; set; } = "unpaid";
+
+    /// <summary>True when the flow was the balance payment (false = deposit).</summary>
+    public bool IsBalance { get; set; }
+
+    /// <summary>Auto-refresh seconds while Stripe runs an async action (MB Way), empty otherwise.</summary>
+    public string MetaRefresh { get; set; } = string.Empty;
+
+    /// <summary>Booking shown on the receipt; null when the Stripe session didn't match.</summary>
+    public int? BookingId { get; set; }
+
+    public string SessionName { get; set; } = string.Empty;
+
+    /// <summary>Session start in Portugal's clock (already converted by the controller).</summary>
+    public DateTime? Start { get; set; }
+
+    public string Location { get; set; } = string.Empty;
+}

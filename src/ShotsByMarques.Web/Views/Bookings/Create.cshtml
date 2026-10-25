@@ -176,6 +176,105 @@
     </form>
 </section>
 
+<style>
+    /* ==== Tema claro do fluxo de marcação (só nesta página) ==== */
+    .booking-page { color: #141414; }
+    .booking-page a.booking-back { color: rgba(20,20,20,.5); }
+    .booking-page a.booking-back:hover { color: #a1843f; }
+    .booking-hero { border-bottom-color: rgba(20,20,20,.1); }
+    .booking-service-image { background: #ffffff; border-color: rgba(20,20,20,.1); }
+    .booking-eyebrow { color: rgba(20,20,20,.45); }
+    .booking-service-copy h1 { color: #141414; }
+    .booking-page .booking-service-copy > p:not(.booking-eyebrow) { color: rgba(20,20,20,.55); }
+    .booking-service-price strong { color: #a1843f; }
+    .booking-service-price span { color: rgba(20,20,20,.45); }
+    .booking-login-note { border-color: rgba(161,132,63,.35); background: rgba(161,132,63,.08); color: rgba(20,20,20,.65); }
+    .booking-login-note a { color: #a1843f; }
+    .booking-step { border-color: rgba(20,20,20,.1); background: #ffffff; }
+    .booking-step-number { color: rgba(20,20,20,.35); }
+    .booking-step-heading h2 { color: #141414; }
+    .booking-page .booking-step-heading p { color: rgba(20,20,20,.5); }
+    .booking-step.complete { border-color: rgba(161,132,63,.5); }
+    .booking-month-bar strong { color: #141414; }
+    .booking-month-bar a { border-color: rgba(20,20,20,.12); color: rgba(20,20,20,.6); }
+    .booking-month-bar a:hover { border-color: rgba(20,20,20,.4); color: #141414; }
+    .booking-weekdays { color: rgba(20,20,20,.35); }
+    .booking-day { border-color: rgba(20,20,20,.1); background: rgba(20,20,20,.02); color: #141414; }
+    .booking-page .booking-day small { color: rgba(20,20,20,.45); }
+    .booking-day.available { border-color: rgba(161,132,63,.5); background: rgba(161,132,63,.1); color: #6d5420; }
+    .booking-day.available:hover, .booking-day.available.selected { border-color: #a1843f; background: rgba(161,132,63,.16); box-shadow: 0 0 0 2px rgba(161,132,63,.18); }
+    .booking-day.event { border-color: rgba(20,20,20,.22); background: rgba(20,20,20,.05); color: rgba(20,20,20,.6); }
+    .booking-day.maybe { border-color: rgba(161,132,63,.35); color: #6d5420; }
+    .booking-day.unavailable { border-color: rgba(20,20,20,.08); color: rgba(20,20,20,.3); text-decoration: line-through; }
+    .booking-day.undefined { color: rgba(20,20,20,.3); }
+    .booking-calendar-legend { color: rgba(20,20,20,.45); }
+    .booking-calendar-legend i { background: rgba(20,20,20,.2); }
+    .booking-calendar-legend i.available { background: #a1843f; }
+    .booking-calendar-legend i.event { background: rgba(20,20,20,.4); }
+    .booking-selection-label { color: rgba(20,20,20,.5); }
+    .booking-loading, .booking-empty-choice { color: rgba(20,20,20,.45); }
+    .booking-field-error, .booking-errors { color: #b42318; }
+    .booking-location-grid label { color: rgba(20,20,20,.55); }
+    .booking-page select, .booking-page input {
+        background-color: #ffffff;
+        border-color: rgba(20,20,20,.14);
+        color: #141414;
+    }
+    .booking-fixed-place { border-color: rgba(20,20,20,.12); background: rgba(20,20,20,.02); }
+    .booking-page .booking-fixed-place small { color: rgba(20,20,20,.45); }
+    .booking-page .booking-fixed-place strong { color: #141414; }
+    .booking-travel-note { color: rgba(20,20,20,.4); }
+    .booking-how-it-works span { color: rgba(20,20,20,.35); }
+    .booking-how-it-works b { color: rgba(20,20,20,.75); }
+    .booking-how-it-works small { color: rgba(20,20,20,.4); }
+    .booking-summary { border-color: rgba(20,20,20,.1); background: #ffffff; }
+    .booking-page .booking-summary-inner > h2 { color: #141414; }
+    .booking-page .booking-summary-line { border-top-color: rgba(20,20,20,.07); color: rgba(20,20,20,.45); }
+    .booking-page .booking-summary-line strong { color: rgba(20,20,20,.8); }
+    .booking-summary-total { border-top-color: rgba(20,20,20,.12); }
+    .booking-page .booking-summary-total div { color: rgba(20,20,20,.5); }
+    .booking-page .booking-summary-total strong { color: #141414; }
+    .booking-payment-split div { border-color: rgba(20,20,20,.1); background: rgba(20,20,20,.02); }
+    .booking-page .booking-payment-split small, .booking-page .booking-payment-split span { color: rgba(20,20,20,.4); }
+    .booking-page .booking-payment-split strong { color: #141414; }
+    .booking-warning { color: #8a6d1f; }
+    .booking-submit {
+        background: #a1843f;
+        color: #faf9f7;
+        box-shadow: none;
+    }
+    .booking-submit:hover { background: #8a7034; box-shadow: 0 10px 24px -14px rgba(161,132,63,.6); }
+    .booking-page .booking-secure-note { color: rgba(20,20,20,.4); }
+
+    /* SBM slot-bar (gerado por JS com classes escuras partilhadas com o admin) */
+    .booking-slot-panel.rounded-xl { background: #ffffff; border-color: rgba(20,20,20,.1); }
+    .booking-slot-panel .text-white\/60 { color: rgba(20,20,20,.5); }
+    .booking-slot-panel .text-accent { color: #a1843f; }
+    .booking-slot-panel .text-white\/35 { color: rgba(20,20,20,.4); }
+    .booking-slot-panel .slot-bar-seg {
+        border-color: rgba(20,20,20,.14);
+        background: rgba(20,20,20,.03);
+        color: rgba(20,20,20,.8);
+    }
+    .booking-slot-panel .slot-bar-seg.night {
+        background: rgba(20,20,20,.05);
+        border-color: rgba(20,20,20,.2);
+        color: rgba(20,20,20,.7);
+    }
+    .booking-slot-panel .slot-bar-seg:hover:not(:disabled) {
+        background: #a1843f;
+        border-color: #a1843f;
+        color: #faf9f7;
+    }
+    .booking-slot-panel .slot-bar-seg.sel,
+    .booking-slot-panel .slot-bar-seg.sel.night-sel {
+        background: #a1843f;
+        border-color: #a1843f;
+        color: #faf9f7;
+        box-shadow: none;
+    }
+</style>
+
 @section Scripts {
 <script>
 (function () {

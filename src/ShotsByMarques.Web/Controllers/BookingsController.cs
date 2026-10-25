@@ -294,32 +294,41 @@ public class BookingsController : Controller
     public async Task<IActionResult> DepositSuccess(string session_id)
     {
         ViewData["Title"] = "Depósito";
-        ViewData["State"] = "unpaid";
+        var vm = new PaymentResultViewModel { State = "unpaid", IsBalance = false };
         if (!string.IsNullOrEmpty(session_id))
         {
             var booking = await _db.Bookings
+                .Include(b => b.SessionType)
                 .FirstOrDefaultAsync(b => b.DepositSessionId == session_id && b.ClientUserId == UserId());
-            if (booking is not null && !booking.DepositPaid)
+            if (booking is not null)
             {
-                var status = await _stripe.GetPaymentStatusAsync(session_id);
-                if (status == "paid")
+                vm.BookingId = booking.Id;
+                vm.SessionName = booking.SessionType?.Name ?? string.Empty;
+                vm.Start = PortugalTime.FromUtc(booking.Start);
+                vm.Location = booking.Location ?? string.Empty;
+                vm.State = "paid"; // existing booking: already confirmed previously
+                if (!booking.DepositPaid)
                 {
-                    booking.DepositPaid = true;
-                    await _db.SaveChangesAsync();
-                    ViewData["State"] = "paid";
+                    var status = await _stripe.GetPaymentStatusAsync(session_id);
+                    if (status == "paid")
+                    {
+                        booking.DepositPaid = true;
+                        await _db.SaveChangesAsync();
+                        vm.State = "paid";
+                    }
+                    else if (status == "processing")
+                    {
+                        vm.State = "processing";
+                        vm.MetaRefresh = "5";
+                    }
+                    else
+                    {
+                        vm.State = "unpaid";
+                    }
                 }
-                else if (status == "processing")
-                {
-                    ViewData["State"] = "processing";
-                    ViewData["MetaRefresh"] = "5";
-                }
-            }
-            else
-            {
-                ViewData["State"] = "paid";
             }
         }
-        return View("PaymentResult");
+        return View("PaymentResult", vm);
     }
 
     [Authorize]
@@ -327,32 +336,41 @@ public class BookingsController : Controller
     public async Task<IActionResult> BalanceSuccess(string session_id)
     {
         ViewData["Title"] = "Saldo";
-        ViewData["State"] = "unpaid";
+        var vm = new PaymentResultViewModel { State = "unpaid", IsBalance = true };
         if (!string.IsNullOrEmpty(session_id))
         {
             var booking = await _db.Bookings
+                .Include(b => b.SessionType)
                 .FirstOrDefaultAsync(b => b.BalanceSessionId == session_id && b.ClientUserId == UserId());
-            if (booking is not null && !booking.BalancePaid)
+            if (booking is not null)
             {
-                var status = await _stripe.GetPaymentStatusAsync(session_id);
-                if (status == "paid")
+                vm.BookingId = booking.Id;
+                vm.SessionName = booking.SessionType?.Name ?? string.Empty;
+                vm.Start = PortugalTime.FromUtc(booking.Start);
+                vm.Location = booking.Location ?? string.Empty;
+                vm.State = "paid";
+                if (!booking.BalancePaid)
                 {
-                    booking.BalancePaid = true;
-                    await _db.SaveChangesAsync();
-                    ViewData["State"] = "paid";
+                    var status = await _stripe.GetPaymentStatusAsync(session_id);
+                    if (status == "paid")
+                    {
+                        booking.BalancePaid = true;
+                        await _db.SaveChangesAsync();
+                        vm.State = "paid";
+                    }
+                    else if (status == "processing")
+                    {
+                        vm.State = "processing";
+                        vm.MetaRefresh = "5";
+                    }
+                    else
+                    {
+                        vm.State = "unpaid";
+                    }
                 }
-                else if (status == "processing")
-                {
-                    ViewData["State"] = "processing";
-                    ViewData["MetaRefresh"] = "5";
-                }
-            }
-            else
-            {
-                ViewData["State"] = "paid";
             }
         }
-        return View("PaymentResult");
+        return View("PaymentResult", vm);
     }
 
     private async Task<Booking?> OwnedBookingAsync(int id)

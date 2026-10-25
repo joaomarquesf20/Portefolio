@@ -1,65 +1,120 @@
+@model ShotsByMarques.Web.ViewModels.PaymentResultViewModel
 @{
-    ViewData["Title"] = ViewData["Title"] as string ?? "Pagamento";
-    var state = ViewData["State"] as string ?? "unpaid";
-    var isBalance = (ViewData["Title"] as string) == "Saldo";
-    var metaRefresh = ViewData["MetaRefresh"] as string;
+    ViewData["Title"] = Model.IsBalance ? "Saldo pago" : "Depósito pago";
+    var ptPT = System.Globalization.CultureInfo.GetCultureInfo("pt-PT");
+    var when = Model.Start?.ToString("dddd, dd 'de' MMMM 'de' yyyy", ptPT) ?? string.Empty;
+    var hour = Model.Start?.ToString("HH:mm", ptPT) ?? string.Empty;
+    var paid = Model.State == "paid";
+    var processing = Model.State == "processing";
+    var hasBooking = Model.BookingId is not null;
 }
 
-@if (!string.IsNullOrEmpty(metaRefresh))
+@if (!string.IsNullOrEmpty(Model.MetaRefresh))
 {
-    <meta http-equiv="refresh" content="@metaRefresh" />
+    <meta http-equiv="refresh" content="@Model.MetaRefresh" />
 }
 
-<section class="max-w-xl mx-auto px-6 py-24 text-center">
-    @if (state == "paid")
-    {
-        <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-8"
-             style="background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.4);">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-        </div>
-        @if (isBalance)
+<section class="grid min-h-screen place-items-center px-5 pb-20 pt-24 sm:pt-28">
+    <div class="rv w-full max-w-2xl">
+        <p class="inline-flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.4em] text-black/50">
+            <span class="rule inline-block h-px w-10"></span>
+            Pagamento · Shots By Marques
+        </p>
+
+        @if (paid)
         {
-            <h1 class="font-display text-4xl">Saldo pago!</h1>
-            <p class="text-white/60 mt-4">O saldo foi pago — as fotos da tua sessão já estão disponíveis para descarregar.</p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/downloads" class="btn-primary">@SharedLocalizer["GoDownloads"]</a>
-                <a href="/as-minhas-marcacoes" class="btn-outline">@SharedLocalizer["NavMyBookings"]</a>
-            </div>
+            <span class="mt-6 flex h-16 w-16 items-center justify-center rounded-full border border-[#a1843f]/50 bg-[#a1843f]/10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-[#a1843f]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+            </span>
+            <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.2rem,5vw,3.6rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
+                @(Model.IsBalance ? "Saldo pago!" : "Depósito pago!")
+            </h1>
+            <p class="rv rv-d2 mt-4 max-w-xl text-base leading-relaxed text-black/55">
+                @(Model.IsBalance
+                    ? "O saldo foi pago — as fotos da tua sessão já estão disponíveis para descarregar."
+                    : "O depósito (50%) foi pago — a tua marcação está confirmada. O restante (50%) é pago na entrega das fotos.")
+            </p>
+        }
+        else if (processing)
+        {
+            <span class="mt-6 flex h-16 w-16 items-center justify-center rounded-full border border-[#a1843f]/50 bg-[#a1843f]/10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 animate-spin text-[#a1843f]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+            </span>
+            <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.2rem,5vw,3.6rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
+                Pagamento em processamento
+            </h1>
+            <p class="rv rv-d2 mt-4 max-w-xl text-base leading-relaxed text-black/55">
+                Aprova o pagamento na app MB Way. Assim que for confirmado fica registado na tua conta — a página atualiza sozinha (pode demorar alguns segundos).
+            </p>
         }
         else
         {
-            <h1 class="font-display text-4xl">Depósito pago!</h1>
-            <p class="text-white/60 mt-4">O depósito (50%) foi pago — a tua marcação está confirmada. O restante (50%) é pago na entrega das fotos.</p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/as-minhas-marcacoes" class="btn-primary">@SharedLocalizer["NavMyBookings"]</a>
-                <a href="/portfolio" class="btn-outline">@SharedLocalizer["GoHome"]</a>
+            <span class="mt-6 flex h-16 w-16 items-center justify-center rounded-full border border-black/15 bg-black/[0.03]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-black/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+            </span>
+            <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.2rem,5vw,3.6rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
+                Pagamento não confirmado
+            </h1>
+            <p class="rv rv-d2 mt-4 max-w-xl text-base leading-relaxed text-black/55">
+                Não recebemos a confirmação do pagamento. Se já pagaste e isto é um erro, tenta novamente a partir de "As minhas marcações" ou contacta-nos.
+            </p>
+        }
+
+        @if (hasBooking && paid)
+        {
+            <!-- ================= recibo da marcação ================= -->
+            <div class="rv rv-d2 mt-10 border-t border-black/10">
+                <div class="grid grid-cols-12 gap-x-6 gap-y-3 border-b border-black/10 py-5 text-sm">
+                    <span class="col-span-12 text-[10px] font-medium uppercase tracking-[0.3em] text-black/40 sm:col-span-3">Sessão</span>
+                    <span class="col-span-12 font-semibold text-[#141414] sm:col-span-9">@Model.SessionName</span>
+                </div>
+                <div class="grid grid-cols-12 gap-x-6 gap-y-3 border-b border-black/10 py-5 text-sm">
+                    <span class="col-span-12 text-[10px] font-medium uppercase tracking-[0.3em] text-black/40 sm:col-span-3">Data</span>
+                    <span class="col-span-12 font-medium text-[#141414] sm:col-span-9"><span class="capitalize">@when</span> · <span class="tabular-nums">@hour</span></span>
+                </div>
+                <div class="grid grid-cols-12 gap-x-6 gap-y-3 border-b border-black/10 py-5 text-sm">
+                    <span class="col-span-12 text-[10px] font-medium uppercase tracking-[0.3em] text-black/40 sm:col-span-3">Local</span>
+                    <span class="col-span-12 font-medium text-[#141414] sm:col-span-9">@(string.IsNullOrWhiteSpace(Model.Location) ? "A combinar" : Model.Location)</span>
+                </div>
+            </div>
+
+            <!-- ================= adicionar ao calendário ================= -->
+            <div class="rv rv-d3 mt-10">
+                <p class="text-[11px] font-medium uppercase tracking-[0.4em] text-black/50">Ajuda a guardar a data</p>
+                <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                    <a href="/sessoes/calendario/ficheiro/@(Model.BookingId!.Value)"
+                       class="inline-flex items-center justify-center gap-3 bg-[#a1843f] px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#faf9f7] transition hover:bg-[#8a7034]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6V5.25A2.25 2.25 0 0014.25 3h-4.5A2.25 2.25 0 007.5 5.25V6m13.5 0v12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18V6a2.25 2.25 0 012.25-2.25h13.5M9 11.25h6M9 15h6" />
+                        </svg>
+                        Adicionar ao Calendário
+                    </a>
+                    <a href="/sessoes/calendario/google/@(Model.BookingId!.Value)" target="_blank" rel="noopener"
+                       class="inline-flex items-center justify-center gap-3 border border-black/15 px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#141414] transition hover:border-[#141414]/40 hover:bg-black/[0.03]">
+                        Google Calendar <span aria-hidden="true">↗</span>
+                    </a>
+                </div>
+                <p class="mt-3 text-xs text-black/45">Gera um ficheiro .ics com a data, hora e local — importa no iPhone, Google Calendar ou Outlook.</p>
             </div>
         }
-    }
-    else if (state == "processing")
-    {
-        <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-8"
-             style="background: rgba(216,169,91,0.1); border: 1px solid rgba(216,169,91,0.4);">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-accent animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
+
+        <div class="rv rv-d3 mt-12 flex flex-col gap-3 sm:flex-row sm:items-center">
+            @if (paid && Model.IsBalance)
+            {
+                <a href="/downloads" class="inline-flex items-center justify-center gap-3 bg-[#a1843f] px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#faf9f7] transition hover:bg-[#8a7034]">Descarregar as fotos</a>
+                <a href="/as-minhas-marcacoes" class="inline-flex items-center justify-center gap-3 border border-black/15 px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#141414] transition hover:border-[#141414]/40 hover:bg-black/[0.03]">@SharedLocalizer["NavMyBookings"]</a>
+            }
+            else
+            {
+                <a href="/as-minhas-marcacoes" class="inline-flex items-center justify-center gap-3 border border-black/15 px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#141414] transition hover:border-[#141414]/40 hover:bg-black/[0.03]">@SharedLocalizer["NavMyBookings"]</a>
+                <a href="/" class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-black/45 transition hover:text-[#a1843f]">@SharedLocalizer["GoHome"] <span aria-hidden="true">→</span></a>
+            }
         </div>
-        <h1 class="font-display text-4xl">Pagamento em processamento</h1>
-        <p class="text-white/60 mt-4">Aprova o pagamento na app MB Way. Assim que for confirmado, fica registado na tua conta (pode demorar alguns segundos — recarrega a página).</p>
-        <a href="/as-minhas-marcacoes" class="btn-primary mt-10 inline-block">@SharedLocalizer["NavMyBookings"]</a>
-    }
-    else
-    {
-        <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-8"
-             style="background: rgba(216,169,91,0.1); border: 1px solid rgba(216,169,91,0.4);">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
-        </div>
-        <h1 class="font-display text-4xl">Pagamento não confirmado</h1>
-        <p class="text-white/60 mt-4">Não recebemos a confirmação do pagamento. Se já pagaste e isto é um erro, tenta novamente a partir de "As minhas marcações" ou contacta-nos.</p>
-        <a href="/as-minhas-marcacoes" class="btn-primary mt-10 inline-block">@SharedLocalizer["NavMyBookings"]</a>
-    }
+    </div>
 </section>

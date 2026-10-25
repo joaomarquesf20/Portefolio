@@ -2,72 +2,199 @@
 @{
     ViewData["Title"] = SharedLocalizer["NavSessions"];
     var pageCover = "/sample-photos/cars-cover.svg";
+    var pt = System.Globalization.CultureInfo.CurrentCulture;
+    var money = System.Globalization.CultureInfo.GetCultureInfo("pt-PT");
+
+    var sessionTypes = Model.SessionTypes.ToList();
+    var miniDays = Model.MiniDays.ToList();
+    var minPrice = sessionTypes.Count > 0 ? sessionTypes.Min(s => s.Price) : 0m;
+    var nextMini = miniDays.Select(m => m.Date).FirstOrDefault(d => d >= System.DateTime.Today);
+
+    // Numeração editorial contínua.
+    var gi = 0;
+    // Padrão de colunas por grelha (fecha sempre a linha, whatever the count).
+    string TileClass(int i, int n)
+    {
+        if (n == 1) return "col-span-12 aspect-[21/9]";
+        if (i == n - 1)
+        {
+            var r = (n - 1) % 6;
+            if (r is 0 or 2) return "col-span-12 aspect-[21/9]";
+            if (r == 3) return "col-span-12 md:col-span-8 aspect-[16/10] md:aspect-[8/5]";
+        }
+        return (i % 6) switch
+        {
+            0 => "col-span-12 aspect-[4/3] md:col-span-8 md:aspect-[16/10]",
+            1 => "col-span-12 aspect-[4/5] md:col-span-4",
+            2 => "col-span-6 aspect-square md:col-span-4 md:aspect-[4/5]",
+            3 => "col-span-6 aspect-square md:col-span-4 md:aspect-[4/5]",
+            4 => "col-span-12 aspect-[4/3] md:col-span-4 md:aspect-[4/5]",
+            _ => "col-span-12 aspect-[21/9]"
+        };
+    }
 }
 
-<section class="relative overflow-hidden min-h-screen">
-    <img src="@(ViewData["BgSessions"] ?? pageCover)" alt="" class="absolute inset-0 w-full h-full object-cover" />
-    <div class="absolute inset-0 page-photo-overlay"></div>
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-14">
-    <div class="text-center mb-12 fade-up">
-        <h1 class="font-display text-4xl sm:text-5xl text-white">@SharedLocalizer["NavSessions"]</h1>
-        <p class="text-white/50 mt-3">@SharedLocalizer["ServicesSubtitle"]</p>
-    </div>
+<!-- ============ CABEÇALHO — foto lavada de luz, ecrã inteiro ============ -->
+<section class="relative overflow-hidden">
+    <img src="@(ViewData["BgSessions"] ?? pageCover)" alt="" class="absolute inset-0 h-full w-full object-cover" />
+    <div class="absolute inset-0 bg-[#faf9f7]/80"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-[#faf9f7]/90 via-transparent to-[#faf9f7]"></div>
+    <div class="grain absolute inset-0" aria-hidden="true"></div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        @foreach (var session in Model.SessionTypes)
-        {
-            <div class="card overflow-hidden fade-up flex flex-col">
-                <div class="h-52 overflow-hidden relative">
-                    <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-[color:var(--card)] via-transparent to-transparent"></div>
-                </div>
-                <div class="p-7 flex flex-col flex-1">
-                    <h2 class="font-display text-2xl text-white">@session.Name</h2>
-                    <p class="text-white/50 text-sm mt-3 leading-relaxed">@session.Description</p>
-                    <p class="font-display text-2xl text-white mt-6">@session.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
-                    <a href="/sessoes/marcar/@session.Id" class="btn-primary w-full text-center mt-6">@SharedLocalizer["BookNow"]</a>
-                </div>
-            </div>
-        }
-    </div>
+    <div class="relative z-[2] flex flex-wrap items-end justify-between gap-10 px-5 pb-16 pt-24 sm:px-8 sm:pt-32 lg:px-12">
+        <div>
+            <p class="rv inline-flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.4em] text-black/50">
+                <span class="rule inline-block h-px w-10"></span>
+                Shots By Marques · Sessões
+            </p>
+            <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.8rem,7vw,6rem)] font-bold leading-[0.95] tracking-[-0.04em] text-[#141414]">
+                @SharedLocalizer["NavSessions"]
+            </h1>
+            <p class="rv rv-d2 mt-5 max-w-xl text-lg leading-relaxed text-black/55">@SharedLocalizer["ServicesSubtitle"]</p>
+        </div>
 
-    @if (Model.MiniDays.Count > 0)
-    {
-        <div class="mt-20 fade-up">
-            <div class="text-center mb-10">
-                <h2 class="font-display text-3xl sm:text-4xl text-white">🎪 @SharedLocalizer["MiniSessionsTitle"]</h2>
-                <p class="text-white/50 mt-3 max-w-2xl mx-auto">@SharedLocalizer["MiniSessionsSubtitle"]</p>
+        <div class="rv rv-d2 flex gap-10 sm:gap-14">
+            <div>
+                <span class="block font-display text-3xl font-bold tabular-nums text-[#141414] sm:text-4xl">@sessionTypes.Count</span>
+                <span class="mt-1 block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">Tipologias</span>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                @foreach (var m in Model.MiniDays)
-                {
-                    <div class="card p-7 fade-up">
-                        <h3 class="font-display text-2xl text-white">@m.Title</h3>
-                        <p class="text-white/50 text-sm mt-3 capitalize">
-                            @m.Date.ToString("dddd, dd MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture)
-                        </p>
-                        @if (!string.IsNullOrEmpty(m.Zone) || !string.IsNullOrEmpty(m.Location))
-                        {
-                            <p class="text-sm mt-2">📍 <span class="text-white/80">@m.Zone</span>@(string.IsNullOrEmpty(m.Location) ? "" : $" — {m.Location}")</p>
-                        }
-                        <p class="font-display text-xl text-white mt-4">@m.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
-                        <div class="flex flex-wrap items-center justify-between gap-3 mt-6">
-                            @if (m.Remaining > 0)
-                            {
-                                <span class="text-xs px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 font-semibold">
-                                    @string.Format(System.Globalization.CultureInfo.CurrentCulture, SharedLocalizer["MiniSessionSlotsLeft"].ToString(), m.Remaining, m.MaxMiniSessions)
-                                </span>
-                                <a href="/sessoes/mini-sessao/@m.Date.ToString("yyyy-MM-dd")" class="btn-primary !py-2.5 !px-5 !text-sm">@SharedLocalizer["MiniSessionBook"]</a>
-                            }
-                            else
-                            {
-                                <span class="text-xs px-3 py-1.5 rounded-full bg-red-500/15 text-red-300 font-semibold">@SharedLocalizer["MiniSessionSoldOut"]</span>
-                            }
-                        </div>
-                    </div>
-                }
+            <div>
+                <span class="block font-display text-3xl font-bold tabular-nums text-[#141414] sm:text-4xl">@(minPrice > 0 ? minPrice.ToString("N0", money) : "—")<span class="text-base font-medium text-black/35"> €</span></span>
+                <span class="mt-1 block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">A partir de</span>
+            </div>
+            <div>
+                <span class="block font-display text-3xl font-bold tabular-nums text-[#141414] sm:text-4xl">@(miniDays.Count > 0 && nextMini != default ? nextMini.ToString("dd/MM") : "—")</span>
+                <span class="mt-1 block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">Próximo evento</span>
             </div>
         </div>
-    }
     </div>
 </section>
+
+<!-- ============ 01 · TIPOS DE SESSÃO — grelha fotográfica nua, edge-to-edge ============ -->
+@if (sessionTypes.Any())
+{
+    <section class="scroll-mt-16">
+        <div class="rv flex flex-wrap items-end justify-between gap-6 px-5 pb-7 pt-14 sm:px-8 sm:pt-24 lg:px-12">
+            <div>
+                <p class="inline-flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.4em] text-black/45">
+                    <span class="rule inline-block h-px w-8"></span>
+                    01
+                </p>
+                <h2 class="mt-3 font-display text-[clamp(1.9rem,4vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
+                    Sessões disponíveis
+                </h2>
+            </div>
+            <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-black/40 tabular-nums">@sessionTypes.Count tipologias</span>
+        </div>
+
+        <div class="grid grid-cols-12 gap-[6px]">
+            @for (var ti = 0; ti < sessionTypes.Count; ti++)
+            {
+                var st = sessionTypes[ti];
+                gi++;
+                var big = (ti % 6) is 0 or 5;
+                <a href="/sessoes/marcar/@st.Id"
+                   class="rv @(gi % 2 == 0 ? "rv-d1" : "") group relative block overflow-hidden @TileClass(ti, sessionTypes.Count)">
+                    <img src="@(st.ImagePath ?? pageCover)" alt="@st.Name" loading="lazy"
+                         class="h-full w-full object-cover transition duration-[1100ms] ease-out group-hover:scale-[1.04]" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                    <span class="absolute left-4 top-4 font-display text-xs tabular-nums text-white/70">@(gi.ToString("00"))</span>
+
+                    <div class="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                        <h3 class="font-display font-bold tracking-[-0.02em] text-white @(big ? "text-2xl sm:text-4xl" : "text-lg sm:text-2xl")">@st.Name</h3>
+                        <p class="mt-1 line-clamp-2 max-w-xl text-sm text-white/60">@st.Description</p>
+                        <div class="mt-4 flex flex-wrap items-end justify-between gap-4">
+                            <div class="flex items-baseline gap-5">
+                                <span class="font-display text-xl font-bold text-white drop-shadow-[0_1px_10px_rgba(0,0,0,0.35)] sm:text-2xl">@st.Price.ToString("N0", money) €</span>
+                                <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-white/55">@st.DurationMinutes min</span>
+                            </div>
+                            <span class="inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition group-hover:text-[#a1843f]">
+                                @SharedLocalizer["BookNow"] <span aria-hidden="true">→</span>
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    </section>
+}
+
+<!-- ============ 02 · MINI SESSÕES — bands editoriais com filete ============ -->
+@if (miniDays.Any())
+{
+    <section id="mini" class="scroll-mt-16">
+        <div class="rv flex flex-wrap items-end justify-between gap-6 px-5 pb-7 pt-14 sm:px-8 sm:pt-24 lg:px-12">
+            <div>
+                <p class="inline-flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.4em] text-black/45">
+                    <span class="rule inline-block h-px w-8"></span>
+                    02
+                </p>
+                <h2 class="mt-3 font-display text-[clamp(1.9rem,4vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
+                    @SharedLocalizer["MiniSessionsTitle"]
+                </h2>
+                <p class="mt-3 max-w-xl text-sm leading-relaxed text-black/50">@SharedLocalizer["MiniSessionsSubtitle"]</p>
+            </div>
+            <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-black/40 tabular-nums">@miniDays.Count @(miniDays.Count == 1 ? "evento" : "eventos")</span>
+        </div>
+
+        <div class="px-5 sm:px-8 lg:px-12">
+            @for (var mi = 0; mi < miniDays.Count; mi++)
+            {
+                var m = miniDays[mi];
+                var open = m.Remaining > 0;
+                var miniUrl = open ? $"/sessoes/mini-sessao/{m.Date:yyyy-MM-dd}" : "#";
+                var locLabel = m.Zone ?? string.Empty;
+                if (!string.IsNullOrEmpty(m.Location))
+                {
+                    locLabel = locLabel.Length == 0 ? m.Location : $"{locLabel} — {m.Location}";
+                }
+                <a href="@miniUrl"
+                   class="rv @(mi % 2 == 1 ? "rv-d1" : "") group grid grid-cols-12 items-baseline gap-x-6 gap-y-2 border-t border-black/10 py-7 transition hover:bg-black/[0.015] @(open ? "" : "pointer-events-none opacity-60")">
+                    <span class="col-span-4 font-display text-xs tabular-nums text-black/30 sm:col-span-1">@(String.Format("{0:00}", mi + 1))</span>
+
+                    <div class="col-span-8 sm:col-span-3 md:col-span-2">
+                        <div class="flex items-baseline gap-3">
+                            <span class="font-display text-[clamp(2.4rem,5vw,3.6rem)] font-bold leading-none tracking-[-0.03em] @(open ? "text-[#141414]" : "text-black/25")">@m.Date.Day</span>
+                            <span class="flex flex-col text-[10px] font-semibold uppercase tracking-[0.25em] @(open ? "text-black/45" : "text-black/25")">
+                                <span>@m.Date.ToString("MMM", new System.Globalization.CultureInfo("pt-PT"))</span>
+                                <span class="mt-1">@m.Date.ToString("yyyy")</span>
+                            </span>
+                        </div>
+                        <span class="mt-2 block text-xs capitalize text-black/45">@m.Date.ToString("dddd", new System.Globalization.CultureInfo("pt-PT"))</span>
+                    </div>
+
+                    <div class="col-span-12 min-w-0 sm:col-span-5 md:col-span-5">
+                        <h3 class="truncate font-display text-lg font-bold tracking-[-0.02em] @(open ? "text-[#141414]" : "text-black/40") sm:text-xl">@m.Title</h3>
+                        <p class="mt-1 truncate text-xs text-black/45">@locLabel</p>
+                    </div>
+
+                    <div class="col-span-6 sm:col-span-1 md:col-span-2">
+                        <span class="font-display text-lg font-bold @(open ? "text-[#141414]" : "text-black/25")">@m.Price.ToString("N0", money) €</span>
+                    </div>
+
+                    <div class="col-span-6 sm:col-span-3 md:col-span-2">
+                        @if (open)
+                        {
+                            <span class="inline-flex items-center gap-2 border border-[#a1843f]/35 bg-[#a1843f]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6d5420]">
+                                @String.Format(pt, SharedLocalizer["MiniSessionSlotsLeft"].ToString()!, m.Remaining, m.MaxMiniSessions)
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center border border-black/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-black/35">
+                                @SharedLocalizer["MiniSessionSoldOut"]
+                            </span>
+                        }
+                    </div>
+                </a>
+            }
+            <div class="border-t border-black/10"></div>
+        </div>
+    </section>
+}
+else if (!sessionTypes.Any())
+{
+    <p class="rv px-5 pb-28 pt-10 text-center font-display text-2xl text-black/35">Sem sessões disponíveis por agora.</p>
+}
+
+<div class="h-16 sm:h-28"></div>

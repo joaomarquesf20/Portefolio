@@ -30,12 +30,21 @@ public class BookingCalendarService
             "METHOD:PUBLISH",
             "BEGIN:VEVENT",
             $"UID:shotsbymarques-booking-{booking.Id}@shotsbymarques",
+            $"SEQUENCE:{booking.Id}",
             $"DTSTAMP:{DateTime.UtcNow.ToString("yyyyMMdd'T'HHmmss'Z'", Invariant)}",
             $"DTSTART:{start.ToString("yyyyMMdd'T'HHmmss'Z'", Invariant)}",
             $"DTEND:{end.ToString("yyyyMMdd'T'HHmmss'Z'", Invariant)}",
             $"SUMMARY:{Escape(title)}",
             $"DESCRIPTION:{Escape(description)}",
             $"LOCATION:{Escape(booking.Location ?? string.Empty)}",
+            "STATUS:CONFIRMED",
+            "TRANSP:OPAQUE",
+            // Gentle reminder 24 hours before the session (client + admin).
+            "BEGIN:VALARM",
+            "ACTION:DISPLAY",
+            $"DESCRIPTION:{Escape(title)}",
+            "TRIGGER:-P1D",
+            "END:VALARM",
             "END:VEVENT",
             "END:VCALENDAR"
         };
