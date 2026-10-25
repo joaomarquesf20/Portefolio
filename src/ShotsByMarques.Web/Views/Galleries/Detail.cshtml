@@ -18,16 +18,101 @@
 <style>
     /* ============================================================
        Detalhe da galeria — linguagem editorial CLARA (papel/tinta/camel).
-       Substitui por completo os estilos escuros antigos (#gd dark).
-       Masonry edge-to-edge, gutter 6px, sem caixas, sem painéis.
-       Contratos do site.js preservados: .gallery-item, data-* , chips,
+       Grelha controlada pelo utilizador, 3 vistas:
+         justified (default) — linhas justificadas Flickr/Pixieset,
+                               respeita as proporções nativas (sem crop)
+         squares             — grelha de quadrados (varrimento rápido, com crop)
+         large               — coluna editorial grande (proporção nativa)
+       Contratos do site.js preservados: .gallery-item, data-*, chips,
        .photo-overlay, .bottom-bar, data-toggle, data-cart-count, etc.
+       (O site.js lê os .gallery-item por querySelectorAll no momento do
+       clique: reempacotar em .gd-row NÃO muda a ordem do lightbox.)
        ============================================================ */
+
+    /* ---------- grelha: base flex; as vistas por atributo data-layout ---------- */
     #gd .gallery-grid {
+        columns: auto;
         column-gap: 6px;
+        overflow-x: hidden;
+        transition: opacity .22s ease;
     }
 
-    /* foto nua: sem borda, sem painel escuro, sem arredondado */
+    /* espera calibrada: invisível até a primeira vista estar montada
+       (rede de segurança: a animação força opacidade mesmo sem JS) */
+    #gd .gallery-grid[data-ready="0"] {
+        opacity: 0;
+        animation: gdReady .45s ease 2.4s forwards;
+    }
+
+    @@keyframes gdReady {
+        to { opacity: 1; }
+    }
+
+    /* ---------- vista JUSTIFICADA (linhas de altura homogénea) ---------- */
+    #gd .gallery-grid[data-layout="justified"] {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    #gd .gd-row {
+        display: flex;
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    #gd [data-layout="justified"] .gallery-item {
+        margin-bottom: 0;
+        flex: none;
+    }
+
+    #gd .gd-row .gallery-item img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* wrapper com a proporção exata: só corta sub-pixel */
+    }
+
+    /* ---------- vista QUADRADOS (varrimento rápido, com crop assumido) ---------- */
+    #gd .gallery-grid[data-layout="squares"] {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 6px;
+    }
+
+    #gd [data-layout="squares"] .gallery-item {
+        margin-bottom: 0;
+        aspect-ratio: 1 / 1;
+    }
+
+    #gd [data-layout="squares"] .gallery-item img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* ---------- vista COLUNA GRANDE (editorial, proporção nativa) ---------- */
+    #gd .gallery-grid[data-layout="large"] {
+        display: block;
+        max-width: 62rem;
+    }
+
+    #gd [data-layout="large"] .gallery-item {
+        margin-bottom: clamp(1.5rem, 3.5vw, 2.75rem);
+    }
+
+    #gd [data-layout="large"] .gallery-item img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* aspect-ratio é imposto por JS = proporção exata */
+    }
+
+    /* ---------- item: foto nua sobre papel ---------- */
     #gd .gallery-item {
         margin-bottom: 6px;
         border: none;
@@ -35,17 +120,17 @@
         background: transparent;
     }
 
-        #gd .gallery-item:hover {
-            border-color: transparent;
-        }
+    #gd .gallery-item:hover {
+        border-color: transparent;
+    }
 
-        #gd .gallery-item img {
-            transition: transform 1.1s cubic-bezier(.16, 1, .3, 1);
-        }
+    #gd .gallery-item img {
+        transition: transform 1.1s cubic-bezier(.16, 1, .3, 1);
+    }
 
-        #gd .gallery-item:hover img {
-            transform: scale(1.045);
-        }
+    #gd .gallery-item:hover img {
+        transform: scale(1.045);
+    }
 
     /* seleção: anel camel crocante (contraste total no tema claro) */
     #gd .gallery-item.selected {
@@ -93,11 +178,11 @@
         transition: background-color .25s ease, color .25s ease;
     }
 
-        #gd [data-toggle]:hover,
-        #gd .gallery-item.selected [data-toggle] {
-            background: #a1843f;
-            color: #fff;
-        }
+    #gd [data-toggle]:hover,
+    #gd .gallery-item.selected [data-toggle] {
+        background: #a1843f;
+        color: #fff;
+    }
 
     /* downloads do dono da sessão: pill camel */
     #gd [data-session-download] button {
@@ -106,19 +191,49 @@
         transition: filter .25s ease;
     }
 
-        #gd [data-session-download] button:hover {
-            filter: brightness(1.08);
-        }
+    #gd [data-session-download] button:hover {
+        filter: brightness(1.08);
+    }
+
+    /* ---------- barra de vistas (controle segmentado editorial) ---------- */
+    #gd .gd-layout-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .1rem 0 .35rem;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: rgba(20, 20, 20, .38);
+        border-bottom: 2px solid transparent;
+        transition: color .2s ease, border-color .2s ease;
+    }
+
+    #gd .gd-layout-btn:hover {
+        color: #141414;
+    }
+
+    #gd .gd-layout-btn[aria-pressed="true"] {
+        color: #141414;
+        border-color: #a1843f;
+    }
+
+    #gd .gd-layout-btn svg {
+        width: 14px;
+        height: 14px;
+        display: block;
+    }
 
     /* telemóvel: sem hover — legendas e botão sempre visíveis (como na Home) */
     @@media (max-width: 640px) {
-        #gd .gallery-grid {
-            columns: 2 190px;
-            column-gap: 5px;
+        #gd .gallery-grid[data-layout="squares"] {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 5px;
         }
 
-        #gd .gallery-item {
-            margin-bottom: 5px;
+        #gd .gallery-grid[data-layout="justified"] {
+            gap: 5px;
         }
 
         #gd .photo-overlay {
@@ -183,8 +298,29 @@
         }
     </div>
 
-    <!-- ============ GRELHA MASONRY edge-to-edge (IDs/classes usados pelo site.js — não alterar) ============ -->
-    <div class="@gridClass mt-10 sm:mt-14">
+    <!-- ============ BARRA DE VISTAS (grelha controlada pelo cliente) ============ -->
+    <div class="rv mt-10 px-5 sm:mt-14 sm:px-8 lg:px-12">
+        <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-black/10 pb-3">
+            <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-black/35">Vista</span>
+            <div class="flex items-center gap-5 sm:gap-7" role="group" aria-label="Vista da galeria">
+                <button type="button" data-layout-btn="justified" aria-pressed="true" class="gd-layout-btn" title="Proporções nativas, sem cortes">
+                    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2h9.5v5H1zM12 2h3v5h-3zM1 9h4v5H1zM6.5 9H15v5H6.5z"/></svg>
+                    <span>Justificada</span>
+                </button>
+                <button type="button" data-layout-btn="squares" aria-pressed="false" class="gd-layout-btn" title="Quadrados, varrimento rápido">
+                    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg>
+                    <span>Quadrados</span>
+                </button>
+                <button type="button" data-layout-btn="large" aria-pressed="false" class="gd-layout-btn" title="Coluna grande, detalhada">
+                    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 1h8v14H4z"/></svg>
+                    <span>Coluna grande</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ GRELHA (IDs/classes usados pelo site.js — não alterar) ============ -->
+    <div id="gd-grid" class="@gridClass mt-6 sm:mt-8" data-layout="justified" data-ready="0">
         @foreach (var photo in Model.Photos)
         {
             var photoIsForSale = isSessionGallery ? false : photo.IsForSale;
@@ -282,4 +418,185 @@
             </div>
         </div>
     </div>
+}
+
+@section Scripts {
+    <script>
+        // ============================================================
+        // Vistas da grelha (view-local): justified / squares / large.
+        // Nunca toca no site.js — todos os elementos preservam os seus
+        // listeners (reparenting de nós mantém handlers e ordem DOM).
+        // ============================================================
+        var gdToggle = function () {
+            var grid = document.getElementById("gd-grid");
+            if (!grid || grid.dataset.gdInit) return;
+            grid.dataset.gdInit = "1";
+
+            var KEY = "sbm_glayout";
+            var MODES = ["justified", "squares", "large"];
+            var items = Array.prototype.slice.apply(grid.querySelectorAll(".gallery-item"));
+            var ratios = {};
+            var mode = null;
+            var lastW = grid.clientWidth;
+            var resizeTimer = null;
+
+            function keyOf(item) { return item.getAttribute("data-photo-id"); }
+            function gap() { return window.innerWidth < 640 ? 5 : 6; }
+            function rowTarget() {
+                var vw = window.innerWidth;
+                return vw < 640 ? 205 : vw < 1024 ? 265 : 320;
+            }
+
+            // mede a proporção REAL de cada thumb (cache por photo id).
+            // Se a medida falhar, assume 3:2 — placeholder seguro.
+            function measure(item) {
+                var id = keyOf(item);
+                if (ratios[id]) return Promise.resolve(ratios[id]);
+                var img = item.querySelector("img");
+                var src = img ? img.getAttribute("src") : "";
+                return new Promise(function (resolve) {
+                    if (!src) { ratios[id] = 1.5; resolve(1.5); return; }
+                    var probe = new Image();
+                    var settled = false;
+                    var finish = function (r) { if (!settled) { settled = true; resolve(r); } };
+                    probe.onload = function () {
+                        ratios[id] = probe.naturalWidth > 0 ? probe.naturalWidth / probe.naturalHeight : 1.5;
+                        finish(ratios[id]);
+                    };
+                    probe.onerror = function () { ratios[id] = 1.5; finish(1.5); };
+                    probe.src = src;
+                    setTimeout(function () { finish(typeof ratios[id] === "number" ? ratios[id] : 1.5); }, 4000);
+                });
+            }
+            function measureAll() { return Promise.all(items.map(measure)); }
+
+            // volta a colocar os itens diretamente na grelha (ordem preservada)
+            function clearRows() {
+                if ("replaceChildren" in grid) {
+                    grid.replaceChildren.apply(grid, items);
+                } else {
+                    grid.textContent = "";
+                    items.forEach(function (it) { grid.appendChild(it); });
+                }
+                items.forEach(function (it) {
+                    it.style.removeProperty("width");
+                    it.style.removeProperty("aspect-ratio");
+                });
+            }
+
+            // ---- JUSTIFICADA: linhas com altura homogénea, sem cortes ----
+            function buildJustified() {
+                var W = grid.clientWidth || window.innerWidth;
+                var g = gap();
+                var target = rowTarget();
+                var rows = [];
+                var cur = [];
+                var sumR = 0;
+                var i;
+                for (i = 0; i < items.length; i++) {
+                    cur.push(items[i]);
+                    sumR += ratios[keyOf(items[i])];
+                    var h = (W - g * (cur.length - 1)) / sumR;
+                    if (h <= target) {
+                        rows.push({ list: cur.slice(), sum: sumR, h: h });
+                        cur = []; sumR = 0;
+                    }
+                }
+                if (cur.length > 0) {
+                    var hl = (W - g * (cur.length - 1)) / sumR;
+                    rows.push({ list: cur.slice(), sum: sumR, h: Math.min(target, hl) });
+                }
+
+                grid.textContent = "";
+                rows.forEach(function (row) {
+                    var rowEl = document.createElement("div");
+                    rowEl.className = "gd-row";
+                    var rowH = Math.round(row.h);
+                    rowEl.style.height = rowH + "px";
+                    var widths = row.list.map(function (it) {
+                        return Math.floor(ratios[keyOf(it)] * rowH);
+                    });
+                    // correção anti-arredondamento: a última foto fecha a linha em W
+                    var used = widths.reduce(function (a, b) { return a + b; }, 0) + g * (row.list.length - 1);
+                    widths[widths.length - 1] += (W - used);
+                    row.list.forEach(function (it, j) {
+                        it.style.width = widths[j] + "px";
+                        rowEl.appendChild(it);
+                    });
+                    grid.appendChild(rowEl);
+                });
+                grid.dataset.ready = "1";
+            }
+
+            // ---- outro item grande: largura total, proporção nativa ----
+            function buildLarge() {
+                clearRows();
+                items.forEach(function (it) {
+                    var r = ratios[keyOf(it)] || 1.5;
+                    it.style.aspectRatio = r.toFixed(4);
+                });
+                grid.dataset.ready = "1";
+            }
+
+            function setMode(m, persist) {
+                if (MODES.indexOf(m) < 0) m = "justified";
+                mode = m;
+                grid.dataset.layout = m;
+                grid.dataset.ready = "0";
+                document.querySelectorAll("[data-layout-btn]").forEach(function (b) {
+                    b.setAttribute("aria-pressed", b.getAttribute("data-layout-btn") === m ? "true" : "false");
+                });
+                if (persist) { try { localStorage.setItem(KEY, m); } catch (e) { /* storage opcional */ } }
+                if (m === "squares") {
+                    clearRows();
+                    grid.dataset.ready = "1";
+                } else {
+                    measureAll().then(function () {
+                        if (mode !== m) return; // o utilizador trocou de vista entretanto
+                        if (m === "justified") { buildJustified(); } else { buildLarge(); }
+                    });
+                }
+            }
+
+            document.querySelectorAll("[data-layout-btn]").forEach(function (b) {
+                b.addEventListener("click", function () {
+                    var m = b.getAttribute("data-layout-btn");
+                    if (m !== mode) setMode(m, true);
+                });
+            });
+
+            // re-justifica quando a largura muda de verdade (fluid full-bleed)
+            if ("ResizeObserver" in window) {
+                new ResizeObserver(function () {
+                    var w = grid.clientWidth;
+                    var changed = Math.abs(w - lastW) >= 24;
+                    lastW = w;
+                    if (!changed || mode !== "justified") return;
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(buildJustified, 160);
+                }).observe(grid);
+            } else {
+                // navegador sem ResizeObserver: re-justifica em resize de janela
+                window.addEventListener("resize", function () {
+                    if (mode !== "justified") return;
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(buildJustified, 160);
+                }, { passive: true });
+            }
+
+            try {
+                var saved = null;
+                try { saved = localStorage.getItem(KEY); } catch (e) { /* storage opcional */ }
+                setMode(MODES.indexOf(saved) >= 0 ? saved : "justified", false);
+            } catch (e) {
+                clearRows();
+                grid.dataset.ready = "1";
+            }
+        };
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", gdToggle);
+        } else {
+            gdToggle();
+        }
+    </script>
 }
