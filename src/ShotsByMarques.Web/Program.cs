@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
@@ -85,7 +86,24 @@ builder.Services.Configure<ShotsByMarques.Web.Models.TravelSettings>(
 // as a side effect.
 builder.Services.AddHostedService<ShotsByMarques.Web.Data.DatabaseStartupService>();
 
+// ---- Reverse proxy (Render) ----
+// Render's edge proxy terminates SSL and forwards requests to the container
+// over plain HTTP, adding X-Forwarded-For / X-Forwarded-Proto headers. Trust
+// those headers so the app sees the real client IP and the correct https
+// scheme. The proxy connects from a dynamic private address, so the known
+// proxy/network lists are cleared to accept the headers from any hop.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// Process the proxy's forwarded headers first, before any middleware that
+// reads the request scheme or client IP (HSTS, cookies, redirects).
+app.UseForwardedHeaders();
 
 // Migrations + seeding run inside DatabaseStartupService (IHostedService) once
 // the host starts for real.
@@ -96,7 +114,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// No app-level HTTPS redirection: Render's edge proxy terminates SSL and
+// already redirects HTTP to HTTPS, while the container itself has no TLS
+// endpoint - UseHttpsRedirection could only log "Failed to determine the
+// https port for redirect." without ever being able to act on it.
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRequestLocalization();
