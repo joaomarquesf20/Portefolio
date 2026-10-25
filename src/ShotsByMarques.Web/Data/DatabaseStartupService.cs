@@ -20,7 +20,7 @@ public sealed class DatabaseStartupService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Database migration/seeding failed. Check the SQL Server LocalDB connection string in appsettings.json.");
+            logger.LogError(ex, "Database migration/seeding failed. Check the database connection string in appsettings.json.");
         }
     }
 
