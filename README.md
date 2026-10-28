@@ -22,7 +22,7 @@ Projeto final de curso · ASP.NET Core (.NET 10) + EF Core + SQL Server LocalDB 
 
 | Conta | Email | Palavra-passe | Permissões |
 |---|---|---|---|
-| Admin | `admin@shotsbymarques.pt` | `Admin123!` | Painel de administração |
+| Admin | `marquesjoao2006@gmail.com` | `Admin123!` | Painel de administração |
 | Cliente | `cliente@shotsbymarques.pt` | `Cliente123!` | Compras, downloads, marcações |
 
 ### Contactos reais

@@ -33,6 +33,25 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/Login";
 });
 
+// ---- External authentication (Google) ----
+// Credentials come from configuration only - never hardcoded. In Development
+// they live in user-secrets (`dotnet user-secrets set ...`); in production
+// they arrive as environment variables (Authentication__Google__ClientId /
+// Authentication__Google__ClientSecret). When either value is missing the
+// Google scheme is simply not registered and the "Entrar com Google" button
+// stays hidden, so the app keeps working unconfigured.
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    builder.Services.AddAuthentication().AddGoogle(options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        options.CallbackPath = "/signin-google";
+    });
+}
+
 // ---- Localization (pt-PT default, en-US optional) ----
 // Resources are embedded with their full namespace name (ShotsByMarques.Web.Resources.SharedResource)
 builder.Services.AddLocalization();

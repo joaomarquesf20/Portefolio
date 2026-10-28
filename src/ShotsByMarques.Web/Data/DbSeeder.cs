@@ -12,7 +12,7 @@ namespace ShotsByMarques.Web.Data;
 /// </summary>
 public static class DbSeeder
 {
-    public const string AdminEmail = "admin@shotsbymarques.pt";
+    public const string AdminEmail = "marquesjoao2006@gmail.com";
     public const string AdminPassword = "Admin123!";
 
     public static async Task SeedAsync(IServiceProvider services)
