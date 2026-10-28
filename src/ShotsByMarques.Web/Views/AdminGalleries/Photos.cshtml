@@ -356,9 +356,12 @@
         // Two pickers feed the same `files` form field: plain photos or an
         // entire folder (webkitdirectory). Non-image files (DS_Store, Thumbs.db…)
         // are filtered out client-side; the two pickers are mutually exclusive.
+        // Picking a folder also pre-fills the gallery Title with the folder's
+        // name — the field stays fully editable for manual tweaks.
         var filesIn = document.getElementById('upload-files');
         var folderIn = document.getElementById('upload-folder');
         var countEl = document.getElementById('upload-count');
+        var titleIn = document.getElementById('Title');
         if (!filesIn && !folderIn) return;
 
         var IMAGE_EXT = /\.(jpe?g|png|webp|avif)$/i;
@@ -381,6 +384,10 @@
             var folder = pickFolder(input);
             var other = input === filesIn ? folderIn : filesIn;
             if (other && input.files.length > 0 && other.files.length > 0) other.value = '';
+            // Folder pick -> gallery name: the root folder of webkitRelativePath
+            // becomes the Title so the admin doesn't retype it. Only the folder
+            // picker triggers this; plain multi-file picks never touch the title.
+            if (input === folderIn && folder && titleIn) titleIn.value = folder;
             if (!countEl) return;
             if (!input.files.length) { countEl.textContent = ''; return; }
             var label = input === folderIn && folder ? ' (pasta "' + folder + '")' : '';
