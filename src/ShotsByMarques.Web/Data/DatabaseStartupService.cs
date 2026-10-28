@@ -2,7 +2,7 @@ namespace ShotsByMarques.Web.Data;
 
 /// <summary>
 /// Applies pending EF Core Migrations (creating the database on first run) and
-/// seeds roles/users/sample content when the application host actually starts.
+/// seeds the essential admin account when the application host actually starts.
 /// Registered as an IHostedService so that design-time tooling (`dotnet ef`,
 /// Visual Studio designers) — which builds the host without ever starting it —
 /// does not mutate the database as a side effect.
