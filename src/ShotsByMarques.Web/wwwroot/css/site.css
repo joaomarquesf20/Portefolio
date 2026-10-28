@@ -521,6 +521,11 @@ body.admin-page footer { display: none; }
   font-size: .7rem;
   cursor: pointer;}
 .admin-image-save:hover { background: #a1843f; }
+.admin-image-save:disabled { opacity: .55; cursor: progress; }
+.admin-image-feedback { min-height: 1.1rem; margin-top: .45rem; font-size: .72rem; line-height: 1.4; }
+.admin-image-feedback:empty { margin-top: 0; }
+.admin-image-feedback.is-success { color: #2e6b34; }
+.admin-image-feedback.is-error { color: #a83a2e; }
 
 /* ---- Availability calendar (admin) ---- */
 .admin-availability-page { color: #141414; }

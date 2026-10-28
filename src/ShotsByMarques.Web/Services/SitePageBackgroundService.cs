@@ -81,7 +81,7 @@ public sealed class SitePageBackgroundService
         return path;
     }
 
-    public async Task SaveAsync(string key, IFormFile image)
+    public async Task<string> SaveAsync(string key, IFormFile image)
     {
         if (!Keys.Contains(key, StringComparer.Ordinal))
             throw new ArgumentException("Unknown page background key.", nameof(key));
@@ -114,5 +114,7 @@ public sealed class SitePageBackgroundService
         // gallery covers are never deleted by this feature.
         if (!string.IsNullOrWhiteSpace(oldPath) && oldPath.StartsWith("/uploads/covers/", StringComparison.OrdinalIgnoreCase))
             _storage.DeletePublicCover(oldPath);
+
+        return newPath;
     }
 }

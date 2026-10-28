@@ -76,22 +76,37 @@ public class AdminSiteImagesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Upload(string key, IFormFile? image)
     {
+        // AJAX requests (fetch from the admin page) get a JSON answer so a
+        // single card updates without reloading the page — which would clear
+        // the file inputs chosen on the other cards. Plain form posts keep
+        // the redirect + TempData behaviour.
+        var isAjax = Request.Headers.XRequestedWith == "XMLHttpRequest";
+
         if (!SitePageBackgroundService.Keys.Contains(key, StringComparer.Ordinal))
-            return BadRequest();
+        {
+            return isAjax
+                ? Json(new { success = false, error = "Secção desconhecida." })
+                : BadRequest();
+        }
 
         if (image is null || image.Length == 0)
         {
-            TempData["Error"] = "Escolhe uma imagem antes de guardar.";
+            const string noFileMessage = "Escolhe uma imagem antes de guardar.";
+            if (isAjax) return Json(new { success = false, error = noFileMessage });
+            TempData["Error"] = noFileMessage;
             return RedirectToAction(nameof(Index));
         }
 
         try
         {
-            await _backgrounds.SaveAsync(key, image);
+            var imagePath = await _backgrounds.SaveAsync(key, image);
+            if (isAjax)
+                return Json(new { success = true, imagePath, message = "Imagem de fundo atualizada." });
             TempData["Success"] = "Imagem de fundo atualizada.";
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
+            if (isAjax) return Json(new { success = false, error = ex.Message });
             TempData["Error"] = ex.Message;
         }
 

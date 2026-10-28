@@ -48,7 +48,7 @@
                             <img src="@item.ImagePath" alt="@item.Label" data-image-preview />
                             <span class="admin-image-status @(item.IsCustom ? "is-custom" : "is-automatic")">
                                 <span class="admin-images-dot"></span>
-                                @(item.IsCustom ? "Personalizada" : "Automática")
+                                <span data-image-status-text>@(item.IsCustom ? "Personalizada" : "Automática")</span>
                             </span>
                         </div>
                         <div class="admin-image-card-body">
@@ -74,6 +74,7 @@
                                     <span aria-hidden="true">↑</span> Guardar imagem
                                 </button>
                             </form>
+                            <p class="admin-image-feedback" data-image-feedback role="status" aria-live="polite"></p>
                         </div>
                     </article>
                 }
@@ -88,6 +89,11 @@
             var input = card.querySelector('[data-image-input]');
             var preview = card.querySelector('[data-image-preview]');
             var fileName = card.querySelector('[data-file-name]');
+            var form = card.querySelector('.admin-image-form');
+            var button = form ? form.querySelector('[type="submit"]') : null;
+            var feedback = card.querySelector('[data-image-feedback]');
+            var status = card.querySelector('.admin-image-status');
+            var statusText = card.querySelector('[data-image-status-text]');
 
             input.addEventListener('change', function () {
                 var file = input.files && input.files[0];
@@ -99,6 +105,81 @@
                     reader.onload = function (event) { preview.src = event.target.result; };
                     reader.readAsDataURL(file);
                 }
+            });
+
+            function showFeedback(message, isError) {
+                if (!feedback) return;
+                feedback.textContent = message;
+                feedback.classList.toggle('is-error', !!isError);
+                feedback.classList.toggle('is-success', !isError);
+                if (!isError) {
+                    window.setTimeout(function () {
+                        if (feedback.textContent === message) {
+                            feedback.textContent = '';
+                            feedback.classList.remove('is-success');
+                        }
+                    }, 4000);
+                }
+            }
+
+            if (!form) return;
+
+            // Save one slot via fetch so the page never reloads — the file
+            // inputs chosen on the other cards stay untouched. Without JS the
+            // form still posts normally (full reload fallback).
+            form.addEventListener('submit', function (event) {
+                if (!window.fetch || !window.FormData) return;
+                event.preventDefault();
+
+                if (!input.files || !input.files[0]) {
+                    showFeedback('Escolhe uma imagem antes de guardar.', true);
+                    return;
+                }
+
+                var originalLabel = button ? button.textContent : '';
+                if (button) {
+                    button.disabled = true;
+                    button.textContent = 'A guardar...';
+                }
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(function (response) {
+                        return response.json().catch(function () {
+                            return { success: false, error: 'Resposta inesperada do servidor.' };
+                        });
+                    })
+                    .then(function (result) {
+                        if (result && result.success) {
+                            if (result.imagePath) {
+                                preview.src = result.imagePath + '?v=' + Date.now();
+                            }
+                            if (status) {
+                                status.classList.add('is-custom');
+                                status.classList.remove('is-automatic');
+                            }
+                            if (statusText) {
+                                statusText.textContent = 'Personalizada';
+                            }
+                            showFeedback(result.message || 'Imagem de fundo atualizada.', false);
+                            input.value = '';
+                            fileName.textContent = 'Escolher fotografia';
+                        } else {
+                            showFeedback((result && result.error) || 'Não foi possível guardar a imagem.', true);
+                        }
+                    })
+                    .catch(function () {
+                        showFeedback('Não foi possível guardar a imagem.', true);
+                    })
+                    .finally(function () {
+                        if (button) {
+                            button.disabled = false;
+                            button.textContent = originalLabel;
+                        }
+                    });
             });
         });
     </script>
