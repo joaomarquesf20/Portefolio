@@ -57,6 +57,17 @@
                     <button type="submit" class="btn-primary w-full text-center">@SharedLocalizer["NavLogin"]</button>
                 </form>
 
+                @if (ViewData["ShowResendConfirmation"] is true)
+                {
+                    <form asp-action="ResendConfirmationEmail" method="post" class="mt-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="email" value="@Model.Email" />
+                        <button type="submit" class="w-full rounded-md border border-black/15 bg-white px-4 py-3 text-sm font-medium text-[#141414] transition hover:border-black/35 hover:bg-black/[0.02]">
+                            Reenviar email de confirmação
+                        </button>
+                    </form>
+                }
+
                 @if (!string.IsNullOrWhiteSpace(Config["Authentication:Google:ClientId"]) && !string.IsNullOrWhiteSpace(Config["Authentication:Google:ClientSecret"]))
                 {
                     <div class="my-7 flex items-center gap-4">

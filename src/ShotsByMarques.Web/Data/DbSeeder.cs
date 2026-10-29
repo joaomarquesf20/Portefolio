@@ -147,18 +147,33 @@ public static class DbSeeder
 
     private static async Task SeedAdminAsync(UserManager<ApplicationUser> userManager)
     {
-        if (await userManager.FindByEmailAsync(AdminEmail) is null)
+        var admin = await userManager.FindByEmailAsync(AdminEmail);
+        if (admin is null)
         {
-            var admin = new ApplicationUser
+            admin = new ApplicationUser
             {
                 UserName = AdminEmail,
                 Email = AdminEmail,
+                EmailConfirmed = true,
                 FirstName = "João",
                 LastName = "Marques"
             };
             var result = await userManager.CreateAsync(admin, AdminPassword);
             if (result.Succeeded)
                 await userManager.AddToRoleAsync(admin, "Admin");
+        }
+
+        // Admin accounts created before email confirmation was enforced (or
+        // seeded directly) must remain able to sign in. Only the administrator
+        // accounts are auto-confirmed; normal registrations still need the
+        // confirmation link sent to their address.
+        foreach (var adminUser in await userManager.GetUsersInRoleAsync("Admin"))
+        {
+            if (!adminUser.EmailConfirmed)
+            {
+                adminUser.EmailConfirmed = true;
+                await userManager.UpdateAsync(adminUser);
+            }
         }
     }
 }

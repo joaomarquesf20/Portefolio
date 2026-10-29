@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using ShotsByMarques.Web.Models;
 using ShotsByMarques.Web.ViewModels;
 using System.Security.Claims;
+using System.Text.Encodings.Web;
 
 namespace ShotsByMarques.Web.Controllers;
 
@@ -13,13 +15,18 @@ public class AccountController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider _schemeProvider;
+    private readonly IEmailSender _emailSender;
+    private readonly ILogger<AccountController> _logger;
 
     public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
-        Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider schemeProvider)
+        Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider schemeProvider,
+        IEmailSender emailSender, ILogger<AccountController> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _schemeProvider = schemeProvider;
+        _emailSender = emailSender;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -41,13 +48,88 @@ public class AccountController : Controller
             var result = await _userManager.CreateAsync(user, model.Password);
             if (result.Succeeded)
             {
-                await _signInManager.SignInAsync(user, isPersistent: false);
-                return RedirectToAction("Index", "Home");
+                // Do not sign the user in yet: the account is only usable after
+                // the confirmation link sent to the registered address is opened.
+                try
+                {
+                    await SendConfirmationEmailAsync(user);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send the account confirmation email for user {UserId}.", user.Id);
+                    TempData["ConfirmationEmailError"] =
+                        "A conta foi criada, mas não foi possível enviar o email de confirmação agora. Usa o botão abaixo para tentar novamente.";
+                }
+
+                return RedirectToAction(nameof(RegisterConfirmation), new { email = model.Email });
             }
             foreach (var error in result.Errors)
                 ModelState.AddModelError(string.Empty, error.Description);
         }
         return View(model);
+    }
+
+    [HttpGet]
+    public IActionResult RegisterConfirmation(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return RedirectToAction(nameof(Login));
+
+        ViewData["Email"] = email;
+        return View();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ConfirmEmail(string? userId, string? code)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(code))
+            return ConfirmationResult(false, "O link de confirmação é inválido.");
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+            return ConfirmationResult(false, "A conta associada a este link já não existe.");
+
+        if (await _userManager.IsEmailConfirmedAsync(user))
+            return ConfirmationResult(true, "O teu email já estava confirmado. Já podes iniciar sessão.");
+
+        var result = await _userManager.ConfirmEmailAsync(user, code);
+        if (!result.Succeeded)
+            return ConfirmationResult(false, "O link de confirmação é inválido ou expirou. Pede um novo email.");
+
+        return ConfirmationResult(true, "Email confirmado com sucesso. Já podes iniciar sessão.");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResendConfirmationEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            TempData["ConfirmationEmailError"] = "Indica o email da conta.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is not null && !await _userManager.IsEmailConfirmedAsync(user))
+        {
+            try
+            {
+                await SendConfirmationEmailAsync(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to resend the account confirmation email for user {UserId}.", user.Id);
+                TempData["ConfirmationEmailError"] =
+                    "Não foi possível enviar o email de confirmação agora. Tenta novamente mais tarde.";
+                return RedirectToAction(nameof(RegisterConfirmation), new { email });
+            }
+        }
+
+        // Same response for unknown or already-confirmed addresses, so the
+        // endpoint cannot be used to discover registered accounts.
+        TempData["ConfirmationEmailSent"] =
+            "Se existir uma conta por confirmar com este email, enviámos um novo link.";
+        return RedirectToAction(nameof(RegisterConfirmation), new { email });
     }
 
     [HttpGet]
@@ -75,6 +157,14 @@ public class AccountController : Controller
             return RedirectToAction("Index", "Home");
         }
 
+        if (result.IsNotAllowed)
+        {
+            ModelState.AddModelError(string.Empty,
+                "A conta ainda não está confirmada. Verifica o teu email e abre o link de confirmação.");
+            ViewData["ShowResendConfirmation"] = true;
+            return View(model);
+        }
+
         ModelState.AddModelError(string.Empty, "Email ou palavra-passe inválidos.");
         return View(model);
     }
@@ -85,6 +175,40 @@ public class AccountController : Controller
     {
         await _signInManager.SignOutAsync();
         return RedirectToAction("Index", "Home");
+    }
+
+    private async Task SendConfirmationEmailAsync(ApplicationUser user)
+    {
+        var email = user.Email;
+        if (string.IsNullOrWhiteSpace(email))
+            throw new InvalidOperationException("The user does not have an email address.");
+
+        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var callbackUrl = Url.Action(
+            nameof(ConfirmEmail),
+            "Account",
+            new { userId = user.Id, code },
+            Request.Scheme)
+            ?? throw new InvalidOperationException("Could not build the email confirmation link.");
+
+        var safeUrl = HtmlEncoder.Default.Encode(callbackUrl);
+        var html = $"""
+            <p>Olá,</p>
+            <p>Obrigado por criares uma conta no <strong>Shots By Marques</strong>.</p>
+            <p>Para ativares a tua conta, confirma o teu email através do link abaixo:</p>
+            <p><a href="{safeUrl}">Confirmar email</a></p>
+            <p>Se não criaste esta conta, podes ignorar este email.</p>
+            <p>— Shots By Marques</p>
+            """;
+
+        await _emailSender.SendEmailAsync(email, "Confirma o teu email — Shots By Marques", html);
+    }
+
+    private IActionResult ConfirmationResult(bool succeeded, string message)
+    {
+        ViewData["Confirmed"] = succeeded;
+        ViewData["ConfirmationMessage"] = message;
+        return View("ConfirmEmail");
     }
 
     // ---- External (Google) login ----
