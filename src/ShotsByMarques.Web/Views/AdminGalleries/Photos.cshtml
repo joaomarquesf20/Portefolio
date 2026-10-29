@@ -136,7 +136,7 @@
                 {
                     <div data-price-section>
                         <label class="block text-sm font-medium mb-2">@SharedLocalizer["Price"] (€)</label>
-                        <input type="number" name="price" step="0.01" min="0" value="10"
+                        <input type="number" name="price" step="0.01" min="0" value="3"
                                class="w-28 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-2.5 focus:outline-none focus:border-accent transition" />
                     </div>
                     <div data-price-section class="pb-2.5">
@@ -182,7 +182,7 @@
                     <form asp-action="ApplyPriceToAll" method="post" id="apply-all-form">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@Model.Id" />
-                        <input type="hidden" name="price" id="apply-all-price" value="10" />
+                        <input type="hidden" name="price" id="apply-all-price" value="3" />
                         @if (isEvent)
                         {
                             <input type="hidden" name="forSale" id="apply-all-forsale" value="true" />
@@ -203,19 +203,19 @@
             <h2 class="font-display text-2xl">@SharedLocalizer["Photos"] (@Model.Photos.Count)</h2>
         </div>
 
-        @if (isEvent)
-        {
-            <div id="photo-bulk-bar" data-price-section class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
-                <label class="flex items-center gap-2 text-white/70 cursor-pointer">
-                    <input type="checkbox" id="photo-select-all" class="accent-[color:var(--accent)] w-4 h-4" />
-                    <span id="photo-select-all-label">@SharedLocalizer["SelectAll"]</span>
-                </label>
-                <span class="text-white/40" id="photo-selected-count">0</span>
-                <div class="flex-1"></div>
-                <form asp-action="ApplyPriceToSelected" method="post" class="inline">
+        <div id="photo-bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
+            <label class="flex items-center gap-2 text-white/70 cursor-pointer">
+                <input type="checkbox" id="photo-select-all" class="accent-[color:var(--accent)] w-4 h-4" />
+                <span id="photo-select-all-label">@SharedLocalizer["SelectAll"]</span>
+            </label>
+            <span class="text-white/40" id="photo-selected-count">0</span>
+            <div class="flex-1"></div>
+            @if (isEvent)
+            {
+                <form asp-action="ApplyPriceToSelected" method="post" class="inline flex flex-wrap items-center gap-3" data-price-section>
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="ids" id="photo-bulk-ids" value="" />
-                    <input type="number" name="price" id="photo-bulk-price" step="0.01" min="0" value="10"
+                    <input type="number" name="price" id="photo-bulk-price" step="0.01" min="0" value="3"
                            class="w-24 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-3 py-2 focus:outline-none focus:border-accent transition" />
                     €
                     <input type="hidden" name="forSale" id="photo-bulk-forsale" value="true" />
@@ -224,19 +224,23 @@
                     <button type="submit" id="photo-bulk-free" class="btn-outline !px-4 !py-2" disabled
                             onclick="return photoBulkSubmit('false')">Marcar sem preço</button>
                 </form>
-            </div>
-        }
+            }
+            <form asp-action="DeleteSelected" method="post" class="inline" onsubmit="return photoBulkDeleteConfirm()">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ids" id="photo-bulk-delete-ids" value="" />
+                <button type="submit" id="photo-bulk-delete" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled>
+                    🗑️ @SharedLocalizer["DeleteSelected"]
+                </button>
+            </form>
+        </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             @foreach (var photo in Model.Photos)
             {
                 <div class="card overflow-hidden fade-up photo-item" data-photo-id="@photo.Id">
                     <div class="relative">
-                        @if (isEvent)
-                        {
-                            <input type="checkbox" data-price-section class="photo-check accent-[color:var(--accent)] w-4 h-4 absolute top-2 left-2 z-10" value="@photo.Id"
-                                   aria-label="@photo.Title" />
-                        }
+                        <input type="checkbox" class="photo-check accent-[color:var(--accent)] w-4 h-4 absolute top-2 left-2 z-10" value="@photo.Id"
+                               aria-label="@photo.Title" />
                         <img src="@photo.PreviewUrl()" alt="@photo.Title" class="aspect-[3/2] w-full object-cover" />
                         @if (Model.CoverPath == photo.PreviewPath)
                         {
@@ -245,17 +249,24 @@
                     </div>
                     <div class="p-4">
                         <p class="text-sm font-medium truncate">@photo.Title</p>
-                        <div data-price-section>
-                            @if (photo.IsForSale)
-                            {
-                                <p class="text-accent text-sm font-semibold mt-1">@photo.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
-                                <span class="inline-block mt-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/15 rounded-full px-2 py-0.5">@SharedLocalizer["ForSale"]</span>
-                            }
-                            else
-                            {
-                                <p class="text-white/50 text-xs mt-1">@SharedLocalizer["IncludedInSession"]</p>
-                            }
-                        </div>
+                        @if (isEvent)
+                        {
+                            <div data-price-section>
+                                @if (photo.IsForSale)
+                                {
+                                    <p class="text-accent text-sm font-semibold mt-1">@photo.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
+                                    <span class="inline-block mt-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/15 rounded-full px-2 py-0.5">@SharedLocalizer["ForSale"]</span>
+                                }
+                                else
+                                {
+                                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["IncludedInSession"]</p>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-white/50 text-xs mt-1">@SharedLocalizer["IncludedInSession"]</p>
+                        }
                         <div class="flex items-center gap-3 mt-3">
                             @if (isEvent)
                             {
@@ -356,6 +367,8 @@
         // Two pickers feed the same `files` form field: plain photos or an
         // entire folder (webkitdirectory). Non-image files (DS_Store, Thumbs.db…)
         // are filtered out client-side; the two pickers are mutually exclusive.
+        // Folder uploads are ROOT-ONLY: files inside subfolders are ignored, so a
+        // selected directory uploads exactly the images sitting at its top level.
         // Picking a folder also pre-fills the gallery Title with the folder's
         // name — the field stays fully editable for manual tweaks.
         var filesIn = document.getElementById('upload-files');
@@ -367,31 +380,42 @@
         var IMAGE_EXT = /\.(jpe?g|png|webp|avif)$/i;
 
         function pickFolder(input) {
-            if (!input.files || input.files.length === 0) return null;
+            if (!input.files || input.files.length === 0) return { folder: null, ignored: 0, filtered: 0 };
             var dt = new DataTransfer();
             var folder = null;
+            var ignored = 0;
+            var filtered = 0;
             Array.from(input.files).forEach(function (f) {
-                if (IMAGE_EXT.test(f.name)) {
-                    dt.items.add(f);
-                    if (!folder && f.webkitRelativePath) folder = f.webkitRelativePath.split('/')[0];
-                }
+                if (!IMAGE_EXT.test(f.name)) { filtered++; return; }
+                var rel = (f.webkitRelativePath || '').replace(/\\/g, '/');
+                // "pasta/foto.jpg" = root of the selected folder.
+                // "pasta/subpasta/foto.jpg" = inside a subfolder → ignore.
+                if (rel && rel.split('/').length > 2) { ignored++; return; }
+                dt.items.add(f);
+                if (!folder && rel) folder = rel.split('/')[0];
             });
             input.files = dt.files;
-            return folder;
+            return { folder: folder, ignored: ignored, filtered: filtered };
         }
 
         function update(input) {
-            var folder = pickFolder(input);
+            var result = pickFolder(input);
             var other = input === filesIn ? folderIn : filesIn;
             if (other && input.files.length > 0 && other.files.length > 0) other.value = '';
             // Folder pick -> gallery name: the root folder of webkitRelativePath
             // becomes the Title so the admin doesn't retype it. Only the folder
             // picker triggers this; plain multi-file picks never touch the title.
-            if (input === folderIn && folder && titleIn) titleIn.value = folder;
+            if (input === folderIn && result.folder && titleIn) titleIn.value = result.folder;
             if (!countEl) return;
-            if (!input.files.length) { countEl.textContent = ''; return; }
-            var label = input === folderIn && folder ? ' (pasta "' + folder + '")' : '';
-            countEl.textContent = input.files.length + (input.files.length === 1 ? ' foto selecionada' : ' fotos selecionadas') + label;
+            if (!input.files.length) {
+                countEl.textContent = result.ignored > 0
+                    ? 'Nenhuma foto na raiz — ' + result.ignored + ' foto(s) em subpastas ignorada(s).'
+                    : '';
+                return;
+            }
+            var label = input === folderIn && result.folder ? ' (pasta "' + result.folder + '")' : '';
+            var ignoredNote = result.ignored > 0 ? ' · ' + result.ignored + ' em subpastas ignorada(s)' : '';
+            countEl.textContent = input.files.length + (input.files.length === 1 ? ' foto selecionada' : ' fotos selecionadas') + label + ignoredNote;
         }
 
         [filesIn, folderIn].forEach(function (el) {
@@ -400,7 +424,71 @@
     })();
 </script>
 
-@if (!Model.IsSession && !Model.BookingId.HasValue)
+@if (Model.Photos.Count > 0)
+{
+    <script>
+        (function () {
+            // ----- Per-photo selection: batch delete (all galleries) and,
+            // for event galleries, batch price updates -----
+            var checks = Array.from(document.querySelectorAll('.photo-check'));
+            var selectAll = document.getElementById('photo-select-all');
+            var bulkBar = document.getElementById('photo-bulk-bar');
+            var countEl = document.getElementById('photo-selected-count');
+            var bulkIds = document.getElementById('photo-bulk-ids');
+            var deleteIds = document.getElementById('photo-bulk-delete-ids');
+            var bulkApply = document.getElementById('photo-bulk-apply');
+            var bulkFree = document.getElementById('photo-bulk-free');
+            var deleteBtn = document.getElementById('photo-bulk-delete');
+            var selectAllLabel = document.getElementById('photo-select-all-label');
+
+            function refresh() {
+                var selected = checks.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+                var joined = selected.join(',');
+                if (bulkIds) bulkIds.value = joined;
+                if (deleteIds) deleteIds.value = joined;
+                if (countEl) countEl.textContent = selected.length > 0 ? selected.length : '';
+                if (bulkBar) bulkBar.classList.toggle('hidden', selected.length === 0);
+                if (bulkApply) bulkApply.disabled = selected.length === 0;
+                if (bulkFree) bulkFree.disabled = selected.length === 0;
+                if (deleteBtn) deleteBtn.disabled = selected.length === 0;
+                if (selectAll) {
+                    selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
+                    if (selectAllLabel) {
+                        selectAllLabel.textContent = selectAll.checked
+                            ? "@SharedLocalizer["DeselectAll"]"
+                            : "@SharedLocalizer["SelectAll"]";
+                    }
+                }
+            }
+            checks.forEach(function (c) { c.addEventListener('change', refresh); });
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    checks.forEach(function (c) { c.checked = selectAll.checked; });
+                    refresh();
+                });
+            }
+
+            window.photoBulkSubmit = function (forSale) {
+                if (!bulkIds) return false;
+                bulkIds.value = checks.filter(function (c) { return c.checked; })
+                    .map(function (c) { return c.value; }).join(',');
+                var forSaleInput = document.getElementById('photo-bulk-forsale');
+                if (forSaleInput) forSaleInput.value = forSale;
+                return true;
+            };
+
+            window.photoBulkDeleteConfirm = function () {
+                var selected = checks.filter(function (c) { return c.checked; }).length;
+                if (selected === 0) return false;
+                return confirm("@SharedLocalizer["ConfirmDelete"]");
+            };
+
+            refresh();
+        })();
+    </script>
+}
+
+@if (isEvent)
 {
     <script>
         (function () {
@@ -416,44 +504,6 @@
             if (uploadForSale && applyForSale) {
                 uploadForSale.addEventListener('change', function () { applyForSale.value = uploadForSale.checked ? 'true' : 'false'; });
             }
-
-            // ----- Per-photo selection: apply price to the selected photos only -----
-            var checks = Array.from(document.querySelectorAll('.photo-check'));
-            var selectAll = document.getElementById('photo-select-all');
-            var bulkBar = document.getElementById('photo-bulk-bar');
-            var countEl = document.getElementById('photo-selected-count');
-            var bulkIds = document.getElementById('photo-bulk-ids');
-            var bulkApply = document.getElementById('photo-bulk-apply');
-            var bulkFree = document.getElementById('photo-bulk-free');
-            var selectAllLabel = document.getElementById('photo-select-all-label');
-
-            function refresh() {
-                var selected = checks.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
-                bulkIds.value = selected.join(',');
-                countEl.textContent = selected.length > 0 ? selected.length : '';
-                bulkBar.classList.toggle('hidden', selected.length === 0);
-                bulkApply.disabled = selected.length === 0;
-                bulkFree.disabled = selected.length === 0;
-                selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
-                selectAllLabel.textContent = selectAll.checked
-                    ? "@SharedLocalizer["DeselectAll"]"
-                    : "@SharedLocalizer["SelectAll"]";
-            }
-            checks.forEach(function (c) { c.addEventListener('change', refresh); });
-            if (selectAll) {
-                selectAll.addEventListener('change', function () {
-                    checks.forEach(function (c) { c.checked = selectAll.checked; });
-                    refresh();
-                });
-            }
-
-            window.photoBulkSubmit = function (forSale) {
-                bulkIds.value = checks.filter(function (c) { return c.checked; })
-                    .map(function (c) { return c.value; }).join(',');
-                document.getElementById('photo-bulk-forsale').value = forSale;
-                return true;
-            };
-            refresh();
         })();
     </script>
 }

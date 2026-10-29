@@ -130,6 +130,23 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshCartBadge();
   window.addEventListener("sbm:cart-change", refreshCartBadge);
 
+  // ----- Show/hide password toggles (Login / Register) -----
+  document.querySelectorAll("[data-password-toggle]").forEach(btn => {
+    const input = document.getElementById(btn.getAttribute("aria-controls") || "");
+    if (!input) return;
+    const showIcon = btn.querySelector("[data-eye-show]");
+    const hideIcon = btn.querySelector("[data-eye-hide]");
+    btn.addEventListener("click", () => {
+      const reveal = input.type === "password";
+      input.type = reveal ? "text" : "password";
+      btn.setAttribute("aria-pressed", reveal ? "true" : "false");
+      btn.setAttribute("aria-label", reveal ? "Ocultar palavra-passe" : "Mostrar palavra-passe");
+      showIcon?.classList.toggle("hidden", reveal);
+      hideIcon?.classList.toggle("hidden", !reveal);
+      input.focus();
+    });
+  });
+
   // ----- Photo protection / anti-theft -----
   // Deterrents, not absolute protection — the real protection is the asset
   // split: grid thumbs are small & watermark-free, the large lightbox preview

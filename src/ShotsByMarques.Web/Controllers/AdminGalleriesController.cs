@@ -10,6 +10,9 @@ namespace ShotsByMarques.Web.Controllers;
 [Authorize(Roles = "Admin")]
 public class AdminGalleriesController : Controller
 {
+    /// <summary>Default per-photo price for event galleries (€).</summary>
+    private const decimal DefaultPhotoPrice = 3m;
+
     private readonly ApplicationDbContext _db;
     private readonly PhotoStorageService _storage;
 
@@ -118,12 +121,14 @@ public class AdminGalleriesController : Controller
 
         // A gallery linked to a booking is always a session gallery (photos included).
         if (gallery.BookingId.HasValue)
-        {
             gallery.IsSession = true;
-            // The session is already paid — the photos must NEVER be sold
-            // separately, even if they were uploaded with a price before the
-            // gallery became private (e.g. an event gallery turned into a
-            // session delivery). Clear the price of every photo.
+
+        // Session galleries are priced as a package, never per photo: the photos
+        // must NEVER be sold separately, even if they were uploaded with a price
+        // before the gallery became a session (e.g. an event turned into a
+        // session delivery). Clear the price of every photo.
+        if (gallery.IsSession)
+        {
             var photos = await _db.Photos.Where(p => p.GalleryId == gallery.Id).ToListAsync();
             foreach (var photo in photos)
             {
@@ -255,6 +260,8 @@ public class AdminGalleriesController : Controller
         var isSessionGallery = gallery.IsSession || gallery.BookingId.HasValue;
         if (isSessionGallery)
             forSale = false;
+        else if (forSale && price <= 0)
+            price = DefaultPhotoPrice;
 
         var maxSort = await _db.Photos.Where(p => p.GalleryId == id).MaxAsync(p => (int?)p.SortOrder) ?? 0;
         var skipped = 0;
@@ -322,7 +329,7 @@ public class AdminGalleriesController : Controller
         }
 
         if (forSale && price <= 0)
-            price = 10m;
+            price = DefaultPhotoPrice;
 
         var photos = await _db.Photos.Where(p => p.GalleryId == id).ToListAsync();
         foreach (var photo in photos)
@@ -371,7 +378,7 @@ public class AdminGalleriesController : Controller
         }
 
         if (forSale && price <= 0)
-            price = 10m;
+            price = DefaultPhotoPrice;
 
         foreach (var photo in photos)
         {
@@ -406,7 +413,7 @@ public class AdminGalleriesController : Controller
         if (!photo.IsForSale)
             photo.Price = 0m;
         else if (photo.Price <= 0)
-            photo.Price = 10m;
+            photo.Price = DefaultPhotoPrice;
         await _db.SaveChangesAsync();
 
         return RedirectToAction(nameof(Photos), new { id = photo.GalleryId });
@@ -424,6 +431,41 @@ public class AdminGalleriesController : Controller
         _storage.Delete(photo.FilePath, photo.PreviewPath);
         _db.Photos.Remove(photo);
         await _db.SaveChangesAsync();
+        return RedirectToAction(nameof(Photos), new { id = galleryId });
+    }
+
+    /// <summary>
+    /// Deletes several photos at once (multi-select checkboxes in the photo
+    /// manager). Works for event and session galleries alike.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteSelected(string ids)
+    {
+        var idList = (ids ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        if (idList.Count == 0)
+            return RedirectToAction(nameof(Index));
+
+        var photos = await _db.Photos
+            .Where(p => idList.Contains(p.Id))
+            .ToListAsync();
+        if (photos.Count == 0)
+            return RedirectToAction(nameof(Index));
+
+        var galleryId = photos[0].GalleryId;
+        foreach (var photo in photos)
+            _storage.Delete(photo.FilePath, photo.PreviewPath);
+
+        _db.Photos.RemoveRange(photos);
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"{photos.Count} foto(s) eliminada(s).";
         return RedirectToAction(nameof(Photos), new { id = galleryId });
     }
 

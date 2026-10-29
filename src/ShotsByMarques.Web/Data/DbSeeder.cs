@@ -56,6 +56,24 @@ public static class DbSeeder
         if (mislabelled.Count > 0)
             await db.SaveChangesAsync();
 
+        // Session galleries are priced as a package, never per photo: make sure
+        // no photo in a session/private gallery is left with a sale price, even
+        // if it was uploaded before the gallery became a session.
+        var sessionGalleryIds = await db.Galleries
+            .Where(g => g.IsSession || g.BookingId != null)
+            .Select(g => g.Id)
+            .ToListAsync();
+        var pricedSessionPhotos = await db.Photos
+            .Where(p => sessionGalleryIds.Contains(p.GalleryId) && (p.IsForSale || p.Price != 0m))
+            .ToListAsync();
+        foreach (var photo in pricedSessionPhotos)
+        {
+            photo.IsForSale = false;
+            photo.Price = 0m;
+        }
+        if (pricedSessionPhotos.Count > 0)
+            await db.SaveChangesAsync();
+
         // ---- First-run defaults (brand-new database only) ----
         // Offering configuration (a starting session type + photo packs) is
         // seeded once so a fresh install can take bookings immediately. It is
@@ -82,6 +100,19 @@ public static class DbSeeder
         // ---- Essential accounts (idempotent on every startup) ----
         await SeedRolesAsync(roleManager);
         await SeedAdminAsync(userManager);
+
+        // ---- Volume discount tiers ----
+        // Ensure the default photo packs exist even on databases created before
+        // the packs feature. Existing packs are left untouched (the admin may
+        // have customised them), so this only fills an empty table.
+        if (!await db.PhotoPacks.AnyAsync())
+        {
+            db.PhotoPacks.AddRange(
+                new PhotoPack { Name = "Pack 5 Fotos", MinPhotos = 5, DiscountPercent = 10m, SortOrder = 1 },
+                new PhotoPack { Name = "Pack 10 Fotos", MinPhotos = 10, DiscountPercent = 15m, SortOrder = 2 },
+                new PhotoPack { Name = "Pack 20 Fotos", MinPhotos = 20, DiscountPercent = 20m, SortOrder = 3 });
+            await db.SaveChangesAsync();
+        }
 
         // Mini-session type — required for event-day mini bookings (created on
         // fresh and existing databases). Price/duration are editable in the admin.
