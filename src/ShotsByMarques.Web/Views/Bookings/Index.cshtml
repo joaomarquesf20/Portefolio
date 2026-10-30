@@ -95,7 +95,7 @@
                 var big = (ti % 6) is 0 or 5;
                 <a href="/sessoes/marcar/@st.Id"
                    class="rv @(gi % 2 == 0 ? "rv-d1" : "") group relative block overflow-hidden @TileClass(ti, sessionTypes.Count)">
-                    <img src="@(st.ImagePath ?? pageCover)" alt="@st.Name" loading="lazy"
+                    <img src="@st.ImagePath.ToWebPath(pageCover)" alt="@st.Name" loading="lazy"
                          class="h-full w-full object-cover transition duration-[1100ms] ease-out group-hover:scale-[1.04]" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
                     <span class="absolute left-4 top-4 font-display text-xs tabular-nums text-white/70">@(gi.ToString("00"))</span>

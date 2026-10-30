@@ -5,6 +5,44 @@ namespace ShotsByMarques.Web.Helpers;
 public static class PhotoUrlHelper
 {
     /// <summary>
+    /// Normalizes a stored image path (e.g. SessionType.ImagePath) into a URL
+    /// the browser can load. Normally the value is a clean wwwroot-relative
+    /// path ("/sample-photos/cars-cover.svg"), but stray absolute local values
+    /// such as "C:\Users\...\wwwroot\sample-photos\cars-cover.svg" would render
+    /// broken-image icons. Backslashes and "~/" are normalized, anything before
+    /// "/wwwroot/" is stripped so the URL always originates from wwwroot, and
+    /// unrecoverable local paths (drive letters, UNC shares, "file:") fall back
+    /// to the supplied default image instead of 404ing in the browser.
+    /// </summary>
+    public static string ToWebPath(this string? path, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return fallback;
+
+        var url = path.Trim().Replace('\\', '/');
+        if (url.StartsWith("~/", StringComparison.Ordinal)) url = url[2..];
+
+        // Absolute remote URL — already loadable by the browser, use as-is.
+        if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            return url;
+
+        // Absolute filesystem path: keep only the section served from wwwroot.
+        var wwwrootIndex = url.IndexOf("/wwwroot/", StringComparison.OrdinalIgnoreCase);
+        if (wwwrootIndex >= 0) return url[(wwwrootIndex + "/wwwroot/".Length)..];
+        if (url.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase)) return url["wwwroot/".Length..];
+
+        // Unrecoverable local paths (drive "C:/..."/UNC "//server/..."/"file:")
+        // can never resolve through the server — serve the fallback image.
+        var isLocalAbsolute =
+            (url.Length >= 2 && char.IsAsciiLetter(url[0]) && url[1] == ':') ||
+            (url.StartsWith("//") && url.Length > 2) ||
+            url.StartsWith("file:", StringComparison.OrdinalIgnoreCase);
+        if (isLocalAbsolute) return fallback;
+
+        return url.StartsWith('/') ? url : '/' + url;
+    }
+
+    /// <summary>
     /// Large (watermarked) preview URL. THIS IS THE LIGHTBOX-ONLY ASSET —
     /// the view must never place it in a src attribute; site.js receives it
     /// via a data-secure-src attribute and swaps it in as a blob: URL.

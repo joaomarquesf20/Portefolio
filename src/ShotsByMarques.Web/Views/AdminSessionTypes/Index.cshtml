@@ -49,7 +49,7 @@
                 <div class="admin-session-type-main">
                     <input type="checkbox" class="session-check accent-[color:var(--accent)] w-4 h-4" value="@session.Id" aria-label="@session.Name" />
                     <div class="admin-session-type-cover-wrap">
-                        <img src="@(session.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@session.Name" class="admin-session-type-cover" loading="lazy" />
+                        <img src="@session.ImagePath.ToWebPath("/sample-photos/cars-cover.svg")" alt="@session.Name" class="admin-session-type-cover" loading="lazy" />
                         <span class="admin-session-type-order">@(i + 1).º</span>
                     </div>
                     <div class="admin-session-type-info">

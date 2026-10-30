@@ -72,23 +72,63 @@ public class CheckoutController : Controller
     [Produces("application/json")]
     public IActionResult ValidateDiscount([FromForm] DiscountCodeRequest request)
     {
-        if (!ModelState.IsValid)
+        // The browser sends the base price as an invariant-culture string
+        // (e.g. "24.30"); binding it as decimal broke on comma-culture servers.
+        // Parse it manually here instead, so model binding never rejects it.
+        if (request is null)
         {
-            var message = ModelState.Values
-                .SelectMany(v => v.Errors)
-                .Select(e => e.ErrorMessage)
-                .FirstOrDefault(e => !string.IsNullOrWhiteSpace(e))
-                ?? "Os dados do código promocional são inválidos.";
             return Json(new DiscountCodeResponse
             {
                 Success = false,
                 DiscountAmount = 0m,
-                FinalPrice = Math.Max(0m, request?.BasePrice ?? 0m),
+                FinalPrice = 0m,
+                Message = "Os dados do código promocional são inválidos."
+            });
+        }
+
+        decimal basePrice = 0m;
+        var parseError = false;
+        try
+        {
+            if (request.BasePrice is null)
+            {
+                parseError = true;
+            }
+            else
+            {
+                basePrice = decimal.Parse(request.BasePrice, System.Globalization.CultureInfo.InvariantCulture);
+            }
+        }
+        catch (FormatException)
+        {
+            parseError = true;
+        }
+        catch (OverflowException)
+        {
+            parseError = true;
+        }
+
+        basePrice = Math.Max(0m, basePrice);
+
+        if (parseError || !ModelState.IsValid)
+        {
+            var message = parseError
+                ? "O preço base é inválido."
+                : ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .FirstOrDefault(e => !string.IsNullOrWhiteSpace(e))
+                    ?? "Os dados do código promocional são inválidos.";
+            return Json(new DiscountCodeResponse
+            {
+                Success = false,
+                DiscountAmount = 0m,
+                FinalPrice = basePrice,
                 Message = message
             });
         }
 
-        return Json(DiscountCodeService.Validate(request.Code, request.BasePrice));
+        return Json(DiscountCodeService.Validate(request.Code, basePrice));
     }
 
     [HttpPost]

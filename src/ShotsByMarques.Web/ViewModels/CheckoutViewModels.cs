@@ -38,8 +38,7 @@ public class DiscountCodeRequest
     [StringLength(50)]
     public string Code { get; set; } = string.Empty;
 
-    [Range(0, double.MaxValue, ErrorMessage = "O preço base é inválido.")]
-    public decimal BasePrice { get; set; }
+    public string BasePrice { get; set; } = string.Empty;
 }
 
 /// <summary>JSON payload used by the promo-code AJAX handler.</summary>

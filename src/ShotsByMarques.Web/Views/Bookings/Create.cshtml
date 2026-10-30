@@ -28,7 +28,7 @@
         <a href="/sessoes" class="booking-back">← Voltar às sessões</a>
         <div class="booking-hero-content">
             <div class="booking-service-image">
-                <img src="@(Model.SessionType!.ImagePath ?? "/sample-photos/cars-cover.svg")" alt="@Model.SessionType.Name" />
+                <img src="@Model.SessionType!.ImagePath.ToWebPath("/sample-photos/cars-cover.svg")" alt="@Model.SessionType.Name" />
             </div>
             <div class="booking-service-copy">
                 <p class="booking-eyebrow">SHOTS BY MARQUES · ANCEDE</p>

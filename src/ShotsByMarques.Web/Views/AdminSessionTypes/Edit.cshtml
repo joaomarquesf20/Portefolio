@@ -33,7 +33,7 @@
             @if (!string.IsNullOrEmpty(Model.ImagePath))
             {
                 <div class="mb-3">
-                    <img src="@Model.ImagePath" alt="@Model.Name" class="w-full max-w-xs h-40 object-cover rounded-xl border border-[color:var(--border)]" />
+                    <img src="@Model.ImagePath.ToWebPath("/sample-photos/cars-cover.svg")" alt="@Model.Name" class="w-full max-w-xs h-40 object-cover rounded-xl border border-[color:var(--border)]" />
                 </div>
             }
             <input type="file" name="cover" accept="image/*" class="text-sm text-white/60" />
