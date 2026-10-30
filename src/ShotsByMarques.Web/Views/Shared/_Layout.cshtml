@@ -316,44 +316,49 @@
                 </button>
             </div>
         </div>
-
-        @* Mobile full-screen menu (site.js toggles #mobile-menu on #menu-btn click) *@
-        <div id="mobile-menu" class="fixed inset-0 z-40 hidden bg-[#faf9f7] px-7 pb-16 pt-24 text-[#141414]">
-            <button onclick="document.getElementById('mobile-menu').classList.add('hidden')" class="absolute right-5 top-20 text-3xl text-black/40 transition hover:text-black" aria-label="Fechar menu">✕</button>
-
-            <nav class="flex flex-col gap-1 font-display text-3xl font-bold tracking-[-0.02em]">
-                <a href="/portfolio" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">01</span>@SharedLocalizer["NavPortfolio"]</a>
-                <a href="/servicos" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">02</span>@SharedLocalizer["NavServices"]</a>
-                <a href="/sessoes" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">03</span>@SharedLocalizer["NavSessions"]</a>
-                <a href="/#contacto" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">04</span>@SharedLocalizer["NavContact"]</a>
-                <a href="/Checkout" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">05</span>@SharedLocalizer["NavCart"]</a>
-            </nav>
-
-            <div class="mt-8 space-y-3 border-t border-black/10 pt-8 text-sm text-black/60">
-                @if (User.Identity!.IsAuthenticated)
-                {
-                    <a href="/as-minhas-marcacoes" class="block transition hover:text-black">@SharedLocalizer["NavMyBookings"]</a>
-                    <a href="/downloads" class="block transition hover:text-black">@SharedLocalizer["NavDownloads"]</a>
-                    <form asp-controller="Account" asp-action="Logout" method="post" onsubmit="try{localStorage.removeItem('sbm_cart')}catch(e){}">
-                        @Html.AntiForgeryToken()
-                        <button class="transition hover:text-[#a1843f]">@SharedLocalizer["NavLogout"]</button>
-                    </form>
-                }
-                else
-                {
-                    <a href="/Account/Login" class="block transition hover:text-black">@SharedLocalizer["NavLogin"]</a>
-                    <a href="/Account/Register" class="block transition hover:text-[#a1843f]">@SharedLocalizer["NavRegister"]</a>
-                }
-            </div>
-
-            <form asp-controller="Culture" asp-action="Set" method="post" class="mt-10 flex items-center gap-2 text-xs">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                <button name="culture" value="pt-PT" class="rounded-full border border-black/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-[#141414] text-white" : "text-black/60 hover:text-black")">PT</button>
-                <button name="culture" value="en-US" class="rounded-full border border-black/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-[#141414] text-white" : "text-black/60 hover:text-black")">EN</button>
-            </form>
-        </div>
     </header>
+
+    @* Mobile full-screen menu — MUST live outside <header>: the scrolled
+       header's backdrop-filter turns the header into the containing block for
+       fixed children, which would clip this overlay to the 64px top bar.
+       Outside it, fixed resolves against the viewport and z-[100] covers
+       everything (header z-50, toasts z-40). site.js toggles #mobile-menu on
+       #menu-btn click and locks body scroll while it is open. *@
+    <div id="mobile-menu" class="fixed inset-0 z-[100] hidden w-full h-screen overflow-y-auto bg-[#faf9f7] px-7 pb-16 pt-24 text-[#141414]" role="dialog" aria-modal="true" aria-label="Menu">
+        <button data-menu-close class="fixed right-4 top-4 p-2 text-3xl leading-none text-black/40 transition hover:text-black" aria-label="Fechar menu">✕</button>
+
+        <nav class="flex flex-col gap-1 font-display text-3xl font-bold tracking-[-0.02em]">
+            <a href="/portfolio" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">01</span>@SharedLocalizer["NavPortfolio"]</a>
+            <a href="/servicos" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">02</span>@SharedLocalizer["NavServices"]</a>
+            <a href="/sessoes" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">03</span>@SharedLocalizer["NavSessions"]</a>
+            <a href="/#contacto" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">04</span>@SharedLocalizer["NavContact"]</a>
+            <a href="/Checkout" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">05</span>@SharedLocalizer["NavCart"]</a>
+        </nav>
+
+        <div class="mt-8 space-y-3 border-t border-black/10 pt-8 text-sm text-black/60">
+            @if (User.Identity!.IsAuthenticated)
+            {
+                <a href="/as-minhas-marcacoes" class="block transition hover:text-black">@SharedLocalizer["NavMyBookings"]</a>
+                <a href="/downloads" class="block transition hover:text-black">@SharedLocalizer["NavDownloads"]</a>
+                <form asp-controller="Account" asp-action="Logout" method="post" onsubmit="try{localStorage.removeItem('sbm_cart')}catch(e){}">
+                    @Html.AntiForgeryToken()
+                    <button class="transition hover:text-[#a1843f]">@SharedLocalizer["NavLogout"]</button>
+                </form>
+            }
+            else
+            {
+                <a href="/Account/Login" class="block transition hover:text-black">@SharedLocalizer["NavLogin"]</a>
+                <a href="/Account/Register" class="block transition hover:text-[#a1843f]">@SharedLocalizer["NavRegister"]</a>
+            }
+        </div>
+
+        <form asp-controller="Culture" asp-action="Set" method="post" class="mt-10 flex items-center gap-2 text-xs">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+            <button name="culture" value="pt-PT" class="rounded-full border border-black/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "pt" ? "bg-[#141414] text-white" : "text-black/60 hover:text-black")">PT</button>
+            <button name="culture" value="en-US" class="rounded-full border border-black/15 px-3 py-1.5 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-[#141414] text-white" : "text-black/60 hover:text-black")">EN</button>
+        </form>
+    </div>
 
     @* ================= BODY ================= *@
     <main id="main" class="@(isAdminArea ? "admin-main" : (isHome ? "" : "pt-16"))">

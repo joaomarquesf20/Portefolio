@@ -458,7 +458,27 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1200);
 
   // ----- Mobile menu -----
+  // Full-screen overlay: lock body scroll while open so the page behind it
+  // can't scroll (or bleed) through the menu.
   const menuBtn = document.getElementById("menu-btn");
   const mobileMenu = document.getElementById("mobile-menu");
-  menuBtn?.addEventListener("click", () => mobileMenu?.classList.toggle("hidden"));
+
+  const setMenu = open => {
+    if (!mobileMenu) return;
+    const isOpen = !mobileMenu.classList.contains("hidden");
+    if (open === isOpen) return;
+    mobileMenu.classList.toggle("hidden", !open);
+    document.body.classList.toggle("overflow-hidden", open);
+    if (!open) menuBtn?.focus();
+  };
+
+  menuBtn?.addEventListener("click", () => setMenu(mobileMenu?.classList.contains("hidden")));
+  mobileMenu?.querySelectorAll("[data-menu-close]").forEach(btn =>
+    btn.addEventListener("click", () => setMenu(false)));
+  // Same-page anchor links don't reload — close the overlay when tapped.
+  mobileMenu?.querySelectorAll("a").forEach(link =>
+    link.addEventListener("click", () => setMenu(false)));
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") setMenu(false);
+  });
 });
