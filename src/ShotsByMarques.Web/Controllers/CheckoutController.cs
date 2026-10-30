@@ -67,6 +67,30 @@ public class CheckoutController : Controller
         }
     }
 
+    [HttpPost("validar-codigo")]
+    [ValidateAntiForgeryToken]
+    [Produces("application/json")]
+    public IActionResult ValidateDiscount([FromForm] DiscountCodeRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            var message = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault(e => !string.IsNullOrWhiteSpace(e))
+                ?? "Os dados do código promocional são inválidos.";
+            return Json(new DiscountCodeResponse
+            {
+                Success = false,
+                DiscountAmount = 0m,
+                FinalPrice = Math.Max(0m, request?.BasePrice ?? 0m),
+                Message = message
+            });
+        }
+
+        return Json(DiscountCodeService.Validate(request.Code, request.BasePrice));
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> PlaceOrder(string? ids)

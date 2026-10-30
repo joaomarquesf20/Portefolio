@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using ShotsByMarques.Web.Models;
 
 namespace ShotsByMarques.Web.ViewModels;
@@ -25,6 +26,29 @@ public class CheckoutIndexViewModel
     public decimal Total => Subtotal - Discount;
     public bool RequiresLogin { get; set; }
     public bool StripeConfigured { get; set; } = true;
+}
+
+/// <summary>
+/// Data posted by the AJAX promo-code form. The base price is sent from the
+/// page so the endpoint can return a completely calculated response.
+/// </summary>
+public class DiscountCodeRequest
+{
+    [Required(ErrorMessage = "Escreve um código promocional.")]
+    [StringLength(50)]
+    public string Code { get; set; } = string.Empty;
+
+    [Range(0, double.MaxValue, ErrorMessage = "O preço base é inválido.")]
+    public decimal BasePrice { get; set; }
+}
+
+/// <summary>JSON payload used by the promo-code AJAX handler.</summary>
+public class DiscountCodeResponse
+{
+    public bool Success { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public decimal FinalPrice { get; set; }
+    public string Message { get; set; } = string.Empty;
 }
 
 public class DownloadsViewModel

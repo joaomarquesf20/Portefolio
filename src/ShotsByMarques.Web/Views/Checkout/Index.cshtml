@@ -1,6 +1,7 @@
 @model ShotsByMarques.Web.ViewModels.CheckoutIndexViewModel
 @{
     ViewData["Title"] = SharedLocalizer["CheckoutTitle"];
+    var ptPT = new System.Globalization.CultureInfo("pt-PT");
     var ids = string.Join(",", Model.Items.Select(i => i.PhotoId));
 }
 
@@ -49,25 +50,54 @@
                     <div class="space-y-2">
                         <div class="flex justify-between text-sm">
                             <span class="text-black/55">@SharedLocalizer["Subtotal"] (@Model.Items.Count)</span>
-                            <span class="tabular-nums">@Model.Subtotal.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                            <span class="tabular-nums">@Model.Subtotal.ToString("C", ptPT)</span>
                         </div>
+
                         @if (Model.Discount > 0)
                         {
                             <div class="flex justify-between text-sm text-emerald-700">
                                 <span>Pack · @Model.PackName</span>
-                                <span class="tabular-nums">−@Model.Discount.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                                <span class="tabular-nums">−@Model.Discount.ToString("C", ptPT)</span>
                             </div>
                         }
                         else if (Model.MinPackPhotos.HasValue)
                         {
                             <p class="text-black/40 text-xs">@SharedLocalizer["PackHint"] @Model.MinPackPhotos+ @SharedLocalizer["PhotosCount"]</p>
                         }
+
+                        <div id="promo-discount-row" class="hidden">
+                            <div class="flex justify-between text-sm text-emerald-600">
+                                <span><span>@SharedLocalizer["Discount"]</span> · <span id="promo-code-label"></span></span>
+                                <span class="tabular-nums" id="promo-discount-value"></span>
+                            </div>
+                        </div>
+
                         <div class="border-t border-black/10 pt-3 flex justify-between text-lg font-semibold">
                             <span class="text-[#141414]">@SharedLocalizer["Total"]</span>
-                            <span class="text-[#a1843f] font-display tabular-nums">@Model.Total.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                            <span id="checkout-total" class="text-[#a1843f] font-display tabular-nums">@Model.Total.ToString("C", ptPT)</span>
                         </div>
                     </div>
                     <p class="text-black/40 text-xs mt-2">@SharedLocalizer["HighRes"] · @SharedLocalizer["FreeDelivery"]</p>
+
+                    <form id="promo-form" asp-action="ValidateDiscount" method="post" class="mt-5 border-t border-black/10 pt-5"
+                          data-base-price="@Model.Total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="BasePrice"
+                               value="@Model.Total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
+                        <label class="block text-xs font-semibold uppercase tracking-[0.16em] text-black/50"
+                               for="promo-code">@SharedLocalizer["PromoCode"]</label>
+                        <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                            <input id="promo-code" name="Code" type="text" maxlength="50" autocomplete="off" required
+                                   placeholder="@SharedLocalizer["PromoCode"]"
+                                   class="flex-1 rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm text-[#141414] transition focus:border-[#a1843f] focus:outline-none focus:ring-2 focus:ring-[#a1843f]/20" />
+                            <button type="submit" id="apply-promo-btn"
+                                    class="rounded-xl bg-black px-6 py-2.5 text-sm font-semibold text-white transition duration-300 hover:bg-[#a1843f]">
+                                @SharedLocalizer["Apply"]
+                            </button>
+                        </div>
+                        <p class="mt-2 text-xs text-black/40">@SharedLocalizer["PromoCodeHint"]</p>
+                        <p id="promo-feedback" class="hidden mt-2 text-sm" aria-live="polite"></p>
+                    </form>
                 </div>
 
                 <div class="rv rv-d2 text-center mb-4">
@@ -118,6 +148,87 @@
                     window.location.href = "/Checkout";
                 });
             }
+
+            // Validate a promo code asynchronously and refresh the totals.
+            var promoForm = document.getElementById("promo-form");
+            var promoBtn = document.getElementById("apply-promo-btn");
+            var promoInput = document.getElementById("promo-code");
+            var promoFeedback = document.getElementById("promo-feedback");
+            var promoRow = document.getElementById("promo-discount-row");
+            var promoCodeLabel = document.getElementById("promo-code-label");
+            var promoDiscountValue = document.getElementById("promo-discount-value");
+            var totalElement = document.getElementById("checkout-total");
+
+            var moneyFormatter = new Intl.NumberFormat("pt-PT", {
+                style: "currency",
+                currency: "EUR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            var fallbackTotal = totalElement ? totalElement.textContent : "";
+
+            if (!promoForm || !promoBtn || !promoInput || !promoFeedback || !promoRow || !promoCodeLabel || !promoDiscountValue || !totalElement) return;
+
+            var setFeedback = function (message, isSuccess) {
+                if (!promoFeedback) return;
+                promoFeedback.textContent = message;
+                promoFeedback.classList.toggle("hidden", !message);
+                promoFeedback.classList.toggle("text-emerald-700", isSuccess);
+                promoFeedback.classList.toggle("text-red-700", !isSuccess);
+            };
+
+            var responseValue = function (payload, name) {
+                if (!payload) return null;
+                return payload[name] !== undefined ? payload[name] : payload[name.charAt(0).toUpperCase() + name.slice(1)];
+            };
+
+            var showPromoRow = function (show) {
+                promoRow.classList.toggle("hidden", !show);
+            };
+
+            promoForm.addEventListener("submit", async function (event) {
+                event.preventDefault();
+                if (!promoInput.value.trim()) return;
+
+                promoBtn.disabled = true;
+                setFeedback("Validando código promocional...", true);
+                try {
+                    var response = await fetch(promoForm.action, {
+                        method: "POST",
+                        body: new FormData(promoForm)
+                    });
+                    if (!response.ok) {
+                        showPromoRow(false);
+                        totalElement.textContent = fallbackTotal;
+                        setFeedback("Não foi possível validar o código promocional. Tenta novamente.", false);
+                        return;
+                    }
+
+                    var payload = await response.json();
+                    var success = !!responseValue(payload, "success");
+                    var message = responseValue(payload, "message") || "";
+                    var finalPrice = Number(responseValue(payload, "finalPrice") ?? 0);
+                    var discount = Number(responseValue(payload, "discountAmount") ?? 0);
+
+                    showPromoRow(success && discount > 0);
+                    if (success) {
+                        promoCodeLabel.textContent = promoInput.value.trim().toUpperCase();
+                        promoDiscountValue.textContent = "−" + moneyFormatter.format(discount);
+                        totalElement.textContent = moneyFormatter.format(finalPrice);
+                    } else {
+                        promoCodeLabel.textContent = "";
+                        promoDiscountValue.textContent = "";
+                        totalElement.textContent = fallbackTotal;
+                    }
+                    setFeedback(message, success);
+                } catch (error) {
+                    showPromoRow(false);
+                    totalElement.textContent = fallbackTotal;
+                    setFeedback("Não foi possível validar o código promocional. Tenta novamente.", false);
+                } finally {
+                    promoBtn.disabled = false;
+                }
+            });
         })();
     </script>
 }

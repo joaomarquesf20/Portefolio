@@ -76,6 +76,10 @@
   <data name="CheckoutLoginRequired" xml:space="preserve"><value>Inicia sessão para finalizar a compra.</value></data>
   <data name="PayNow" xml:space="preserve"><value>Pagar com cartão ou MB Way</value></data>
   <data name="Total" xml:space="preserve"><value>Total</value></data>
+  <data name="PromoCode" xml:space="preserve"><value>Código promocional</value></data>
+  <data name="Apply" xml:space="preserve"><value>Aplicar</value></data>
+  <data name="Discount" xml:space="preserve"><value>Desconto</value></data>
+  <data name="PromoCodeHint" xml:space="preserve"><value>Experimenta SHOTS10 ou OFERTA15.</value></data>
   <data name="Photo" xml:space="preserve"><value>Foto</value></data>
   <data name="Gallery" xml:space="preserve"><value>Galeria</value></data>
   <data name="Price" xml:space="preserve"><value>Preço</value></data>
