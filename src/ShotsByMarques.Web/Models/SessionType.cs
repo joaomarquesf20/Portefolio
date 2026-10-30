@@ -11,7 +11,11 @@ public class SessionType
     public bool IsActive { get; set; } = true;
     public int SortOrder { get; set; }
 
-    /// <summary>Mini sessions booked on event days (never listed on the public sessions page).</summary>
+    /// <summary>
+    /// Mini sessions — rendered in the public sessions grid like any other
+    /// type, but bookable only through the event-day flow at
+    /// /sessoes/mini-sessao/{date} (the normal booking route rejects them).
+    /// </summary>
     public bool IsMiniSessionType { get; set; }
 
     public List<Booking> Bookings { get; set; } = new();

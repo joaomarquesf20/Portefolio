@@ -35,8 +35,12 @@ public class BookingsController : Controller
     [Route("sessoes")]
     public async Task<IActionResult> Index()
     {
+        // All visible session types — mini types are part of the public grid
+        // (and the "Tipologias" counter). Their tiles link to the mini
+        // event-day flow, since /sessoes/marcar/{id} is reserved for normal
+        // sessions (the Create action returns NotFound for mini types).
         var sessionTypes = await _db.SessionTypes
-            .Where(s => s.IsActive && !s.IsMiniSessionType)
+            .Where(s => s.IsActive)
             .OrderBy(s => s.SortOrder)
             .ToListAsync();
 

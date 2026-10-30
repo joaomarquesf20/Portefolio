@@ -93,7 +93,14 @@
                 var st = sessionTypes[ti];
                 gi++;
                 var big = (ti % 6) is 0 or 5;
-                <a href="/sessoes/marcar/@st.Id"
+
+                // Mini session types never use /sessoes/marcar/{id} (the Create
+                // action 404s them): link them to the next upcoming mini event,
+                // or to the mini section when no event day is scheduled.
+                var tileUrl = st.IsMiniSessionType
+                    ? (nextMini != default ? $"/sessoes/mini-sessao/{nextMini:yyyy-MM-dd}" : "#mini")
+                    : $"/sessoes/marcar/{st.Id}";
+                <a href="@tileUrl"
                    class="rv @(gi % 2 == 0 ? "rv-d1" : "") group relative block overflow-hidden @TileClass(ti, sessionTypes.Count)">
                     <img src="@st.ImagePath.ToWebPath(pageCover)" alt="@st.Name" loading="lazy"
                          class="h-full w-full object-cover transition duration-[1100ms] ease-out group-hover:scale-[1.04]" />
