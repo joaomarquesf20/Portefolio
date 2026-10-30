@@ -91,6 +91,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 // ---- Application services ----
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<DiscountCodeService>();
 builder.Services.AddScoped<StripeCheckoutService>();
 builder.Services.AddScoped<PhotoStorageService>();
 builder.Services.AddScoped<AvailabilityCalendarService>();

@@ -17,6 +17,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<PhotoPack> PhotoPacks => Set<PhotoPack>();
     public DbSet<SitePageSetting> SitePageSettings => Set<SitePageSetting>();
+    public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -76,5 +77,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<OrderItem>().Property(i => i.Price).HasPrecision(18, 2);
         builder.Entity<PhotoPack>().Property(p => p.DiscountPercent).HasPrecision(5, 2);
         builder.Entity<SitePageSetting>().HasIndex(s => s.PageKey).IsUnique();
+
+        // Promo codes: unique, always stored uppercase by the admin forms to
+        // keep SQLite (case-sensitive) lookups consistent with the service.
+        builder.Entity<DiscountCode>().HasIndex(d => d.Code).IsUnique();
+        builder.Entity<DiscountCode>().Property(d => d.Value).HasPrecision(18, 2);
     }
 }

@@ -318,6 +318,38 @@ namespace ShotsByMarques.Web.Migrations
                     b.ToTable("DayAvailability");
                 });
 
+            modelBuilder.Entity("ShotsByMarques.Web.Models.DiscountCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DiscountType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("DiscountCodes");
+                });
+
             modelBuilder.Entity("ShotsByMarques.Web.Models.Gallery", b =>
                 {
                     b.Property<int>("Id")

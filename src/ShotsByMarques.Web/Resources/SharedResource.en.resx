@@ -79,7 +79,7 @@
   <data name="PromoCode" xml:space="preserve"><value>Promo code</value></data>
   <data name="Apply" xml:space="preserve"><value>Apply</value></data>
   <data name="Discount" xml:space="preserve"><value>Discount</value></data>
-  <data name="PromoCodeHint" xml:space="preserve"><value>Try SHOTS10 or OFERTA15.</value></data>
+  <data name="PromoCodeHint" xml:space="preserve"><value>Try your promo code..</value></data>
   <data name="Photo" xml:space="preserve"><value>Photo</value></data>
   <data name="Gallery" xml:space="preserve"><value>Gallery</value></data>
   <data name="Price" xml:space="preserve"><value>Price</value></data>

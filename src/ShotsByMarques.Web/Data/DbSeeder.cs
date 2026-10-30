@@ -114,6 +114,19 @@ public static class DbSeeder
             await db.SaveChangesAsync();
         }
 
+        // ---- Promo discount codes ----
+        // Default campaign codes for databases created before the codes feature
+        // (or with an empty codes table — e.g. right after this migration).
+        // Fully managed in the admin panel afterwards; like the packs, they are
+        // only filled here when the table is empty.
+        if (!await db.DiscountCodes.AnyAsync())
+        {
+            db.DiscountCodes.AddRange(
+                new DiscountCode { Code = "NATAL26", DiscountType = DiscountCodeType.Percentage, Value = 20m, IsActive = true },
+                new DiscountCode { Code = "AMIGO5", DiscountType = DiscountCodeType.FixedAmount, Value = 5m, IsActive = true });
+            await db.SaveChangesAsync();
+        }
+
         // Mini-session type — required for event-day mini bookings (created on
         // fresh and existing databases). Price/duration are editable in the admin.
         var miniSessionType = await db.SessionTypes.FirstOrDefaultAsync(s => s.IsMiniSessionType);

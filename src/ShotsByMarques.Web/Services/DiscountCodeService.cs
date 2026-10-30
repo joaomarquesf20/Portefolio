@@ -1,4 +1,7 @@
 using System.Globalization;
+using Microsoft.EntityFrameworkCore;
+using ShotsByMarques.Web.Data;
+using ShotsByMarques.Web.Models;
 
 namespace ShotsByMarques.Web.Services;
 
@@ -6,42 +9,52 @@ namespace ShotsByMarques.Web.Services;
 public record DiscountCodeResult(bool Success, decimal DiscountAmount, decimal FinalPrice, string Message);
 
 /// <summary>
-/// Temporary, in-memory list of active campaign codes. Matches are
-/// case-insensitive and the final price is always clamped so a discount can
-/// never turn it negative.
+/// Validates promo codes stored in the database, managed in the admin panel
+/// (AdminDiscountCodes). Matches are case-insensitive (codes are stored
+/// uppercase), only active, unexpired codes apply, and the final price is
+/// always clamped so a discount can never turn it negative.
 /// </summary>
-public static class DiscountCodeService
+public class DiscountCodeService
 {
     private static readonly CultureInfo Currency = new("pt-PT", false);
-    private const string TenPercentCode = "SHOTS10";
-    private const string FifteenEuroCode = "OFERTA15";
-    private const decimal FifteenEuro = 15m;
-    private const decimal TenPercent = 0.10m;
+    private readonly ApplicationDbContext _db;
 
-    public static DiscountCodeResult Validate(string? code, decimal basePrice)
+    public DiscountCodeService(ApplicationDbContext db) => _db = db;
+
+    public async Task<DiscountCodeResult> ValidateAsync(string? code, decimal basePrice)
     {
         var requestedCode = code?.Trim().ToUpperInvariant() ?? string.Empty;
 
         if (basePrice < 0m)
             return new DiscountCodeResult(false, 0m, 0m, "O preço base é inválido.");
 
-        var quotedDiscount = requestedCode switch
+        var discount = await _db.DiscountCodes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Code == requestedCode);
+
+        if (discount is null || !discount.IsActive)
+            return Invalid(basePrice);
+
+        if (discount.ExpiryDate.HasValue && discount.ExpiryDate.Value.Date < PortugalTime.Today)
+            return new DiscountCodeResult(false, 0m, basePrice, $"O código {requestedCode} já expirou.");
+
+        var quotedDiscount = discount.DiscountType switch
         {
-            TenPercentCode => Math.Round(basePrice * TenPercent, 2, MidpointRounding.AwayFromZero),
-            FifteenEuroCode => FifteenEuro,
+            DiscountCodeType.Percentage => Math.Round(basePrice * discount.Value / 100m, 2, MidpointRounding.AwayFromZero),
+            DiscountCodeType.FixedAmount => discount.Value,
             _ => 0m
         };
 
         if (quotedDiscount <= 0m)
-            return new DiscountCodeResult(false, 0m, basePrice, "Código inválido. Experimenta SHOTS10 ou OFERTA15.");
+            return Invalid(basePrice);
 
         var finalPrice = Math.Max(0m, basePrice - quotedDiscount);
         finalPrice = Math.Round(finalPrice, 2, MidpointRounding.AwayFromZero);
         var appliedDiscount = Math.Min(quotedDiscount, basePrice);
 
-        var label = requestedCode == FifteenEuroCode
+        var label = discount.DiscountType == DiscountCodeType.FixedAmount
             ? $"{FormatMoney(appliedDiscount)} fixos"
-            : "10%";
+            : $"{discount.Value:0.##}%";
 
         return new DiscountCodeResult(
             true,
@@ -49,6 +62,9 @@ public static class DiscountCodeService
             finalPrice,
             $"Código {requestedCode} aplicado — desconto de {label}.");
     }
+
+    private static DiscountCodeResult Invalid(decimal basePrice) =>
+        new(false, 0m, basePrice, "Código promocional inválido.");
 
     private static string FormatMoney(decimal value) =>
         value.ToString("C", Currency);

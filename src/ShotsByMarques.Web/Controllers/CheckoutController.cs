@@ -14,11 +14,13 @@ public class CheckoutController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly StripeCheckoutService _stripe;
+    private readonly DiscountCodeService _discounts;
 
-    public CheckoutController(ApplicationDbContext db, StripeCheckoutService stripe)
+    public CheckoutController(ApplicationDbContext db, StripeCheckoutService stripe, DiscountCodeService discounts)
     {
         _db = db;
         _stripe = stripe;
+        _discounts = discounts;
     }
 
     /// <summary>Receives the selected photo ids (?ids=1,2,3) from the client cart.</summary>
@@ -70,7 +72,7 @@ public class CheckoutController : Controller
     [HttpPost("validar-codigo")]
     [ValidateAntiForgeryToken]
     [Produces("application/json")]
-    public IActionResult ValidateDiscount([FromForm] DiscountCodeRequest request)
+    public async Task<IActionResult> ValidateDiscount([FromForm] DiscountCodeRequest request)
     {
         // The browser sends the base price as an invariant-culture string
         // (e.g. "24.30"); binding it as decimal broke on comma-culture servers.
@@ -128,7 +130,7 @@ public class CheckoutController : Controller
             });
         }
 
-        return Json(DiscountCodeService.Validate(request.Code, basePrice));
+        return Json(await _discounts.ValidateAsync(request.Code, basePrice));
     }
 
     [HttpPost]

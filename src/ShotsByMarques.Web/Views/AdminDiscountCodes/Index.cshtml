@@ -1,0 +1,66 @@
+@model List<ShotsByMarques.Web.Models.DiscountCode>
+@{
+    ViewData["Title"] = "Códigos de Desconto";
+    var today = ShotsByMarques.Web.Services.PortugalTime.Today;
+
+    string ValueLabel(ShotsByMarques.Web.Models.DiscountCode c) => c.DiscountType switch
+    {
+        ShotsByMarques.Web.Models.DiscountCodeType.Percentage => $"−{c.Value:0.##}%",
+        _ => $"−{c.Value.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("pt-PT"))} fixos"
+    };
+}
+
+<section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
+
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
+        <h1 class="font-display text-4xl fade-up">Códigos de Desconto</h1>
+        <a href="/AdminDiscountCodes/Create" class="btn-primary fade-up">+ Novo código</a>
+    </div>
+
+    <p class="text-white/40 text-sm mb-8">🎟 Os códigos são aplicados no checkout. Só estão ativos os códigos ativos e não expirados.</p>
+
+    <div class="space-y-4">
+        @foreach (var code in Model)
+        {
+            var expired = code.ExpiryDate.HasValue && code.ExpiryDate.Value.Date < today;
+            <div class="card p-5 flex flex-wrap items-center gap-5 fade-up @(!code.IsActive || expired ? "opacity-60" : "")">
+                <div class="flex-1 min-w-[220px]">
+                    <p class="font-semibold tracking-wide">@code.Code
+                        @if (!code.IsActive)
+                        {
+                            <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">inativo</span>
+                        }
+                        @if (expired)
+                        {
+                            <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-300">expirado</span>
+                        }
+                    </p>
+                    <p class="text-white/40 text-sm mt-0.5">
+                        @(code.DiscountType == ShotsByMarques.Web.Models.DiscountCodeType.Percentage ? "percentagem" : "valor fixo")
+                        · validade: @(code.ExpiryDate.HasValue ? code.ExpiryDate.Value.ToString("dd/MM/yyyy") : "sem data")
+                    </p>
+                </div>
+                <span class="text-emerald-300 font-semibold">@ValueLabel(code)</span>
+                <div class="flex items-center gap-3 text-sm">
+                    <a href="/AdminDiscountCodes/Edit/@code.Id" class="text-white/60 hover:text-accent transition">@SharedLocalizer["Edit"]</a>
+                    <form asp-action="ToggleActive" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@code.Id" />
+                        <button class="text-white/60 hover:text-accent transition">@(code.IsActive ? SharedLocalizer["Deactivate"] : SharedLocalizer["Activate"])</button>
+                    </form>
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@code.Id" />
+                        <button class="text-red-400 hover:text-red-300 transition">@SharedLocalizer["Delete"]</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <p class="text-white/40 py-16 text-center">Ainda não há códigos.</p>
+    }
+</section>
