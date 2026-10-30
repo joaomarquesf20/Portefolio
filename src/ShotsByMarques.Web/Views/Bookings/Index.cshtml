@@ -95,13 +95,19 @@
                 var big = (ti % 6) is 0 or 5;
 
                 // Mini session types never use /sessoes/marcar/{id} (the Create
-                // action 404s them): link them to the next upcoming mini event,
-                // or to the mini section when no event day is scheduled.
-                var tileUrl = st.IsMiniSessionType
-                    ? (nextMini != default ? $"/sessoes/mini-sessao/{nextMini:yyyy-MM-dd}" : "#mini")
-                    : $"/sessoes/marcar/{st.Id}";
-                <a href="@tileUrl"
-                   class="rv @(gi % 2 == 0 ? "rv-d1" : "") group relative block overflow-hidden @TileClass(ti, sessionTypes.Count)">
+                // action 404s them): they link to the next upcoming mini event.
+                // When no event day is scheduled there is nothing to book, so
+                // the tile outputs a static "SEM EVENTOS" state instead of a
+                // dead link (no jump, no pointer, no hover interaction).
+                var miniUnavailable = st.IsMiniSessionType && nextMini == default;
+                var tileHref = miniUnavailable
+                    ? "javascript:void(0)"
+                    : st.IsMiniSessionType
+                        ? $"/sessoes/mini-sessao/{nextMini:yyyy-MM-dd}"
+                        : $"/sessoes/marcar/{st.Id}";
+                <a href="@tileHref"
+                   class="rv @(gi % 2 == 0 ? "rv-d1" : "") @(miniUnavailable ? "pointer-events-none cursor-default select-none opacity-60" : "group") relative block overflow-hidden @TileClass(ti, sessionTypes.Count)"
+                   @(miniUnavailable ? Html.Raw("aria-disabled=\"true\" tabindex=\"-1\"") : null)>
                     <img src="@st.ImagePath.ToWebPath(pageCover)" alt="@st.Name" loading="lazy"
                          class="h-full w-full object-cover transition duration-[1100ms] ease-out group-hover:scale-[1.04]" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
@@ -115,9 +121,18 @@
                                 <span class="font-display text-xl font-bold text-white drop-shadow-[0_1px_10px_rgba(0,0,0,0.35)] sm:text-2xl">@st.Price.ToString("N0", money) €</span>
                                 <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-white/55">@st.DurationMinutes min</span>
                             </div>
-                            <span class="inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition group-hover:text-[#a1843f]">
-                                @SharedLocalizer["BookNow"] <span aria-hidden="true">→</span>
-                            </span>
+                            @if (miniUnavailable)
+                            {
+                                <span class="inline-flex items-center border border-white/25 bg-black/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
+                                    SEM EVENTOS
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition group-hover:text-[#a1843f]">
+                                    @SharedLocalizer["BookNow"] <span aria-hidden="true">→</span>
+                                </span>
+                            }
                         </div>
                     </div>
                 </a>
