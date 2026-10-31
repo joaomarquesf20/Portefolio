@@ -32,14 +32,24 @@ function saveCart(ids) {
   window.dispatchEvent(new CustomEvent("sbm:cart-change", { detail: list.length }));
 }
 
-// Mirrors the change into the server cart (signed-in visitors only; anonymous
-// visitors stay on localStorage). The /cart/* responses always carry the
-// full DB list — adopting it keeps the local copy converged with all devices.
-let cartMutations = 0; // in-flight /cart/* mutations — the page-load DB adopt waits for them
+// ----- Server sync layer (signed-in visitors only) -----
+// DB cart = single source of truth; local copy mirrors the latest server
+// snapshot while user actions are applied optimistically. Two protections
+// kill the "bouncing badge" on rapid deletions:
+//   1. pendingDeleteIds — ids whose DELETE is still in flight; adopted
+//      snapshots FILTER them out, so an out-of-order/older response can
+//      never resurrect an item the local cart already deleted;
+//   2. monotonic tickets — each POST carries one, and snapshots are adopted
+//      in ticket order (older responses arriving late are ignored).
+let cartMutations = 0;        // in-flight /cart/* mutations
+let cartAppliedTicket = 0;    // last mutation snapshot applied, in ticket order
+let cartReqSeq = 0;           // monotonically increasing request ticket
+const pendingDeleteIds = new Set();
 
 function cartPost(path, params) {
   if (!AUTHED || !CSRF) return Promise.resolve(null);
   cartMutations++;
+  const ticket = ++cartReqSeq;
   return fetch(path, {
     method: "POST",
     headers: { "RequestVerificationToken": CSRF },
@@ -47,11 +57,72 @@ function cartPost(path, params) {
   })
     .then(r => (r.ok ? r.json() : Promise.reject(new Error("cart " + path))))
     .then(data => {
-      if (data && Array.isArray(data.photoIds)) saveCart(data.photoIds);
+      // Adopt in ticket order: a stale response losing the race never
+      // clobbers a fresher one (out-of-order HTTP == bounce source).
+      if (data && Array.isArray(data.photoIds) && ticket > cartAppliedTicket) {
+        cartAppliedTicket = ticket;
+        adoptServerCart(data.photoIds);
+      }
       return data;
     })
     .catch(() => null)
     .finally(() => { cartMutations--; });
+}
+
+// Adopt a server snapshot of the DB cart: filter ids still in pendingDeleteIds
+// (their DELETE is mid-flight — older snapshots must not resurrect them), then
+// commit only if the list actually differs (no badge churn on no-op polls).
+function adoptServerCart(photoIds) {
+  const filtered = Array.from(new Set(
+    (photoIds || []).map(Number)
+      .filter(n => Number.isInteger(n) && n > 0 && !pendingDeleteIds.has(n))
+  ));
+  const current = localCartIds();
+  if (current.join(",") === filtered.join(",")) return false;
+  saveCart(filtered);
+  forceWebKitRepaint(); // cart contents (re)rendered — WebKit needs the kick
+  return true;
+}
+
+// DELETE one photo: optimistic local removal + queued server DELETE. The id
+// stays in pendingDeleteIds until ITS request resolves (success OR failure) —
+// rapid multi-delete sequences therefore never bounce the badge with stale
+// snapshots. If the server write ultimately failed, the next poll re-adopts
+// the item, so state stays truthful.
+function cartRemovePhoto(photoId) {
+  pendingDeleteIds.add(Number(photoId));
+  const ids = localCartIds();
+  const idx = ids.indexOf(photoId);
+  if (idx >= 0) {
+    ids.splice(idx, 1);
+    saveCart(ids); // deleted on BOTH ends immediately: local + /cart/remove
+    forceWebKitRepaint();
+  }
+  return cartPost("/cart/remove", { photoId }).finally(() => {
+    pendingDeleteIds.delete(Number(photoId));
+  });
+}
+
+// Pull the authoritative DB cart and adopt it (with the pending filter).
+// Used by page load, window focus and visibility changes, plus a lightweight
+// ticker. Skips while any mutation is in flight — its response will be
+// fresher than anything this pull can fetch.
+let cloudRefreshInFlight = false;
+
+function refreshCloudCart() {
+  if (!AUTHED || !CSRF || cloudRefreshInFlight) return;
+  if (document.visibilityState !== "visible" || cartMutations > 0) return;
+  cloudRefreshInFlight = true;
+  fetch("/cart")
+    .then(r => (r.ok ? r.json() : null))
+    .then(d => {
+      // A mutation started after this fetch began — its response is fresher;
+      // adopting a stale GET snapshot here would undo the optimistic delete.
+      if (cartMutations > 0) return;
+      if (d && Array.isArray(d.photoIds)) adoptServerCart(d.photoIds);
+    })
+    .catch(() => {})
+    .finally(() => { cloudRefreshInFlight = false; });
 }
 
 // iOS Safari/WebKit repaint helper: after a dynamic cart deletion/re-render
@@ -76,10 +147,7 @@ function togglePhoto(galleryId, photoId) {
   const ids = localCartIds();
   const idx = ids.indexOf(photoId);
   if (idx >= 0) {
-    ids.splice(idx, 1);
-    saveCart(ids); // deleted on BOTH ends immediately: local + DELETE /cart/remove below
-    cartPost("/cart/remove", { photoId });
-    forceWebKitRepaint();
+    cartRemovePhoto(photoId); // optimistic local delete + queued server delete
   } else {
     ids.push(photoId);
     saveCart(ids);
@@ -95,14 +163,11 @@ function clearCart() {
 }
 
 // Remove a photo by id from the cart (used by the cart page) — local copy
-// AND the DB, immediately; the repaint kick keeps WebKit pages visible.
+// AND the DB, immediately; queued through pendingDeleteIds so rapid taps
+// never bounce; the repaint kick keeps WebKit pages visible.
 function removeFromCart(photoId) {
-  const ids = localCartIds();
-  const idx = ids.indexOf(photoId);
-  if (idx < 0) return;
-  ids.splice(idx, 1);
-  saveCart(ids);
-  cartPost("/cart/remove", { photoId });
+  if (!localCartIds().includes(photoId)) return; // already gone locally
+  cartRemovePhoto(photoId);
   forceWebKitRepaint();
 }
 
@@ -200,18 +265,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.querySelector('meta[name="cart-merge"]')) {
       cartPost("/cart/sync", { photoIds: selectedPhotoIds().join(",") });
     } else {
-      fetch("/cart")
-        .then(r => (r.ok ? r.json() : null))
-        .then(d => {
-          // A user mutation landed before this snapshot — prefer local truth.
-          if (!d || cartMutations > 0) return;
-          if (Array.isArray(d.photoIds)) {
-            saveCart(d.photoIds);
-            forceWebKitRepaint(); // cart contents (re)rendered — WebKit kick
-          }
-        })
-        .catch(() => {});
+      refreshCloudCart();
     }
+
+    // Instant cross-device sync: pull the DB cart whenever the tab becomes
+    // visible or receives focus (the PC no longer waits for a refresh), plus
+    // a lightweight 8s ticker that only fires while the tab is visible —
+    // zero server traffic when the tab is hidden.
+    window.addEventListener("focus", refreshCloudCart);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refreshCloudCart();
+    });
+    window.setInterval(refreshCloudCart, 8000);
   }
 
   // ----- Show/hide password toggles (Login / Register) -----

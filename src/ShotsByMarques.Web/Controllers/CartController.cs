@@ -45,7 +45,11 @@ public class CartController : Controller
         return Ok(new { photoIds = await _cart.SyncAsync(UserId(), ids) });
     }
 
-    /// <summary>POST /cart/remove — explicit removal of one photo id.</summary>
+    /// <summary>POST /cart/remove — explicit removal of one photo id.
+    /// Rapid multi-deletes run as parallel requests, each answered with a
+    /// fresh full snapshot; the client (site.js) guards against out-of-order
+    /// snapshots with its pending-delete filter + ordered adoption, so the
+    /// server only has to keep returning the real DB list.</summary>
     [HttpPost("cart/remove")]
     [ValidateAntiForgeryToken]
     [Produces("application/json")]
