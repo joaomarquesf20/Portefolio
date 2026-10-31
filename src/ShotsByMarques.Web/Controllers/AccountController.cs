@@ -136,7 +136,11 @@ public class AccountController : Controller
     public IActionResult Login(string? returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl ?? Url.Content("~/");
-        return View(new LoginViewModel { ReturnUrl = returnUrl });
+        // "Lembrar-me" ships CHECKED: persistent by default so closing the
+        // browser doesn't end the session on personal devices (cookie config
+        // in Program.cs grants the 30-day sliding lifetime); visitors who
+        // want session-only auth can uncheck it.
+        return View(new LoginViewModel { ReturnUrl = returnUrl, RememberMe = true });
     }
 
     [HttpPost]
@@ -273,7 +277,10 @@ public class AccountController : Controller
         if (user is null)
             return Fail("Esta conta Google não corresponde a nenhum utilizador registado.");
 
-        await _signInManager.SignInAsync(user, isPersistent: false);
+        // Persistent sign-in: the issued auth cookie must survive browser
+        // restarts, same "trusted personal device" contract as password
+        // login (the 30-day sliding lifetime comes from Program.cs).
+        await _signInManager.SignInAsync(user, isPersistent: true);
 
         // Explicit login event (Google): merge the anonymous cart once.
         TempData["CartMerge"] = "1";

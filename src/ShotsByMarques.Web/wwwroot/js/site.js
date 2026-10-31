@@ -8,6 +8,40 @@ const CART_KEY = "sbm_cart"; // flat list: { "__cloud": [photoId, ...] }
 const AUTHED = document.body.dataset.authed === "1";
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
+// ----- Cart ownership isolation -----
+// The local cart can outlive the login that created it (session expired,
+// logged out, account switched). Every page load tags the cart's OWNER in
+// localStorage: "guest" or the signed-in user id. An unauthenticated visit
+// that finds a previous account's cart wipes it immediately — guest mode
+// never shows leftover account items; explicit logout resets the state via
+// the logout form handlers in _Layout (same tag key).
+const CART_USER_KEY = "sbm_cart_user";
+const CURRENT_USER_ID = document.body.dataset.userId || "";
+const cartOwner = () => (AUTHED ? (CURRENT_USER_ID || "user") : "guest");
+
+// True when the stored ownership tag belongs to a DIFFERENT authenticated
+// session than the current visitor (leftover of expiry/logout/switch).
+function cartOwnershipStale() {
+  let previous = null;
+  try { previous = localStorage.getItem(CART_USER_KEY); } catch { }
+  if (!AUTHED) return previous !== null && previous !== "guest";
+  return (
+    CURRENT_USER_ID !== "" &&
+    previous !== null && previous !== "guest" &&
+    previous !== CURRENT_USER_ID
+  );
+}
+
+// Wipe the local cart and re-tag ownership. Server DB carts are untouched —
+// they belong to their account permanently.
+function cleanStaleLocalCart() {
+  try {
+    localStorage.removeItem(CART_KEY);
+    localStorage.setItem(CART_USER_KEY, cartOwner());
+  } catch { /* storage unavailable — treat as empty */ }
+  window.dispatchEvent(new CustomEvent("sbm:cart-change", { detail: 0 }));
+}
+
 function readCart() {
   try { return JSON.parse(localStorage.getItem(CART_KEY)) || {}; }
   catch { return {}; }
@@ -251,6 +285,11 @@ window.SBM.buildSlotBar = function (container, slots, opts) {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Cart ownership check runs FIRST — an expired session/logout wipe must
+  // land before the badge ever reads localStorage. Then the badge renders
+  // from the (possibly cleaned) local cart.
+  if (cartOwnershipStale()) cleanStaleLocalCart();
+  try { localStorage.setItem(CART_USER_KEY, cartOwner()); } catch { }
   refreshCartBadge();
   window.addEventListener("sbm:cart-change", refreshCartBadge);
 

@@ -32,6 +32,17 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/Login";
+
+    // Persistent authentication: issued tickets live 30 days and SLIDE on
+    // activity, so closing the browser no longer ends the session (a session
+    // cookie dies with the browser; the persistence comes from the sign-in
+    // calls — "Lembrar-me" default + Google callback). IsEssential keeps the
+    // cookie outside any consent-suppression path. Cookie.Expiration is kept
+    // in sync for completeness; ExpireTimeSpan on the ticket governs.
+    options.Cookie.Expiration = TimeSpan.FromDays(30);
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.SlidingExpiration = true;
+    options.Cookie.IsEssential = true;
 });
 
 // ---- External authentication (Google) ----
