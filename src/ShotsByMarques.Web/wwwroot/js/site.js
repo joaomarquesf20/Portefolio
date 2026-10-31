@@ -296,14 +296,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ----- Lightbox with zoom -----
   const lb = {
-    box: null, img: null, title: null, index: 0, items: [], currentBlob: null,
+    box: null, img: null, index: 0, items: [], currentBlob: null,
     scale: 1, tx: 0, ty: 0, dragging: false, moved: false
   };
 
   window.openLightbox = (items, current) => {
     lb.box = document.getElementById("lightbox");
     lb.img = document.getElementById("lightbox-img");
-    lb.title = document.getElementById("lightbox-title");
     lb.items = items;
     lb.index = items.indexOf(current);
     lbResetZoom();
@@ -333,7 +332,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const lbShow = () => {
     const el = lb.items[lb.index];
-    lb.title.textContent = el.dataset.title + (el.dataset.price ? " — " + el.dataset.price : "");
     // 1) Instant fallback: the WATERMARKED thumb already in the grid. Every
     //    public derivative is baked watermarked server-side, so not even this
     //    first frame shows clean pixels.
@@ -367,18 +365,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // Close when clicking the backdrop (stage or box background), not the image/buttons.
       if (e.target === lbBox || e.target.closest("#lb-stage")) closeLightbox();
     });
-    lbBox.querySelector("[data-lb-zoom-in]")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      lbZoomAt(1.4, window.innerWidth / 2, window.innerHeight / 2);
-    });
-    lbBox.querySelector("[data-lb-zoom-out]")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      lbZoomAt(1 / 1.4, window.innerWidth / 2, window.innerHeight / 2);
-    });
-    lbBox.querySelector("[data-lb-zoom-reset]")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      lbResetZoom();
-    });
+    // Zoom stays available through invisible gestures — scroll wheel and
+    // click-to-zoom below (there is no visible toolbar in the minimal UI).
     lbBox.addEventListener("wheel", (e) => {
       e.preventDefault();
       // Zoom always centered on the photo (not at the cursor position)

@@ -426,16 +426,15 @@
     </footer>
 
     @* ================= LIGHTBOX (IDs/classes usados pelo site.js — não alterar) ================= *@
+    @* Minimal: imagem full-screen, setas ‹ › e fechar ✕. Sem barra de zoom
+       (− ⤾ +) e sem título/nome de ficheiro no rodapé — o zoom continua
+       disponível por gestos invisíveis (scroll, duplo… clique, arrastar). *@
     <div id="lightbox" class="lightbox">
         <button data-close-lightbox class="absolute top-5 right-6 text-white/70 hover:text-white text-3xl z-10">✕</button>
-        <button data-lb-zoom-out class="absolute bottom-6 left-1/2 -translate-x-[5.5rem] text-white/70 hover:text-white text-2xl w-11 h-11 rounded-full border border-white/20 bg-black/40 transition">−</button>
-        <button data-lb-zoom-reset class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 hover:text-white text-xl w-11 h-11 rounded-full border border-white/20 bg-black/40 transition">⤾</button>
-        <button data-lb-zoom-in class="absolute bottom-6 left-1/2 translate-x-[3.5rem] text-white/70 hover:text-white text-2xl w-11 h-11 rounded-full border border-white/20 bg-black/40 transition">+</button>
         <button onclick="lbNav(-1)" class="absolute left-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl z-10">‹</button>
         <div id="lb-stage" class="w-full h-full flex flex-col items-center justify-center overflow-hidden">
             <img id="lightbox-img" alt="Foto" draggable="false" />
         </div>
-        <div id="lightbox-title" class="absolute bottom-6 right-6 text-white/70 text-sm"></div>
         <button onclick="lbNav(1)" class="absolute right-5 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl z-10">›</button>
     </div>
 

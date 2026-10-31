@@ -378,10 +378,13 @@
             // foto tem preço nem selo (A = vitrine limpa; C = entrega incluída).
             var photoIsForSale = isForSale && photo.IsForSale;
             var photoPrice = photoIsForSale ? photo.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT")) : string.Empty;
+            // Nome de câmara ("_DSC8299") é nome de máquina — nunca visível
+            // em overlays (grid ou lightbox). Título escrito pelo admin mantém-se.
+            var photoTitle = PhotoTitleHelper.VisibleTitle(photo.Title);
             <div class="gallery-item rv" data-gallery-id="@Model.Gallery.Id" data-photo-id="@photo.Id"
-                 data-title="@photo.Title" data-price="@photoPrice" data-sale="@photoIsForSale.ToString().ToLowerInvariant()"
+                 data-title="@photoTitle" data-price="@photoPrice" data-sale="@photoIsForSale.ToString().ToLowerInvariant()"
                  data-secure-src="@photo.LargePreviewUrl()">
-                <img src="@photo.ThumbUrl()" alt="@photo.Title" loading="lazy" />
+                <img src="@photo.ThumbUrl()" alt="@(string.IsNullOrEmpty(photoTitle) ? "Foto" : photoTitle)" loading="lazy" />
                 <div class="gallery-ghost" aria-hidden="true"></div>
                 @if (photoIsForSale)
                 {
@@ -394,7 +397,10 @@
                     {
                         <div class="flex items-end justify-between gap-2">
                             <div class="min-w-0">
-                                <p class="gd-title truncate font-display text-sm font-bold text-white">@photo.Title</p>
+                                @if (!string.IsNullOrEmpty(photoTitle))
+                                {
+                                    <p class="gd-title truncate font-display text-sm font-bold text-white">@photoTitle</p>
+                                }
                                 <p class="gd-price mt-0.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75">@photoPrice</p>
                             </div>
                             <button type="button" data-toggle
@@ -410,21 +416,24 @@
                         @* Modo C: entrega privada — ação de download por foto (a
                            nota "incluída" vive UMA vez no cabeçalho, não aqui). *@
                         <div class="flex items-end justify-between gap-2">
-                            <div class="min-w-0">
-                                <p class="gd-title truncate font-display text-sm font-bold text-white">@photo.Title</p>
-                            </div>
+                            @if (!string.IsNullOrEmpty(photoTitle))
+                            {
+                                <div class="min-w-0">
+                                    <p class="gd-title truncate font-display text-sm font-bold text-white">@photoTitle</p>
+                                </div>
+                            }
                             <form asp-controller="Downloads" asp-action="SessionPhoto" asp-route-photoId="@photo.Id" method="post" data-session-download>
                                 @Html.AntiForgeryToken()
                                 <button class="gd-toggle shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">↓ @SharedLocalizer["Download"]</button>
                             </form>
                         </div>
                     }
-                    else
+                    else if (!string.IsNullOrEmpty(photoTitle))
                     {
                         @* Modo A (e fotos não à venda no modo B): card limpo —
                            apenas o título no hover, sem tuple de preço/selo. *@
                         <div class="min-w-0">
-                            <p class="gd-title truncate font-display text-sm font-bold text-white">@photo.Title</p>
+                            <p class="gd-title truncate font-display text-sm font-bold text-white">@photoTitle</p>
                         </div>
                     }
                 </div>
