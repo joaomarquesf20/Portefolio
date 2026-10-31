@@ -1,9 +1,11 @@
+@model ShotsByMarques.Web.Models.Order?
 @{
     ViewData["Title"] = "Pagamento";
     var state = ViewData["State"] as string ?? "unpaid";
+    var ptPT = new System.Globalization.CultureInfo("pt-PT");
 }
 
-<section class="max-w-xl mx-auto px-6 py-24 text-center">
+<section class="max-w-3xl mx-auto px-5 sm:px-8 py-24">
     @if (state == "paid")
     {
         <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-8"
@@ -12,12 +14,60 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
         </div>
-        <h1 class="font-display text-4xl">@SharedLocalizer["PaymentSuccess"]</h1>
-        <p class="text-white/60 mt-4">@SharedLocalizer["PaymentSuccessMsg"]</p>
-        <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/downloads" class="btn-primary">@SharedLocalizer["GoDownloads"]</a>
-            <a href="/portfolio" class="btn-outline">@SharedLocalizer["GoHome"]</a>
-        </div>
+
+        @if (Model is not null)
+        {
+            <div class="text-center">
+                <h1 class="font-display text-4xl">@SharedLocalizer["PaymentSuccess"]</h1>
+                <p class="text-white/60 mt-4">@SharedLocalizer["PaymentSuccessMsg"]</p>
+                <p class="text-white/45 text-sm mt-2 tabular-nums">
+                    @SharedLocalizer["OrderNumber"]: <span class="text-[#d5b878]">@Model.OrderNumber</span>
+                    · @Model.Items.Count fotos · @SharedLocalizer["Total"]: @Model.Total.ToString("C", ptPT)
+                </p>
+            </div>
+
+            @* Primary action — the whole order in one ZIP file. *@
+            <div class="mt-10 flex flex-col items-center gap-4">
+                <form asp-controller="Downloads" asp-action="OrderZip" asp-route-orderId="@Model.Id" method="post" class="w-full sm:w-auto">
+                    @Html.AntiForgeryToken()
+                    <button class="btn-primary w-full sm:w-auto sm:px-10">↓ @SharedLocalizer["DownloadAllZip"]</button>
+                </form>
+                <p class="text-white/40 text-xs">@SharedLocalizer["YourPhotos"] — @SharedLocalizer["HighRes"]</p>
+            </div>
+
+            @* One-by-one downloads (iOS-friendly: the button sits UNDER the
+               photo, always visible — no hover needed) *@
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40 mt-12 mb-4 border-b border-white/10 pb-3">@SharedLocalizer["YourPhotos"]</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                @foreach (var item in Model.Items)
+                {
+                    <div class="rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                        <img src="/Photos/Preview/@item.PhotoId" alt="@item.Title" class="w-full aspect-[3/2] object-cover" loading="lazy" />
+                        <div class="p-2.5">
+                            <p class="text-xs font-medium text-white/85 truncate">@item.Title</p>
+                            <form asp-controller="Downloads" asp-action="File" asp-route-orderItemId="@item.Id" method="post" class="mt-2">
+                                @Html.AntiForgeryToken()
+                                <button class="w-full rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/20">↓ @SharedLocalizer["Download"]</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/downloads" class="btn-outline">@SharedLocalizer["GoDownloads"]</a>
+                <a href="/portfolio" class="btn-outline">@SharedLocalizer["GoHome"]</a>
+            </div>
+        }
+        else
+        {
+            <h1 class="font-display text-4xl text-center">@SharedLocalizer["PaymentSuccess"]</h1>
+            <p class="text-white/60 mt-4 text-center">@SharedLocalizer["PaymentSuccessMsg"]</p>
+            <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/downloads" class="btn-primary">@SharedLocalizer["GoDownloads"]</a>
+                <a href="/portfolio" class="btn-outline">@SharedLocalizer["GoHome"]</a>
+            </div>
+        }
         <script>
             // Payment confirmed — clear the photo selection cart.
             try { localStorage.removeItem('sbm_cart'); } catch (e) {}
@@ -31,8 +81,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
         </div>
-        <h1 class="font-display text-4xl">Pagamento em processamento</h1>
-        <p class="text-white/60 mt-4">Aprova o pagamento na app MB Way. Assim que for confirmado, as tuas fotos ficam disponíveis na página de downloads (pode demorar alguns segundos — recarrega a página).</p>
+        <h1 class="font-display text-4xl text-center">Pagamento em processamento</h1>
+        <p class="text-white/60 mt-4 text-center">Aprova o pagamento na app MB Way. Assim que for confirmado, esta página atualiza-se sozinha e as tuas fotos ficam disponíveis aqui mesmo para descarregar (pode demorar alguns segundos).</p>
         <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <a href="/downloads" class="btn-primary">@SharedLocalizer["GoDownloads"]</a>
             <a href="/portfolio" class="btn-outline">@SharedLocalizer["GoHome"]</a>
@@ -50,8 +100,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
             </svg>
         </div>
-        <h1 class="font-display text-4xl">Pagamento não confirmado</h1>
-        <p class="text-white/60 mt-4">Não recebemos a confirmação do pagamento. Se já pagaste e isto é um erro, tenta novamente ou contacta-nos.</p>
+        <h1 class="font-display text-4xl text-center">Pagamento não confirmado</h1>
+        <p class="text-white/60 mt-4 text-center">Não recebemos a confirmação do pagamento. Se já pagaste e isto é um erro, tenta novamente ou contacta-nos.</p>
         <a href="/portfolio" class="btn-primary mt-10 inline-block">@SharedLocalizer["GoHome"]</a>
     }
 </section>

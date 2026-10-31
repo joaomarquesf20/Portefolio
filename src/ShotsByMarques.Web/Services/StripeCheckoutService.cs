@@ -17,20 +17,30 @@ public class StripeCheckoutService
         _baseUrl = env.IsDevelopment() ? "http://localhost:5123" : config["SiteUrl"] ?? string.Empty;
     }
 
+    /// <summary>
+    /// Picks the public base URL for absolute redirect URLs (success/cancel).
+    /// The per-request override comes from the controller (honouring reverse
+    /// proxy forwarded headers — e.g. ngrok), falling back to the configured
+    /// base URL when it cannot be resolved.
+    /// </summary>
+    private static string BaseUrl(string configured, string? perRequest) =>
+        string.IsNullOrWhiteSpace(perRequest) ? configured : perRequest.TrimEnd('/');
+
     public bool IsConfigured =>
         !string.IsNullOrEmpty(_config["Stripe:SecretKey"]) &&
         !_config["Stripe:SecretKey"]!.StartsWith("sk_placeholder");
 
-    public async Task<string?> CreateCheckoutSessionAsync(Order order, IEnumerable<OrderItem> items)
+    public async Task<string?> CreateCheckoutSessionAsync(Order order, IEnumerable<OrderItem> items, string? publicBaseUrl = null)
     {
         if (!IsConfigured)
             return null;
 
+        var baseUrl = BaseUrl(_baseUrl, publicBaseUrl);
         var options = new SessionCreateOptions
         {
             Mode = "payment",
-            SuccessUrl = $"{_baseUrl}/Checkout/Success?session_id={{CHECKOUT_SESSION_ID}}",
-            CancelUrl = $"{_baseUrl}/Checkout/Cancel?session_id={{CHECKOUT_SESSION_ID}}",
+            SuccessUrl = $"{baseUrl}/Checkout/Success?session_id={{CHECKOUT_SESSION_ID}}",
+            CancelUrl = $"{baseUrl}/Checkout/Cancel?session_id={{CHECKOUT_SESSION_ID}}",
             CustomerEmail = order.ClientUser?.Email,
             ClientReferenceId = order.OrderNumber,
             Metadata = new Dictionary<string, string>
@@ -63,25 +73,24 @@ public class StripeCheckoutService
                 .ToList();
         }
 
-        // Photo pack discount: apply the exact discount amount (in cents) as a coupon,
-        // so the amount Stripe charges matches Order.Total exactly.
-        if (order.DiscountAmount > 0)
+        // Combined discount (photo pack + promo coupon code) applied as a single
+        // exact coupon, so the amount Stripe charges matches Order.Total exactly.
+        var discountCents = (long)Math.Round((order.DiscountAmount + order.CouponDiscount) * 100);
+        if (discountCents > 0)
         {
-            var amountOff = (long)Math.Round(order.DiscountAmount * 100);
-            if (amountOff > 0)
+            var couponLabel = string.Join(" · ", new[] { order.PackName, order.CouponCode }
+                .Where(part => !string.IsNullOrWhiteSpace(part)));
+            var coupon = await new CouponService(_client).CreateAsync(new CouponCreateOptions
             {
-                var coupon = await new CouponService(_client).CreateAsync(new CouponCreateOptions
-                {
-                    Name = order.PackName ?? "Desconto pack",
-                    AmountOff = amountOff,
-                    Currency = "eur",
-                    Duration = "once"
-                });
-                options.Discounts = new List<SessionDiscountOptions>
-                {
-                    new() { Coupon = coupon.Id }
-                };
-            }
+                Name = string.IsNullOrWhiteSpace(couponLabel) ? "Desconto" : couponLabel,
+                AmountOff = discountCents,
+                Currency = "eur",
+                Duration = "once"
+            });
+            options.Discounts = new List<SessionDiscountOptions>
+            {
+                new() { Coupon = coupon.Id }
+            };
         }
 
         var service = new SessionService(_client);
@@ -93,18 +102,19 @@ public class StripeCheckoutService
     /// Creates a Stripe Checkout session for a booking payment (deposit or balance).
     /// The webhook and the success page match it via metadata (bookingId + purpose).
     /// </summary>
-    public async Task<string?> CreateBookingCheckoutSessionAsync(Booking booking, decimal amount, string purpose)
+    public async Task<string?> CreateBookingCheckoutSessionAsync(Booking booking, decimal amount, string purpose, string? publicBaseUrl = null)
     {
         if (!IsConfigured)
             return null;
 
+        var baseUrl = BaseUrl(_baseUrl, publicBaseUrl);
         var successAction = purpose == "balance" ? "BalanceSuccess" : "DepositSuccess";
         var isBalance = purpose == "balance";
         var options = new SessionCreateOptions
         {
             Mode = "payment",
-            SuccessUrl = $"{_baseUrl}/Bookings/{successAction}?session_id={{CHECKOUT_SESSION_ID}}",
-            CancelUrl = $"{_baseUrl}/as-minhas-marcacoes",
+            SuccessUrl = $"{baseUrl}/Bookings/{successAction}?session_id={{CHECKOUT_SESSION_ID}}",
+            CancelUrl = $"{baseUrl}/as-minhas-marcacoes",
             CustomerEmail = booking.ClientUser?.Email,
             Metadata = new Dictionary<string, string>
             {

@@ -116,7 +116,11 @@ builder.Services.AddHostedService<ShotsByMarques.Web.Data.DatabaseStartupService
 // proxy/network lists are cleared to accept the headers from any hop.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // X-ForwardedHost: the proxy also forwards the PUBLIC host header (e.g. an
+    // ngrok domain). Without it, Request.Host (and any absolute redirect URL
+    // built from it) would still be the local bind address — the classic
+    // "Stripe redirects me to localhost" bug on mobile.
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });

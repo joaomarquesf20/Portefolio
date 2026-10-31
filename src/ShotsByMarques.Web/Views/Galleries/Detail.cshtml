@@ -23,7 +23,7 @@
                                         proporções nativas (sem crop)
          squares "Quadrados" — grelha de quadrados; nº de colunas escolhido
                                pelo cliente (2 a 5, preferência gravada em
-                               sbm_gcols; limite 3 no telemóvel)
+                               sbm_gcols; 2 fixas no telemóvel)
          large "Coluna Grande" — coluna editorial grande (proporção nativa)
        Contratos do site.js preservados: .gallery-item, data-*, chips,
        .photo-overlay, .bottom-bar, data-toggle, data-cart-count, etc.
@@ -81,6 +81,22 @@
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
         gap: 6px;
+    }
+
+    /* touch: no hover the overlay never shows — the [data-toggle]
+       "+ Selecionar" would be unreachable on mobile. Always-on only
+       in photos for sale. */
+    @@media (hover: none) {
+        #gd .gallery-item:has([data-toggle]) .photo-overlay { opacity: 1; }
+    }
+
+    /* compact overlay in small tiles (2 columns no telemovel): sem quebra
+       de texto, sem overflow — chips/botao escalam, titulo corta com … */
+    @@media (max-width: 639.98px) {
+        #gd .photo-overlay { padding: 0.55rem; }
+        #gd .photo-overlay .gd-title { font-size: 0.78rem; }
+        #gd .photo-overlay .gd-price { font-size: 0.62rem; letter-spacing: 0.12em; }
+        #gd .photo-overlay .gd-toggle { padding: 0.32rem 0.7rem; font-size: 0.68rem; white-space: nowrap; }
     }
 
     #gd [data-layout="squares"] .gallery-item {
@@ -375,13 +391,13 @@
                     {
                         <div class="flex items-end justify-between gap-2">
                             <div class="min-w-0">
-                                <p class="truncate font-display text-sm font-bold text-white">@photo.Title</p>
-                                <p class="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75">@photoPrice</p>
+                                <p class="gd-title truncate font-display text-sm font-bold text-white">@photo.Title</p>
+                                <p class="gd-price mt-0.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75">@photoPrice</p>
                             </div>
                             <button type="button" data-toggle
                                     data-add-text="+ @SharedLocalizer["AddToSelection"]"
                                     data-remove-text="✓ @SharedLocalizer["RemoveFromSelection"]"
-                                    class="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">
+                                    class="gd-toggle shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">
                                 + @SharedLocalizer["AddToSelection"]
                             </button>
                         </div>
@@ -390,19 +406,19 @@
                     {
                         <div class="flex items-end justify-between gap-2">
                             <div class="min-w-0">
-                                <p class="truncate font-display text-sm font-bold text-white">@photo.Title</p>
-                                <p class="mt-0.5 text-xs text-white/65">@SharedLocalizer["IncludedInSession"]</p>
+                                <p class="gd-title truncate font-display text-sm font-bold text-white">@photo.Title</p>
+                                <p class="gd-price mt-0.5 text-xs text-white/65">@SharedLocalizer["IncludedInSession"]</p>
                             </div>
                             <form asp-controller="Downloads" asp-action="SessionPhoto" asp-route-photoId="@photo.Id" method="post" data-session-download>
                                 @Html.AntiForgeryToken()
-                                <button class="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">↓ @SharedLocalizer["Download"]</button>
+                                <button class="gd-toggle shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">↓ @SharedLocalizer["Download"]</button>
                             </form>
                         </div>
                     }
                     else
                     {
                         <div class="min-w-0">
-                            <p class="truncate font-display text-sm font-bold text-white">@photo.Title</p>
+                            <p class="gd-title truncate font-display text-sm font-bold text-white">@photo.Title</p>
                             <p class="mt-0.5 text-xs text-white/65">@SharedLocalizer["IncludedInSession"]</p>
                         </div>
                     }
@@ -579,11 +595,16 @@
             }
 
             // ---- colunas personalizadas: só a vista QUADRADOS as usa. No
-            // telemóvel limita a 3 para os quadrados não ficarem minúsculos.
+            // telemóvel fixa 2 colunas (tiles suficientemente grandes p/ o
+            // preço + botão "+ Selecionar" sem partir). No tablet limita a
+            // 3. No computador respeita a preferência do cliente (2–5).
+            // minmax(0,1fr) impede blowout de colunas por min-content largo.
             function applyCols() {
                 if (mode !== "squares") return;
-                var eff = window.innerWidth < 640 ? Math.min(cols, 3) : cols;
-                grid.style.gridTemplateColumns = "repeat(" + eff + ", 1fr)";
+                var eff = window.innerWidth < 640 ? 2
+                    : window.innerWidth < 1024 ? Math.min(cols, 3)
+                    : cols;
+                grid.style.gridTemplateColumns = "repeat(" + eff + ", minmax(0, 1fr))";
             }
 
             // o seletor desliga-se nas vistas que ditam o próprio fluxo

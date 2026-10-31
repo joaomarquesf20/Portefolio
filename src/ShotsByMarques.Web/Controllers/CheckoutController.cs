@@ -135,7 +135,7 @@ public class CheckoutController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> PlaceOrder(string? ids)
+    public async Task<IActionResult> PlaceOrder(string? ids, string? promo)
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
         var client = await _db.Users.FindAsync(userId);
@@ -167,11 +167,37 @@ public class CheckoutController : Controller
             Subtotal = photos.Sum(p => p.Price)
         };
 
-        // Apply the best photo pack (discount) to the order.
+        // Assemble the final price exactly like the checkout page displays it:
+        // 1) photo pack discount, 2) promo coupon code on the pack-reduced base.
+        // The same rules run on the server — the UI total is never trusted.
         var packResult = await BestPackAsync(photos.Count, order.Subtotal);
         order.DiscountAmount = packResult.Discount;
         order.PackName = packResult.PackName;
         order.Total = packResult.Total;
+
+        var promoCode = promo?.Trim().ToUpperInvariant();
+        if (!string.IsNullOrEmpty(promoCode))
+        {
+            var coupon = await _discounts.ValidateAsync(promoCode, packResult.Total);
+            if (!coupon.Success)
+            {
+                TempData["Error"] = $"O código {promoCode} já não é válido. Confirma o carrinho para continuar.";
+                return RedirectToAction(nameof(Index), new { ids });
+            }
+
+            order.CouponCode = promoCode;
+            order.CouponDiscount = coupon.DiscountAmount;
+            order.Total = coupon.FinalPrice;
+        }
+
+        // Stripe's minimum charge for EUR is 0.50 — a stacked discount could
+        // clamp the total below it.
+        if (_stripe.IsConfigured && order.Total < 0.50m)
+        {
+            TempData["Error"] = "O desconto aplicado deixa o total abaixo do mínimo aceitado pelo Stripe (0,50 €). Revisa o código promocional.";
+            return RedirectToAction(nameof(Index), new { ids });
+        }
+
         foreach (var photo in photos)
         {
             order.Items.Add(new OrderItem
@@ -189,7 +215,9 @@ public class CheckoutController : Controller
         string? sessionId;
         try
         {
-            sessionId = await _stripe.CreateCheckoutSessionAsync(order, order.Items);
+            // Absolute redirect URLs must point at the PUBLIC host (ngrok/proxy),
+            // never the local bind address.
+            sessionId = await _stripe.CreateCheckoutSessionAsync(order, order.Items, PublicBaseUrl.Of(Request));
         }
         catch (Exception ex)
         {
@@ -223,6 +251,7 @@ public class CheckoutController : Controller
         if (!string.IsNullOrEmpty(session_id))
         {
             var order = await _db.Orders
+                .Include(o => o.Items)
                 .FirstOrDefaultAsync(o => o.StripeSessionId == session_id && o.ClientUserId == UserId());
             if (order is not null && order.Status != OrderStatus.Paid)
             {
@@ -247,8 +276,13 @@ public class CheckoutController : Controller
             {
                 ViewData["State"] = "paid";
             }
+
+            // The success page doubles as an instant download hub: render the
+            // purchased photos with per-photo + ZIP download buttons.
+            return View(order);
         }
-        return View();
+
+        return View(null);
     }
 
     public async Task<IActionResult> Cancel(string session_id)

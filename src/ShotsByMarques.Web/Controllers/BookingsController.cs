@@ -234,7 +234,7 @@ public class BookingsController : Controller
         string? sessionId;
         try
         {
-            sessionId = await _stripe.CreateBookingCheckoutSessionAsync(booking, booking.DepositAmount, "deposit");
+            sessionId = await _stripe.CreateBookingCheckoutSessionAsync(booking, booking.DepositAmount, "deposit", PublicBaseUrl());
         }
         catch (Exception ex)
         {
@@ -390,7 +390,7 @@ public class BookingsController : Controller
         string? sessionId;
         try
         {
-            sessionId = await _stripe.CreateBookingCheckoutSessionAsync(booking, amount, purpose);
+            sessionId = await _stripe.CreateBookingCheckoutSessionAsync(booking, amount, purpose, PublicBaseUrl());
         }
         catch (Exception ex)
         {
@@ -514,7 +514,7 @@ public class BookingsController : Controller
         string? sessionId;
         try
         {
-            sessionId = await _stripe.CreateBookingCheckoutSessionAsync(booking, booking.DepositAmount, "deposit");
+            sessionId = await _stripe.CreateBookingCheckoutSessionAsync(booking, booking.DepositAmount, "deposit", PublicBaseUrl());
         }
         catch (Exception ex)
         {
@@ -599,4 +599,7 @@ public class BookingsController : Controller
 
     private string UserId() =>
         User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
+
+    /// <summary>Public base URL for absolute Stripe redirect URLs (proxy-aware).</summary>
+    private string PublicBaseUrl() => Services.PublicBaseUrl.Of(Request);
 }

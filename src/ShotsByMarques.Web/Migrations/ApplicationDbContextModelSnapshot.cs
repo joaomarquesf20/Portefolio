@@ -405,6 +405,12 @@ namespace ShotsByMarques.Web.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CouponCode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("CouponDiscount")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 

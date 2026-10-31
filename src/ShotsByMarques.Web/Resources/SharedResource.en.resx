@@ -92,6 +92,8 @@
   <data name="DownloadsTitle" xml:space="preserve"><value>My purchases</value></data>
   <data name="DownloadsEmpty" xml:space="preserve"><value>You haven't bought any photos yet.</value></data>
   <data name="Download" xml:space="preserve"><value>Download</value></data>
+  <data name="DownloadAllZip" xml:space="preserve"><value>Download all as ZIP</value></data>
+  <data name="YourPhotos" xml:space="preserve"><value>Your photos</value></data>
   <data name="OrderNumber" xml:space="preserve"><value>Order</value></data>
   <data name="OrderDate" xml:space="preserve"><value>Date</value></data>
   <data name="Status" xml:space="preserve"><value>Status</value></data>
