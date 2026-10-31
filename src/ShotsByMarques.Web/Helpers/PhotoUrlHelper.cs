@@ -75,13 +75,13 @@ public static class PhotoUrlHelper
             : photo.PreviewPath.Replace("-wm.", ".");
 
     /// <summary>
-    /// CLEAN, HIGH-RESOLUTION derivative for covers, full-bleed masonry tiles
-    /// and hero/page backgrounds. Uploaded photos resolve to /Photos/Cover —
-    /// 1920px, JPEG quality 92, sharp on desktop monitors, but still a
-    /// downscaled re-encode (never the raw original). Legacy wwwroot sample
-    /// assets expose a clean variant; "-wm." is stripped.
+    /// High-resolution cover/hero URL for a photo. Uploaded photos resolve to
+    /// /Photos/Cover — 1920px WATERMARKED derivative (quality 88): full-bleed
+    /// public imagery is baked watermarked too, so screenshots/recordings of
+    /// covers, page backgrounds and cards never capture clean pixels. Legacy
+    /// wwwroot sample assets expose a clean variant; "-wm." is stripped.
     /// </summary>
-    public static string LargeCleanUrl(this Photo photo) =>
+    public static string LargeWatermarkedUrl(this Photo photo) =>
         photo.PreviewPath.StartsWith("photos/")
             ? $"/Photos/Cover/{photo.Id}"
             : photo.PreviewPath.Replace("-wm.", ".");
@@ -90,12 +90,12 @@ public static class PhotoUrlHelper
     /// Cover URL for rendering. Covers are usually a public wwwroot path, but
     /// when the cover was picked from one of the gallery's uploaded photos it
     /// points at a private preview path ("photos/...") — resolve it to the
-    /// CLEAN high-res cover endpoint instead of a raw (broken) path.
+    /// WATERMARKED high-res cover endpoint instead of a raw (broken) path.
     /// </summary>
     public static string CoverUrl(this Gallery gallery) =>
         gallery.CoverPath is null || gallery.CoverPath.Length == 0
             ? string.Empty
             : gallery.CoverPath.StartsWith("photos/")
-                ? gallery.Photos.FirstOrDefault(p => p.PreviewPath == gallery.CoverPath)?.LargeCleanUrl() ?? gallery.CoverPath
+                ? gallery.Photos.FirstOrDefault(p => p.PreviewPath == gallery.CoverPath)?.LargeWatermarkedUrl() ?? gallery.CoverPath
                 : gallery.CoverPath;
 }

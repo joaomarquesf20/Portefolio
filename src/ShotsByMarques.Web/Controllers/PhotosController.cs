@@ -15,7 +15,8 @@ namespace ShotsByMarques.Web.Controllers;
 ///     initial frame: tiles show baked watermark pixels).
 ///   /Photos/Preview — WATERMARKED, larger 1600px (lightbox only; the page
 ///     never puts it in a src attribute — site.js fetches it into a blob: URL).
-///   /Photos/Cover — CLEAN high-res 1920px, for covers / hero backgrounds.
+///   /Photos/Cover — WATERMARKED, 1920px (covers, hero banners and full-bleed
+///     page backgrounds: baked pixels, nothing clean is served).
 /// STRICT NO-FALLBACK: if a watermarked derivative is missing it is rebuilt
 /// from the original synchronously BEFORE responding (or the endpoint 404s) —
 /// the clean original is NEVER streamed from App_Data/photos/ by this
@@ -132,13 +133,14 @@ public class PhotosController : Controller
     }
 
     /// <summary>
-    /// CLEAN, HIGH-RESOLUTION derivative (covers, hero banners, full-bleed
-    /// page backgrounds). 1920px, JPEG quality 92 — sharp on desktop
-    /// monitors. Authorization mirrors Preview/Thumb; still never the raw
-    /// original (that only goes out after payment/ownership checks), and no
-    /// watermark — covers/backgrounds are the ONLY clean public asset (the
-    /// site's public face); grid tiles and the lightbox show the watermarked
-    /// derivatives instead.
+    /// WATERMARKED, HIGH-RESOLUTION cover/hero derivative. 1920px, JPEG
+    /// quality 88 — sharp on desktop monitors with the watermark BAKED into
+    /// the pixels: screenshots/screen-recording of a cover, a hero banner or
+    /// a full-bleed background always capture the watermark. Served pre-baked
+    /// at upload ("{base}-wc.jpg"); if the file is missing it is generated
+    /// synchronously BEFORE responding — the clean original is NEVER streamed
+    /// (only DownloadsController streams originals, after payment/ownership
+    /// checks). Authorization mirrors Preview/Thumb.
     /// </summary>
     [Route("photos/cover/{id:int}")]
     public async Task<IActionResult> Cover(int id)
@@ -159,13 +161,17 @@ public class PhotosController : Controller
 
         var coverPath = Path.Combine(
             Path.GetDirectoryName(fullPath) ?? photosRoot,
-            Path.GetFileNameWithoutExtension(fullPath) + "-large.jpg");
+            Path.GetFileNameWithoutExtension(fullPath) + "-wc.jpg");
 
+        // STRICT NO-FALLBACK (same rule as Preview/Thumb): the watermarked
+        // cover is the only thing that leaves this endpoint. If the baked
+        // file vanished, rebuild it from the original synchronously first —
+        // never a clean derivative, never the original itself.
         if (!System.IO.File.Exists(coverPath))
         {
             try
             {
-                PhotoStorageService.GenerateCleanLarge(fullPath, coverPath);
+                PhotoStorageService.GenerateWatermarkedCover(fullPath, coverPath);
             }
             catch (IOException) when (System.IO.File.Exists(coverPath))
             {

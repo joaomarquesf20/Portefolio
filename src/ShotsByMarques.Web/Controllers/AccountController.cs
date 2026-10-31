@@ -152,6 +152,10 @@ public class AccountController : Controller
 
         if (result.Succeeded)
         {
+            // Explicit login event: the anonymous localStorage cart unions
+            // into the DB cart exactly once (rendered via meta[cart-merge],
+            // consumed by site.js on this page).
+            TempData["CartMerge"] = "1";
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                 return Redirect(model.ReturnUrl);
             return RedirectToAction("Index", "Home");
@@ -270,6 +274,9 @@ public class AccountController : Controller
             return Fail("Esta conta Google não corresponde a nenhum utilizador registado.");
 
         await _signInManager.SignInAsync(user, isPersistent: false);
+
+        // Explicit login event (Google): merge the anonymous cart once.
+        TempData["CartMerge"] = "1";
 
         return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl) : RedirectToAction("Index", "Home");
     }

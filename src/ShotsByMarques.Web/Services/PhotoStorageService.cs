@@ -51,17 +51,20 @@ public class PhotoStorageService
             await file.CopyToAsync(stream);
         }
 
-        // Watermarked preview (1600px, for the lightbox) + watermarked thumb
-        // (900px, for grids) — ALL derivatives pre-baked at upload time.
-        // If any watermark fails we DELETE the upload and let the error
-        // propagate: a watermarked derivative is never optional, otherwise a
-        // clean original would be one "missing file" away from leaking.
-        var previewName = $"{Path.GetFileNameWithoutExtension(fileName)}-wm.jpg";
+        // Watermarked preview (1600px, lightbox) + watermarked thumb (900px,
+        // grids) + watermarked cover (1920px, /Photos/Cover) — ALL derivatives
+        // pre-baked at upload time. If any watermark fails we DELETE the
+        // upload and let the error propagate: a watermarked derivative is
+        // never optional, otherwise a clean original would be one "missing
+        // file" away from leaking.
+        var baseName = Path.GetFileNameWithoutExtension(fileName);
+        var previewName = $"{baseName}-wm.jpg";
         var previewPath = Path.Combine(dir, previewName);
         try
         {
             GenerateWatermarkedDerivative(path, previewPath, PreviewMaxDimension, 88);
-            GenerateWatermarkedDerivative(path, Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(fileName)}-wt.jpg"), ThumbMaxDimension, 82);
+            GenerateWatermarkedDerivative(path, Path.Combine(dir, $"{baseName}-wt.jpg"), ThumbMaxDimension, 82);
+            GenerateWatermarkedDerivative(path, Path.Combine(dir, $"{baseName}-wc.jpg"), CoverMaxDimension, 88);
         }
         catch
         {
@@ -74,9 +77,10 @@ public class PhotoStorageService
 
     /// <summary>
     /// Resizes the image to maxDimension and stamps a tiled diagonal watermark
-    /// baked into the pixels — shared by the 1600px lightbox preview and the
-    /// 900px grid thumb. Every public derivative of an uploaded photo (thumb,
-    /// preview) goes through this: NO clean pixels ever reach the browser.
+    /// baked into the pixels — shared by the 1600px lightbox preview, the
+    /// 900px grid thumb and the 1920px cover. EVERY public derivative of an
+    /// uploaded photo (thumb, preview, cover) goes through this: NO clean
+    /// pixels of a client photo ever reach the browser.
     /// </summary>
     public static void GenerateWatermarkedDerivative(string sourcePath, string targetPath, int maxDimension, int quality)
     {
@@ -130,42 +134,10 @@ public class PhotoStorageService
     }
 
     /// <summary>
-    /// CLEAN (watermark-free) JPEG derivative of the photo. Covers/backgrounds
-    /// are the site's public face — deliberately clean and sharp. The security
-    /// split STAYS intact because every other public asset is watermarked:
-    ///   thumb   → public, WATERMARKED 900px (grid tiles + lightbox frame)
-    ///   preview → public, WATERMARKED 1600px (lightbox only)
-    ///   large   → public, clean 1920px (covers / hero banners ONLY)
-    ///   original→ DownloadsController only, after payment/ownership checks
-    /// </summary>
-    private static void GenerateCleanDerivative(string sourcePath, string targetPath, int maxDimension, int quality)
-    {
-        using var source = SKBitmap.Decode(sourcePath)
-            ?? throw new InvalidOperationException("Could not decode image.");
-
-        var scale = Math.Min(1f, maxDimension / (float)Math.Max(source.Width, source.Height));
-        var width = Math.Max(1, (int)Math.Round(source.Width * scale));
-        var height = Math.Max(1, (int)Math.Round(source.Height * scale));
-
-        using var resized = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgb888x, SKAlphaType.Opaque));
-        using (var canvas = new SKCanvas(resized))
-        {
-            canvas.Clear(SKColors.White);
-            var sampling = new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
-            canvas.DrawBitmap(source, new SKRect(0, 0, width, height), sampling);
-        }
-
-        using var image = SKImage.FromBitmap(resized);
-        using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
-        using var output = File.Create(targetPath);
-        data.SaveTo(output);
-    }
-
-    /// <summary>
     /// WATERMARKED thumb for grid tiles and the lightbox initial frame
     /// (900px, quality 82). Generated on demand by /Photos/Thumb into
-    /// "{base}-wt.jpg" — the same service that bakes the 1600px preview,
-    /// at smaller scale: screenshotting a grid tile captures a watermark.
+    /// "{base}-wt.jpg" — the same pipeline as the 1600px preview, at smaller
+    /// scale: a screenshot of a grid tile captures the watermark.
     /// </summary>
     public static void GenerateWatermarkedThumb(string sourcePath, string targetPath) =>
         GenerateWatermarkedDerivative(sourcePath, targetPath, ThumbMaxDimension, 82);
@@ -175,12 +147,19 @@ public class PhotoStorageService
     public static void GenerateWatermarkedPreview(string sourcePath, string targetPath) =>
         GenerateWatermarkedDerivative(sourcePath, targetPath, PreviewMaxDimension, 88);
 
+    /// <summary>WATERMARKED 1920px cover/hero derivative (quality 88) served by
+    /// /Photos/Cover. Covers and page backgrounds are public, full-bleed
+    /// imagery — screenshots/screen-recording of them must still capture the
+    /// watermark, so they go through the same baked-watermark pipeline.</summary>
+    public static void GenerateWatermarkedCover(string sourcePath, string targetPath) =>
+        GenerateWatermarkedDerivative(sourcePath, targetPath, CoverMaxDimension, 88);
+
     /// <summary>
     /// Recreates any missing WATERMARKED derivative of an uploaded photo:
-    /// the 1600px preview ("-wm.jpg", relative path in previewRelativePath)
-    /// and the 900px thumb ("-wt.jpg"). Files already on disk are NOT
-    /// regenerated. Called by the admin upload/update/publish flows so that
-    /// /Photos/Preview and /Photos/Thumb always find their pre-baked files
+    /// the 1600px preview ("-wm.jpg"), the 900px thumb ("-wt.jpg") and the
+    /// 1920px cover ("-wc.jpg"). Files already on disk are NOT regenerated.
+    /// Called by the admin upload/update/publish flows so that /Photos/*,
+    /// /Photos/public and /Photos/Cover always find their pre-baked files
     /// when viewers navigate — no SkiaSharp processing during live traffic.
     /// Legacy wwwroot sample paths are left untouched. Throws on generation
     /// errors — callers decide whether to surface them.
@@ -203,6 +182,10 @@ public class PhotoStorageService
         if (!File.Exists(thumbPath))
             GenerateWatermarkedThumb(fullOriginal, thumbPath);
 
+        var coverPath = baseName + "-wc.jpg";
+        if (!File.Exists(coverPath))
+            GenerateWatermarkedCover(fullOriginal, coverPath);
+
         if (!string.IsNullOrEmpty(previewRelativePath) && previewRelativePath.StartsWith("photos/"))
         {
             var previewPath = Path.GetFullPath(Path.Combine(PhotosRoot, previewRelativePath["photos/".Length..]));
@@ -210,10 +193,6 @@ public class PhotoStorageService
                 GenerateWatermarkedPreview(fullOriginal, previewPath);
         }
     }
-
-    /// <summary>High-res CLEAN derivative for covers and hero banners (1920px, quality 92).</summary>
-    public static void GenerateCleanLarge(string sourcePath, string targetPath) =>
-        GenerateCleanDerivative(sourcePath, targetPath, CoverMaxDimension, 92);
 
     /// <summary>
     /// Saves a public gallery cover into wwwroot (covers are meant to be public).
@@ -268,9 +247,10 @@ public class PhotoStorageService
         if (!fullPath.StartsWith(Path.GetFullPath(PhotosRoot) + Path.DirectorySeparatorChar))
             return;
         var baseName = Path.Combine(Path.GetDirectoryName(fullPath) ?? string.Empty, Path.GetFileNameWithoutExtension(fullPath));
-        // "-thumb.jpg": legacy CLEAN thumbs (pre-watermark-baking) — swept on
-        // delete; "-wt.jpg": the WATERMARKED thumb; "-large.jpg": clean cover.
-        foreach (var suffix in new[] { "-thumb.jpg", "-wt.jpg", "-large.jpg" })
+        // "-thumb.jpg": legacy clean thumbs (pre-watermark-baking) — swept on
+        // delete; "-wt.jpg" thumb / "-wc.jpg" cover: the WATERMARKED
+        // derivatives; "-large.jpg": legacy CLEAN cover — also swept on delete.
+        foreach (var suffix in new[] { "-thumb.jpg", "-wt.jpg", "-wc.jpg", "-large.jpg" })
         {
             var file = baseName + suffix;
             if (File.Exists(file))

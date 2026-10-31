@@ -108,6 +108,10 @@ builder.Services.Configure<ShotsByMarques.Web.Models.TravelSettings>(
 // builds the host without starting it — never performs database operations
 // as a side effect.
 builder.Services.AddHostedService<ShotsByMarques.Web.Data.DatabaseStartupService>();
+// One-time derivative sweep AFTER the DB is migrated/seeded: deletes legacy
+// clean "-large.jpg" covers and re-bakes every watermarked derivative from
+// the originals (marker-gated — see WatermarkSweepService).
+builder.Services.AddHostedService<ShotsByMarques.Web.Services.WatermarkSweepService>();
 
 // ---- Reverse proxy (Render) ----
 // Render's edge proxy terminates SSL and forwards requests to the container

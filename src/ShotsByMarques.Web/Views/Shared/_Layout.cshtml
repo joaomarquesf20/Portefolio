@@ -21,6 +21,13 @@
     @* Antiforgery token for site.js cart posts (/cart/sync|remove|clear).
        Consumed by the meta[name=csrf-token] reader at the top of site.js. *@
     <meta name="csrf-token" content="@(Xsrf.GetAndStoreTokens(Context).RequestToken)" />
+    @* One-time anonymous-cart merge: the login handlers raise TempData["CartMerge"]
+       and site.js unions the local cart into the DB on this page ONLY. Standard
+       navigation adopts the DB cart verbatim (single source of truth). *@
+    @if (TempData["CartMerge"] as string == "1")
+    {
+        <meta name="cart-merge" content="1" />
+    }
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -465,6 +472,21 @@
                     });
                 }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
                 document.querySelectorAll('.rv').forEach(function (el) { io.observe(el); });
+
+                // WebKit (iOS Safari) can leave observed elements unrevealed
+                // until a manual scroll forces a repaint — safety nets:
+                // (1) everything already inside the viewport reveals now,
+                //     keeping the stagger (each element's own transition-delay
+                //     animates it in);
+                // (2) shortly after load, ALL remaining .rv reveal anyway —
+                //     content must never stay invisible because an observer
+                //     callback stalled.
+                document.querySelectorAll('.rv').forEach(function (el) {
+                    if (el.getBoundingClientRect().top < window.innerHeight * 0.92) el.classList.add('in');
+                });
+                setTimeout(function () {
+                    document.querySelectorAll('.rv:not(.in)').forEach(function (el) { el.classList.add('in'); });
+                }, 1200);
             } else {
                 document.querySelectorAll('.rv').forEach(function (el) { el.classList.add('in'); });
             }

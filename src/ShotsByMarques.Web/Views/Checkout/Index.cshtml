@@ -5,10 +5,18 @@
     var ids = string.Join(",", Model.Items.Select(i => i.PhotoId));
 }
 
-<section class="px-5 pb-24 pt-16 sm:px-8 lg:px-12">
+@* iOS Safari/WebKit: the cart shell must paint immediately on load —
+   no reveal opacity/transition locks, no min-height locks. WebKit can leave
+   elements with a pending opacity/transform transition blank until a manual
+   scroll forces a reflow; keep this page transition-free. *@
+<style>
+    .cart-shell { min-height: auto; }
+</style>
+
+<section class="cart-shell px-5 pb-24 pt-16 sm:px-8 lg:px-12">
     <div class="flex justify-center">
         <div class="w-full max-w-[42rem]">
-            <div class="rv mb-10">
+            <div class="mb-10">
                 <p class="inline-flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.4em] text-black/50">
                     <span class="rule inline-block h-px w-10"></span>
                     Carrinho
@@ -18,19 +26,19 @@
 
             @if (!Model.StripeConfigured)
             {
-                <div class="rv border border-red-600/25 bg-red-600/[0.06] text-red-700 px-5 py-4 text-sm mb-8">
+                <div class="border border-red-600/25 bg-red-600/[0.06] text-red-700 px-5 py-4 text-sm mb-8">
                     ◉ @SharedLocalizer["StripeNotConfigured"]
                 </div>
             }
 
             @if (Model.Items.Count == 0)
             {
-                <p class="rv text-black/50">@SharedLocalizer["CheckoutEmpty"]</p>
-                <a href="/portfolio" class="btn-outline rv rv-d1 mt-6 inline-block">@SharedLocalizer["GoHome"]</a>
+                <p class="text-black/50">@SharedLocalizer["CheckoutEmpty"]</p>
+                <a href="/portfolio" class="btn-outline mt-6 inline-block">@SharedLocalizer["GoHome"]</a>
             }
             else
             {
-                <div class="rv space-y-4 mb-8">
+                <div class="space-y-4 mb-8">
                     @foreach (var item in Model.Items)
                     {
                         <div class="card p-4 flex items-center gap-4 checkout-item" data-photo-id="@item.PhotoId">
@@ -46,7 +54,7 @@
                     }
                 </div>
 
-                <div class="card rv rv-d1 p-6 mb-8">
+                <div class="card p-6 mb-8">
                     <div class="space-y-2">
                         <div class="flex justify-between text-sm">
                             <span class="text-black/55">@SharedLocalizer["Subtotal"] (@Model.Items.Count)</span>
@@ -100,7 +108,7 @@
                     </form>
                 </div>
 
-                <div class="rv rv-d2 text-center mb-4">
+                <div class="text-center mb-4">
                     <button type="button" id="empty-cart-btn" class="text-black/40 transition hover:text-red-700 text-sm underline underline-offset-4">
                         @SharedLocalizer["EmptyCart"]
                     </button>
@@ -126,13 +134,16 @@
         (function () {
             var confirmEmpty = "@SharedLocalizer["ConfirmEmptyCart"]";
 
-            // Remove a single photo from the localStorage cart and reload the
-            // checkout with the remaining ids.
+            // Remove a single photo from the localStorage cart AND the DB
+            // (site.js removeFromCart), then reload remaining ids. Under iOS
+            // Safari the removal used to blank the screen until a scroll —
+            // force the WebKit repaint before navigating.
             document.querySelectorAll(".remove-item-btn").forEach(function (btn) {
                 btn.addEventListener("click", function () {
                     var item = btn.closest(".checkout-item");
                     var photoId = Number(item.dataset.photoId);
                     removeFromCart(photoId);
+                    if (window.SBM && typeof window.SBM.forceRepaint === "function") window.SBM.forceRepaint();
                     var remaining = Array.from(document.querySelectorAll(".checkout-item"))
                         .filter(function (el) { return el !== item; })
                         .map(function (el) { return el.dataset.photoId; });
@@ -148,6 +159,7 @@
                 emptyBtn.addEventListener("click", function () {
                     if (!confirm(confirmEmpty)) return;
                     clearCart();
+                    if (window.SBM && typeof window.SBM.forceRepaint === "function") window.SBM.forceRepaint();
                     window.location.href = "/Checkout";
                 });
             }

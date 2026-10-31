@@ -20,6 +20,15 @@ public class CartController : Controller
     private string UserId() =>
         User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
 
+    /// <summary>GET /cart — the DB cart for this account: the SINGLE SOURCE
+    /// OF TRUTH for signed-in clients. site.js adopts (overwrites) its local
+    /// copy with this on standard navigation — never union-adds local ids
+    /// into the DB, so items deleted on any other device stay deleted.</summary>
+    [HttpGet("cart")]
+    [Produces("application/json")]
+    public async Task<IActionResult> Get() =>
+        Ok(new { photoIds = await _cart.GetPhotoIdsAsync(UserId()) });
+
     /// <summary>POST /cart/sync — merge-adds comma-separated photo ids
     /// (unknown ids dropped) and returns the full DB list. Doubles as the
     /// anonymous-cart merge on first login (site.js posts on page load).</summary>

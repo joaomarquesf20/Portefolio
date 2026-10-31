@@ -1,8 +1,9 @@
 // ---------- Photo selection cart ----------
-// Anonymous visitors: pure localStorage. Signed-in clients: the same local
-// cart is mirrored into the SQLite cart (POST /cart/*) so the selection
-// follows the account across devices; on load the local ids are merged up
-// and the DB list is adopted as the single source of truth.
+// Anonymous visitors: pure localStorage. Signed-in clients: the SQLite DB
+// cart is the SINGLE SOURCE OF TRUTH — page loads ADOPT the DB list and
+// overwrite the local copy (no union-add of stale local ids, so deletions
+// on any device stick); mutations remove/add in BOTH places immediately.
+// The anonymous-cart union merge runs ONCE, right after an explicit login.
 const CART_KEY = "sbm_cart"; // flat list: { "__cloud": [photoId, ...] }
 const AUTHED = document.body.dataset.authed === "1";
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
@@ -34,8 +35,11 @@ function saveCart(ids) {
 // Mirrors the change into the server cart (signed-in visitors only; anonymous
 // visitors stay on localStorage). The /cart/* responses always carry the
 // full DB list — adopting it keeps the local copy converged with all devices.
+let cartMutations = 0; // in-flight /cart/* mutations — the page-load DB adopt waits for them
+
 function cartPost(path, params) {
   if (!AUTHED || !CSRF) return Promise.resolve(null);
+  cartMutations++;
   return fetch(path, {
     method: "POST",
     headers: { "RequestVerificationToken": CSRF },
@@ -46,8 +50,19 @@ function cartPost(path, params) {
       if (data && Array.isArray(data.photoIds)) saveCart(data.photoIds);
       return data;
     })
-    .catch(() => null);
+    .catch(() => null)
+    .finally(() => { cartMutations--; });
 }
+
+// iOS Safari/WebKit repaint helper: after a dynamic cart deletion/re-render
+// the viewport can stay blank until the user scrolls (missing reflow kick).
+// A forced layout read + one synthetic resize triggers the repaint.
+function forceWebKitRepaint() {
+  void document.body.offsetHeight; // sync layout read — forces the reflow
+  window.dispatchEvent(new Event("resize"));
+}
+window.SBM = window.SBM || {};
+SBM.forceRepaint = forceWebKitRepaint;
 
 function selectedPhotoIds() {
   return localCartIds();
@@ -62,8 +77,9 @@ function togglePhoto(galleryId, photoId) {
   const idx = ids.indexOf(photoId);
   if (idx >= 0) {
     ids.splice(idx, 1);
-    saveCart(ids);
+    saveCart(ids); // deleted on BOTH ends immediately: local + DELETE /cart/remove below
     cartPost("/cart/remove", { photoId });
+    forceWebKitRepaint();
   } else {
     ids.push(photoId);
     saveCart(ids);
@@ -75,9 +91,11 @@ function clearCart() {
   localStorage.setItem(CART_KEY, JSON.stringify({ __cloud: [] }));
   window.dispatchEvent(new CustomEvent("sbm:cart-change", { detail: 0 }));
   cartPost("/cart/clear", {});
+  forceWebKitRepaint();
 }
 
-// Remove a photo by id from the cart (used by the cart page).
+// Remove a photo by id from the cart (used by the cart page) — local copy
+// AND the DB, immediately; the repaint kick keeps WebKit pages visible.
 function removeFromCart(photoId) {
   const ids = localCartIds();
   const idx = ids.indexOf(photoId);
@@ -85,6 +103,7 @@ function removeFromCart(photoId) {
   ids.splice(idx, 1);
   saveCart(ids);
   cartPost("/cart/remove", { photoId });
+  forceWebKitRepaint();
 }
 
 function countSelected() {
@@ -170,12 +189,29 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshCartBadge();
   window.addEventListener("sbm:cart-change", refreshCartBadge);
 
-  // ----- Cross-device cart merge (signed-in visitors only) -----
-  // Push any local-only ids up — this is what merges the anonymous
-  // localStorage cart into the account on first login — then adopt the DB
-  // list (cartPost saves the returned authoritative list locally).
+  // ----- DB cart = single source of truth (signed-in visitors only) -----
+  // Standard navigation: ADOPT /cart verbatim and overwrite the local copy.
+  // NEVER union-add local ids back into the DB here — that resurrected
+  // items deleted on another device (the zombie-cart bug).
+  // The anonymous-cart union merge runs ONCE, on the page right after an
+  // explicit login (AccountController sets TempData["CartMerge"], rendered
+  // as meta[name=cart-merge]).
   if (AUTHED && CSRF) {
-    cartPost("/cart/sync", { photoIds: selectedPhotoIds().join(",") });
+    if (document.querySelector('meta[name="cart-merge"]')) {
+      cartPost("/cart/sync", { photoIds: selectedPhotoIds().join(",") });
+    } else {
+      fetch("/cart")
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => {
+          // A user mutation landed before this snapshot — prefer local truth.
+          if (!d || cartMutations > 0) return;
+          if (Array.isArray(d.photoIds)) {
+            saveCart(d.photoIds);
+            forceWebKitRepaint(); // cart contents (re)rendered — WebKit kick
+          }
+        })
+        .catch(() => {});
+    }
   }
 
   // ----- Show/hide password toggles (Login / Register) -----
