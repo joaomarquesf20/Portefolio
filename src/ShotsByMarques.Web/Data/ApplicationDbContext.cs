@@ -18,6 +18,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PhotoPack> PhotoPacks => Set<PhotoPack>();
     public DbSet<SitePageSetting> SitePageSettings => Set<SitePageSetting>();
     public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -82,5 +83,20 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         // keep SQLite (case-sensitive) lookups consistent with the service.
         builder.Entity<DiscountCode>().HasIndex(d => d.Code).IsUnique();
         builder.Entity<DiscountCode>().Property(d => d.Value).HasPrecision(18, 2);
+
+        // DB-backed cross-device cart: one row per (client, photo). Photos
+        // and users cascade — deleting a photo (or user) cleans their cart
+        // rows; the unique index makes double-syncs idempotent.
+        builder.Entity<CartItem>().HasIndex(c => new { c.ClientUserId, c.PhotoId }).IsUnique();
+        builder.Entity<CartItem>()
+            .HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(c => c.ClientUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<CartItem>()
+            .HasOne(c => c.Photo)
+            .WithMany()
+            .HasForeignKey(c => c.PhotoId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

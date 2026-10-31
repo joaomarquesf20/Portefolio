@@ -108,12 +108,15 @@ public class StripeCheckoutService
             return null;
 
         var baseUrl = BaseUrl(_baseUrl, publicBaseUrl);
-        var successAction = purpose == "balance" ? "BalanceSuccess" : "DepositSuccess";
+        // Success redirects must hit the REAL active routes — "sessoes/deposito-sucesso"
+        // / "sessoes/saldo-sucesso". The English-looking "/Bookings/DepositSuccess"
+        // was never a route and 404'd right after payment (especially on mobile).
+        var successPath = purpose == "balance" ? "sessoes/saldo-sucesso" : "sessoes/deposito-sucesso";
         var isBalance = purpose == "balance";
         var options = new SessionCreateOptions
         {
             Mode = "payment",
-            SuccessUrl = $"{baseUrl}/Bookings/{successAction}?session_id={{CHECKOUT_SESSION_ID}}",
+            SuccessUrl = $"{baseUrl}/{successPath}?session_id={{CHECKOUT_SESSION_ID}}",
             CancelUrl = $"{baseUrl}/as-minhas-marcacoes",
             CustomerEmail = booking.ClientUser?.Email,
             Metadata = new Dictionary<string, string>

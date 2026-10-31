@@ -1,54 +1,94 @@
-// ---------- Photo selection cart (localStorage) ----------
-const CART_KEY = "sbm_cart"; // { [galleryId]: [photoId, ...] }
+// ---------- Photo selection cart ----------
+// Anonymous visitors: pure localStorage. Signed-in clients: the same local
+// cart is mirrored into the SQLite cart (POST /cart/*) so the selection
+// follows the account across devices; on load the local ids are merged up
+// and the DB list is adopted as the single source of truth.
+const CART_KEY = "sbm_cart"; // flat list: { "__cloud": [photoId, ...] }
+const AUTHED = document.body.dataset.authed === "1";
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
-function getCart() {
+function readCart() {
   try { return JSON.parse(localStorage.getItem(CART_KEY)) || {}; }
   catch { return {}; }
 }
 
-function saveCart(cart) {
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  window.dispatchEvent(new CustomEvent("sbm:cart-change", { detail: countSelected() }));
+// The current shape is flat (single key). Legacy saved carts were
+// "{ [galleryId]: [photoId, ...] }" — everything flattens to photo ids.
+function cartList(cart) {
+  if (!cart || typeof cart !== "object") return [];
+  if (Array.isArray(cart.__cloud)) return cart.__cloud.map(Number);
+  const lists = Object.values(cart).filter(Array.isArray);
+  return lists.length ? lists.flat().map(Number) : Object.keys(cart).map(Number);
+}
+
+function localCartIds() {
+  return Array.from(new Set(cartList(readCart()).filter(n => Number.isInteger(n) && n > 0)));
+}
+
+function saveCart(ids) {
+  const list = Array.from(new Set((ids || []).map(Number).filter(n => Number.isInteger(n) && n > 0)));
+  localStorage.setItem(CART_KEY, JSON.stringify({ __cloud: list }));
+  window.dispatchEvent(new CustomEvent("sbm:cart-change", { detail: list.length }));
+}
+
+// Mirrors the change into the server cart (signed-in visitors only; anonymous
+// visitors stay on localStorage). The /cart/* responses always carry the
+// full DB list — adopting it keeps the local copy converged with all devices.
+function cartPost(path, params) {
+  if (!AUTHED || !CSRF) return Promise.resolve(null);
+  return fetch(path, {
+    method: "POST",
+    headers: { "RequestVerificationToken": CSRF },
+    body: new URLSearchParams(params)
+  })
+    .then(r => (r.ok ? r.json() : Promise.reject(new Error("cart " + path))))
+    .then(data => {
+      if (data && Array.isArray(data.photoIds)) saveCart(data.photoIds);
+      return data;
+    })
+    .catch(() => null);
 }
 
 function selectedPhotoIds() {
-  const cart = getCart();
-  return Object.values(cart).flat();
+  return localCartIds();
 }
 
 function isSelected(galleryId, photoId) {
-  return (getCart()[galleryId] || []).includes(photoId);
+  return localCartIds().includes(photoId);
 }
 
 function togglePhoto(galleryId, photoId) {
-  const cart = getCart();
-  const list = cart[galleryId] || [];
-  const idx = list.indexOf(photoId);
-  if (idx >= 0) list.splice(idx, 1); else list.push(photoId);
-  if (list.length === 0) delete cart[galleryId]; else cart[galleryId] = list;
-  saveCart(cart);
+  const ids = localCartIds();
+  const idx = ids.indexOf(photoId);
+  if (idx >= 0) {
+    ids.splice(idx, 1);
+    saveCart(ids);
+    cartPost("/cart/remove", { photoId });
+  } else {
+    ids.push(photoId);
+    saveCart(ids);
+    cartPost("/cart/sync", { photoIds: String(photoId) });
+  }
 }
 
 function clearCart() {
-  localStorage.removeItem(CART_KEY);
+  localStorage.setItem(CART_KEY, JSON.stringify({ __cloud: [] }));
   window.dispatchEvent(new CustomEvent("sbm:cart-change", { detail: 0 }));
+  cartPost("/cart/clear", {});
 }
 
-// Remove a photo by id from whichever gallery holds it (used by the cart page).
+// Remove a photo by id from the cart (used by the cart page).
 function removeFromCart(photoId) {
-  const cart = getCart();
-  let changed = false;
-  for (const gid in cart) {
-    const list = cart[gid];
-    const idx = list.indexOf(photoId);
-    if (idx >= 0) { list.splice(idx, 1); changed = true; }
-    if (list.length === 0) delete cart[gid];
-  }
-  if (changed) saveCart(cart);
+  const ids = localCartIds();
+  const idx = ids.indexOf(photoId);
+  if (idx < 0) return;
+  ids.splice(idx, 1);
+  saveCart(ids);
+  cartPost("/cart/remove", { photoId });
 }
 
 function countSelected() {
-  return Object.values(getCart()).reduce((sum, list) => sum + list.length, 0);
+  return localCartIds().length;
 }
 
 function refreshCartBadge() {
@@ -129,6 +169,14 @@ window.SBM.buildSlotBar = function (container, slots, opts) {
 document.addEventListener("DOMContentLoaded", () => {
   refreshCartBadge();
   window.addEventListener("sbm:cart-change", refreshCartBadge);
+
+  // ----- Cross-device cart merge (signed-in visitors only) -----
+  // Push any local-only ids up — this is what merges the anonymous
+  // localStorage cart into the account on first login — then adopt the DB
+  // list (cartPost saves the returned authoritative list locally).
+  if (AUTHED && CSRF) {
+    cartPost("/cart/sync", { photoIds: selectedPhotoIds().join(",") });
+  }
 
   // ----- Show/hide password toggles (Login / Register) -----
   document.querySelectorAll("[data-password-toggle]").forEach(btn => {
@@ -238,19 +286,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // ----- Select all (gallery page) -----
   document.querySelectorAll("[data-select-all]").forEach(btn => {
     btn.addEventListener("click", () => {
-      const cart = getCart();
+      const ids = localCartIds();
       let added = 0;
       document.querySelectorAll("[data-gallery-id][data-sale='true']").forEach(item => {
-        const galleryId = Number(item.dataset.galleryId);
         const photoId = Number(item.dataset.photoId);
-        const list = cart[galleryId] || [];
-        if (!list.includes(photoId)) { list.push(photoId); added++; }
-        cart[galleryId] = list;
+        if (!ids.includes(photoId)) { ids.push(photoId); added++; }
         item.classList.add("selected");
         const toggle = item.querySelector("[data-toggle]");
         if (toggle) toggle.textContent = toggle.dataset.removeText;
       });
-      if (added > 0) saveCart(cart);
+      if (added > 0) {
+        saveCart(ids);
+        cartPost("/cart/sync", { photoIds: ids.join(",") });
+      }
       if (continueBtn) continueBtn.classList.toggle("hidden", countSelected() === 0);
     });
   });

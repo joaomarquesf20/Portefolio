@@ -64,12 +64,21 @@ public class StripeWebhookController : ControllerBase
                          && session.Metadata.TryGetValue("purpose", out var purpose))
                 {
                     var booking = await _db.Bookings.FindAsync(bid);
-                    if (booking is not null)
+                    if (booking is not null && purpose == "balance")
                     {
-                        if (purpose == "balance") booking.BalancePaid = true;
-                        else booking.DepositPaid = true;
+                        booking.BalancePaid = true;
                         await _db.SaveChangesAsync();
-                        _logger.LogInformation("Booking {BookingId} {Purpose} marked as paid.", bid, purpose);
+                        _logger.LogInformation("Booking {BookingId} balance marked as paid.", bid);
+                    }
+                    else if (booking is not null) // purpose == "deposit"
+                    {
+                        booking.DepositPaid = true;
+                        // Same semantics as the success page: a paid deposit
+                        // confirms the booking.
+                        if (booking.Status == BookingStatus.Pending)
+                            booking.Status = BookingStatus.Confirmed;
+                        await _db.SaveChangesAsync();
+                        _logger.LogInformation("Booking {BookingId} deposit marked as paid (confirmed).", bid);
                     }
                 }
             }

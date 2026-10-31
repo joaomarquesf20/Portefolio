@@ -15,15 +15,19 @@ public class CheckoutController : Controller
     private readonly ApplicationDbContext _db;
     private readonly StripeCheckoutService _stripe;
     private readonly DiscountCodeService _discounts;
+    private readonly CartService _cart;
 
-    public CheckoutController(ApplicationDbContext db, StripeCheckoutService stripe, DiscountCodeService discounts)
+    public CheckoutController(ApplicationDbContext db, StripeCheckoutService stripe, DiscountCodeService discounts, CartService cart)
     {
         _db = db;
         _stripe = stripe;
         _discounts = discounts;
+        _cart = cart;
     }
 
-    /// <summary>Receives the selected photo ids (?ids=1,2,3) from the client cart.</summary>
+    /// <summary>Receives the selected photo ids (?ids=1,2,3) from the client cart.
+    /// Without the query string (bookmark/new device), falls back to the
+    /// signed-in client's DB cart.</summary>
     public async Task<IActionResult> Index(string? ids)
     {
         var model = new CheckoutIndexViewModel { StripeConfigured = _stripe.IsConfigured };
@@ -36,7 +40,13 @@ public class CheckoutController : Controller
             .ToList();
 
         if (photoIds.Count == 0)
-            return View(model);
+        {
+            var dbIds = await _cart.GetPhotoIdsAsync(UserId());
+            if (dbIds.Count == 0)
+                return View(model);
+            // Replay the standard flow with the DB cart as the selection.
+            return RedirectToAction(nameof(Index), new { ids = string.Join(",", dbIds) });
+        }
 
         var photos = await _db.Photos
             .Include(p => p.Gallery).ThenInclude(g => g!.Booking)
@@ -146,6 +156,12 @@ public class CheckoutController : Controller
             .Where(id => id > 0)
             .Distinct()
             .ToList();
+
+        // DB cart fallback: the client's saved selection is the id list when
+        // the form arrives without one (location.reload after paid flow,
+        // deep links, cleared query string…).
+        if (photoIds.Count == 0)
+            photoIds = await _cart.GetPhotoIdsAsync(userId);
 
         var photos = await _db.Photos
             .Include(p => p.Gallery).ThenInclude(g => g!.Booking)
@@ -263,6 +279,10 @@ public class CheckoutController : Controller
                     order.PaidAt = DateTime.UtcNow;
                     await _db.SaveChangesAsync();
                     ViewData["State"] = "paid";
+                    // Order is paid — the selection served its purpose: drop
+                    // the server cart so it doesn't follow the account to
+                    // the next device (site.js syncs the local copy down).
+                    await _cart.ClearAsync(UserId());
                 }
                 else if (status == "processing")
                 {
@@ -274,7 +294,10 @@ public class CheckoutController : Controller
             }
             else
             {
+                // Already paid — the webhook beat us here (or a page reload).
                 ViewData["State"] = "paid";
+                if (order is not null)
+                    await _cart.ClearAsync(UserId());
             }
 
             // The success page doubles as an instant download hub: render the

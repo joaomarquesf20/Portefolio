@@ -274,6 +274,32 @@ namespace ShotsByMarques.Web.Migrations
                     b.ToTable("Bookings");
                 });
 
+            modelBuilder.Entity("ShotsByMarques.Web.Models.CartItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClientUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PhotoId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PhotoId");
+
+                    b.HasIndex("ClientUserId", "PhotoId")
+                        .IsUnique();
+
+                    b.ToTable("CartItems");
+                });
+
             modelBuilder.Entity("ShotsByMarques.Web.Models.DayAvailability", b =>
                 {
                     b.Property<int>("Id")
@@ -684,6 +710,23 @@ namespace ShotsByMarques.Web.Migrations
                     b.Navigation("ClientUser");
 
                     b.Navigation("SessionType");
+                });
+
+            modelBuilder.Entity("ShotsByMarques.Web.Models.CartItem", b =>
+                {
+                    b.HasOne("ShotsByMarques.Web.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ClientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShotsByMarques.Web.Models.Photo", "Photo")
+                        .WithMany()
+                        .HasForeignKey("PhotoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Photo");
                 });
 
             modelBuilder.Entity("ShotsByMarques.Web.Models.Gallery", b =>

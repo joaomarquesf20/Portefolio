@@ -246,32 +246,41 @@
     .booking-submit:hover { background: #8a7034; box-shadow: 0 10px 24px -14px rgba(161,132,63,.6); }
     .booking-page .booking-secure-note { color: rgba(20,20,20,.4); }
 
-    /* SBM slot-bar (gerado por JS com classes escuras partilhadas com o admin) */
-    .booking-slot-panel.rounded-xl { background: #ffffff; border-color: rgba(20,20,20,.1); }
-    .booking-slot-panel .text-white\/60 { color: rgba(20,20,20,.5); }
-    .booking-slot-panel .text-accent { color: #a1843f; }
-    .booking-slot-panel .text-white\/35 { color: rgba(20,20,20,.4); }
-    .booking-slot-panel .slot-bar-seg {
-        border-color: rgba(20,20,20,.14);
-        background: rgba(20,20,20,.03);
-        color: rgba(20,20,20,.8);
-    }
-    .booking-slot-panel .slot-bar-seg.night {
-        background: rgba(20,20,20,.05);
-        border-color: rgba(20,20,20,.2);
-        color: rgba(20,20,20,.7);
-    }
-    .booking-slot-panel .slot-bar-seg:hover:not(:disabled) {
-        background: #a1843f;
-        border-color: #a1843f;
-        color: #faf9f7;
-    }
-    .booking-slot-panel .slot-bar-seg.sel,
-    .booking-slot-panel .slot-bar-seg.sel.night-sel {
-        background: #a1843f;
-        border-color: #a1843f;
-        color: #faf9f7;
+    /* Grelha de pills de horário (passo 02) — construída localmente em JS;
+       o admin e a MiniSession continuam a usar a barra partilhada do site.js */
+    .slot-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(20,20,20,.16);
+        background: #ffffff;
+        color: rgba(20,20,20,.85);
+        border-radius: 9999px;
+        padding: .65rem .25rem;
+        font-size: .813rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
         box-shadow: none;
+    }
+    .slot-pill:hover:not(:disabled):not(.sel) {
+        border-color: #a1843f;
+        color: #a1843f;
+        background: rgba(161,132,63,.08);
+    }
+    .slot-pill.sel {
+        border-color: #a1843f;
+        background: #a1843f;
+        color: #faf9f7;
+        box-shadow: 0 10px 24px -14px rgba(161,132,63,.6);
+    }
+    /* Ocupado: sem interação — opacity-40, cursor-not-allowed, bg-neutral-800 */
+    .slot-pill:disabled,
+    .slot-pill[disabled] {
+        opacity: .4;
+        cursor: not-allowed;
+        background: #262626;
+        border-color: #262626;
+        color: #a3a3a3;
     }
 </style>
 
@@ -354,6 +363,43 @@
         const ready = !!dateInput.value && !!timeInput.value && !!locationSelect.value;
         document.getElementById('submit-btn').disabled = !ready;
     }
+    // Grelha de pills de horário (página de marcação do cliente). LOCAL a esta
+    // página — o admin e a MiniSession continuam a usar SBM.buildSlotBar.
+    function buildSlotGrid(options, opts) {
+        opts = opts || {};
+        const list = (options || [])
+            .map(s => ({ time: s.time || s.Time, taken: !!(s.taken || s.Taken) }))
+            .sort((a, b) => a.time.localeCompare(b.time));
+        let selected = opts.selected || '';
+        slots.className = 'grid grid-cols-3 gap-2.5 sm:grid-cols-4';
+        slots.innerHTML = '';
+        list.forEach(slot => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = slot.time;
+            btn.className = 'slot-pill';
+            if (slot.taken) {
+                btn.disabled = true;
+                btn.title = 'Ocupado';
+                btn.setAttribute('aria-disabled', 'true');
+            } else {
+                btn.title = 'Livre';
+                if (slot.time === selected) btn.classList.add('sel');
+                btn.addEventListener('click', () => {
+                    slots.querySelectorAll('.slot-pill.sel').forEach(item => item.classList.remove('sel'));
+                    btn.classList.add('sel');
+                    opts.onSelect && opts.onSelect(slot.time);
+                });
+            }
+            slots.appendChild(btn);
+        });
+        if (list.some(item => item.taken)) {
+            const note = document.createElement('p');
+            note.className = 'col-span-full pt-1.5 text-xs text-black/50';
+            note.textContent = 'As horas apagadas já estão ocupadas.';
+            slots.appendChild(note);
+        }
+    }
     async function loadSlots(button) {
         const date = button.dataset.date;
         dateInput.value = date;
@@ -377,9 +423,8 @@
             document.getElementById('no-slots').classList.remove('hidden');
             return;
         }
-        window.SBM.buildSlotBar(slots, options, {
+        buildSlotGrid(options, {
             selected: '',
-            hint: 'Os horários a cinzento já estão ocupados',
             onSelect: function (time) {
                 timeInput.value = time;
                 summaryTime.textContent = time;

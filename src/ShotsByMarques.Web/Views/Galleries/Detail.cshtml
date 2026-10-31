@@ -357,6 +357,8 @@
                 <span class="hidden h-4 w-px bg-black/10 sm:block" aria-hidden="true"></span>
                 <div class="flex items-center gap-2.5 sm:gap-3" role="group" data-cols-group aria-label="Colunas da vista em quadrados">
                     <span class="text-[10px] font-semibold uppercase tracking-[0.28em] text-black/35">Colunas:</span>
+                    <button type="button" data-cols-btn="1" aria-pressed="false" class="gd-cols-btn" title="1 foto por linha">1</button>
+                    <span class="gd-col-dot" aria-hidden="true">·</span>
                     <button type="button" data-cols-btn="2" aria-pressed="false" class="gd-cols-btn" title="2 fotos por linha">2</button>
                     <span class="gd-col-dot" aria-hidden="true">·</span>
                     <button type="button" data-cols-btn="3" aria-pressed="true" class="gd-cols-btn" title="3 fotos por linha">3</button>
@@ -502,14 +504,14 @@
             var lastW = grid.clientWidth;
             var resizeTimer = null;
 
-            // colunas preferidas (2 a 5; usado só pela vista de quadrados).
+            // colunas preferidas (1 a 5; usado só pela vista de quadrados).
             // Em modo PORTFOLIO (data-portfolio=1) o default no computador é 4
             // — grelha mais de vitrine; a preferência gravada do cliente ganha.
             var COLS_KEY = "sbm_gcols";
             var cols = (grid.dataset.portfolio === "1" && window.innerWidth >= 1024) ? 4 : 3;
             try {
                 var savedCols = parseInt(localStorage.getItem(COLS_KEY), 10);
-                if (savedCols >= 2 && savedCols <= 5) cols = savedCols;
+                if (savedCols >= 1 && savedCols <= 5) cols = savedCols;
             } catch (e) { /* storage opcional */ }
 
             function keyOf(item) { return item.getAttribute("data-photo-id"); }
@@ -610,17 +612,27 @@
                 grid.dataset.ready = "1";
             }
 
-            // ---- colunas personalizadas: só a vista QUADRADOS as usa. No
-            // telemóvel fixa 2 colunas (tiles suficientemente grandes p/ o
-            // preço + botão "+ Selecionar" sem partir). No tablet limita a
-            // 3. No computador respeita a preferência do cliente (2–5).
+            // ---- colunas personalizadas: só a vista QUADRADOS as usa.
+            // Por omissão: no telemóvel fixa 2 colunas (tiles suficientemente
+            // grandes p/ o preço + botão "+ Selecionar" sem partir) e no
+            // tablet limita a 3; no computador respeita a preferência (1–5).
+            // Se o cliente toca num número de colunas, a escolha é "pinada"
+            // (sbm_gcols_pin) e vale em TODOS os tamanhos — o clique passa a
+            // mandar sempre, inclusive no telemóvel (inclui o telemóvel).
             // minmax(0,1fr) impede blowout de colunas por min-content largo.
-            function applyCols() {
-                if (mode !== "squares") return;
-                var eff = window.innerWidth < 640 ? 2
+            var COLS_PIN_KEY = "sbm_gcols_pin";
+            var colsPinned = false;
+            try { colsPinned = localStorage.getItem(COLS_PIN_KEY) === "1"; } catch (e) { /* storage opcional */ }
+            function pinnedCols() {
+                var eff = colsPinned ? cols
+                    : window.innerWidth < 640 ? 2
                     : window.innerWidth < 1024 ? Math.min(cols, 3)
                     : cols;
-                grid.style.gridTemplateColumns = "repeat(" + eff + ", minmax(0, 1fr))";
+                return eff;
+            }
+            function applyCols() {
+                if (mode !== "squares") return;
+                grid.style.gridTemplateColumns = "repeat(" + pinnedCols() + ", minmax(0, 1fr))";
             }
 
             // o seletor desliga-se nas vistas que ditam o próprio fluxo
@@ -667,14 +679,16 @@
                 });
             });
 
-            // seletor de colunas (ativo só na vista de quadrados)
+            // seletor de colunas (ativo só na vista de quadrados). Um toque
+            // explícito "pina" a escolha: passa a valer também no telemóvel.
             document.querySelectorAll("[data-cols-btn]").forEach(function (b) {
                 b.addEventListener("click", function () {
                     if (mode !== "squares") return;
                     var n = Number(b.getAttribute("data-cols-btn"));
-                    if (!(n >= 2 && n <= 5) || n === cols) return;
+                    if (!(n >= 1 && n <= 5) || (n === cols && colsPinned)) return;
                     cols = n;
-                    try { localStorage.setItem(COLS_KEY, String(n)); } catch (e) { /* storage opcional */ }
+                    colsPinned = true;
+                    try { localStorage.setItem(COLS_KEY, String(n)); localStorage.setItem(COLS_PIN_KEY, "1"); } catch (e) { /* storage opcional */ }
                     updateColsBar();
                     applyCols(); // pure CSS reflow — não é preciso remontar a grelha
                 });

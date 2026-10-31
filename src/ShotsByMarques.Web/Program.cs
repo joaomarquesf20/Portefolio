@@ -94,6 +94,7 @@ builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<DiscountCodeService>();
 builder.Services.AddScoped<StripeCheckoutService>();
 builder.Services.AddScoped<PhotoStorageService>();
+builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<AvailabilityCalendarService>();
 builder.Services.AddScoped<SitePageBackgroundService>();
 builder.Services.AddSingleton<BookingCalendarService>();

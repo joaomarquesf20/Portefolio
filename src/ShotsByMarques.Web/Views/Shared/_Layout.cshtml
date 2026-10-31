@@ -1,3 +1,4 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
     var isAdminArea = User.IsInRole("Admin") &&
@@ -17,6 +18,9 @@
     <title>@ViewData["Title"] — Shots By Marques</title>
     <meta name="description" content="Fotografia automóvel premium em Portugal — sessões privadas, eventos, stands e dealers." />
     <meta name="theme-color" content="#faf9f7" />
+    @* Antiforgery token for site.js cart posts (/cart/sync|remove|clear).
+       Consumed by the meta[name=csrf-token] reader at the top of site.js. *@
+    <meta name="csrf-token" content="@(Xsrf.GetAndStoreTokens(Context).RequestToken)" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -257,7 +261,7 @@
     }
     <script>document.documentElement.classList.add('js');</script>
 </head>
-<body class="min-h-screen antialiased @(isAdminArea ? "admin-page" : "pub-light")" data-glass-header="@(isAdminArea ? "admin" : (isHome ? "auto" : "always"))">
+<body class="min-h-screen antialiased @(isAdminArea ? "admin-page" : "pub-light")" data-glass-header="@(isAdminArea ? "admin" : (isHome ? "auto" : "always"))" data-authed="@(User.Identity?.IsAuthenticated == true ? "1" : "0")">
 
     @* ================= HEADER ================= *@
     <header data-header class="fixed inset-x-0 top-0 z-50 @(isAdminArea ? "admin-site-nav" : "")">

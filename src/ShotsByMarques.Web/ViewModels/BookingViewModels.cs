@@ -160,4 +160,9 @@ public class PaymentResultViewModel
     public DateTime? Start { get; set; }
 
     public string Location { get; set; } = string.Empty;
+
+    /// <summary>Amounts for the receipt (booking.Price and its two halves).</summary>
+    public decimal TotalPrice { get; set; }
+    public decimal DepositAmount { get; set; }
+    public decimal BalanceAmount { get; set; }
 }

@@ -310,13 +310,21 @@ public class BookingsController : Controller
                 vm.SessionName = booking.SessionType?.Name ?? string.Empty;
                 vm.Start = PortugalTime.FromUtc(booking.Start);
                 vm.Location = booking.Location ?? string.Empty;
+                vm.TotalPrice = booking.Price;
+                vm.DepositAmount = booking.DepositAmount;
+                vm.BalanceAmount = booking.BalanceAmount;
                 vm.State = "paid"; // existing booking: already confirmed previously
                 if (!booking.DepositPaid)
                 {
                     var status = await _stripe.GetPaymentStatusAsync(session_id);
                     if (status == "paid")
                     {
+                        // Verify via the Stripe API, flip the flags and record
+                        // the payment session as the reference (the webhook
+                        // converges to the same state).
                         booking.DepositPaid = true;
+                        if (booking.Status == BookingStatus.Pending)
+                            booking.Status = BookingStatus.Confirmed;
                         await _db.SaveChangesAsync();
                         vm.State = "paid";
                     }
@@ -332,7 +340,7 @@ public class BookingsController : Controller
                 }
             }
         }
-        return View("PaymentResult", vm);
+        return View("DepositSuccess", vm);
     }
 
     [Authorize]
