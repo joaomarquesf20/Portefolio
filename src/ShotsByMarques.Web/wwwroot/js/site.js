@@ -297,7 +297,59 @@ document.addEventListener("DOMContentLoaded", () => {
   // ----- Lightbox with zoom -----
   const lb = {
     box: null, img: null, index: 0, items: [], currentBlob: null,
-    scale: 1, tx: 0, ty: 0, dragging: false, moved: false
+    scale: 1, tx: 0, ty: 0, dragging: false, moved: false,
+    preload: new Map() // item index -> Promise of blob: URL (watermarked preview)
+  };
+
+  // Revokes every preloaded/fetched blob URL (re-open + close bookkeeping):
+  // once revoked, blob: URLs are dead and cannot be reopened or "saved as".
+  const lbRevokePreload = () => {
+    for (const p of lb.preload.values()) {
+      Promise.resolve(p).then((url) => { if (typeof url === "string") URL.revokeObjectURL(url); });
+    }
+    lb.preload.clear();
+    if (lb.currentBlob) { URL.revokeObjectURL(lb.currentBlob); lb.currentBlob = null; }
+  };
+
+  // Anti-theft blob fetch, cached per item index. Deliberately NOT
+  // `new Image(); img.src = secure` — the id-less URL must stay out of the
+  // DOM/src attributes; fetch+blob keeps it invisible while still warming
+  // the browser cache path used to display the frame.
+  const lbFetchBlob = (i) => {
+    const cached = lb.preload.get(i);
+    if (cached === null) return Promise.resolve(null); // legacy/sample item (nothing to fetch)
+    if (typeof cached === "string") return Promise.resolve(cached); // ready
+    if (cached) return cached; // in-flight promise
+    const secure = lb.items[i] && lb.items[i].dataset.secureSrc;
+    if (!secure) { lb.preload.set(i, null); return Promise.resolve(null); }
+    const task = fetch(secure, { credentials: "same-origin" })
+      .then((r) => { if (!r.ok) throw new Error("secure-src " + r.status); return r.blob(); })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        // If the cache slot was trimmed while loading (user swiped away fast),
+        // this fetch result is orphaned — self-revoke instead of leaking it.
+        if (lb.preload.get(i) !== task) { URL.revokeObjectURL(url); return null; }
+        lb.preload.set(i, url);
+        return url;
+      })
+      .catch(() => { if (lb.preload.get(i) === task) lb.preload.delete(i); return null; }); // retried next show
+    lb.preload.set(i, task);
+    return task;
+  };
+
+  // Keep memory bounded: retain only blobs near the current photo (±4).
+  // Without this, a long gallery would accumulate hundreds of decoded 1600px
+  // images on the client. In-flight fetches revoke themselves when trimmed.
+  const lbTrimPreload = (at) => {
+    const n = lb.items.length;
+    for (const key of Array.from(lb.preload.keys())) {
+      const dist = Math.min(Math.abs(key - at), n - Math.abs(key - at));
+      if (dist <= 4) continue;
+      const p = lb.preload.get(key);
+      lb.preload.delete(key);
+      if (p && typeof p.then !== "function" && p !== lb.currentBlob)
+        URL.revokeObjectURL(p);
+    }
   };
 
   window.openLightbox = (items, current) => {
@@ -305,6 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
     lb.img = document.getElementById("lightbox-img");
     lb.items = items;
     lb.index = items.indexOf(current);
+    lbRevokePreload(); // reopening: stale indices/urls are meaningless
     lbResetZoom();
     lbShow();
     lb.box.classList.add("open");
@@ -339,19 +392,22 @@ document.addEventListener("DOMContentLoaded", () => {
     lbResetZoom();
     // 2) Anti-theft: the real (watermarked) high-res path NEVER lives in a src
     //    attribute. It arrives via data-secure-src and is rendered through a
-    //    blob: URL, so casual DOM inspection can't see the file location.
-    const secure = el.dataset.secureSrc;
-    if (!secure) return;
+    //    blob: URL. When the adjacent preload already cached it, the swap is
+    //    instant; otherwise it loads and is cached for the next visit.
     const at = lb.index; // token: ignore stale fetches when navigating fast
-    fetch(secure, { credentials: "same-origin" })
-      .then((r) => { if (!r.ok) throw new Error("secure-src " + r.status); return r.blob(); })
-      .then((blob) => {
-        if (lb.index !== at) return;
-        if (lb.currentBlob) URL.revokeObjectURL(lb.currentBlob);
-        lb.currentBlob = URL.createObjectURL(blob);
-        lb.img.src = lb.currentBlob;
-      })
-      .catch(() => { /* fallback thumb stays */ });
+    lbFetchBlob(at).then((url) => {
+      if (lb.index !== at || !url) return;
+      lb.currentBlob = url;
+      lb.img.src = lb.currentBlob;
+    });
+    // 3) Lightbox adjacent preloading: whenever photo N is displayed,
+    //    silently pre-fetch N+1 and N-1 in the background so fast swiping
+    //    always lands on an already-fetched, pre-watermarked frame.
+    if (lb.items.length > 1) {
+      lbFetchBlob((at + 1) % lb.items.length);
+      lbFetchBlob((at - 1 + lb.items.length) % lb.items.length);
+    }
+    lbTrimPreload(at);
   };
   window.lbNav = (dir) => {
     lb.index = (lb.index + dir + lb.items.length) % lb.items.length;
@@ -412,9 +468,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const box = document.getElementById("lightbox");
     if (box) box.classList.remove("open");
     document.body.style.overflow = "";
-    // Release the fetched secure image — once revoked, the blob: URL in the
-    // DOM is dead and cannot be reopened or "saved as" later.
-    if (lb.currentBlob) { URL.revokeObjectURL(lb.currentBlob); lb.currentBlob = null; }
+    // Release ALL fetched/preloaded blobs — once revoked, the blob: URLs are
+    // dead and cannot be reopened or "saved as" later.
+    lbRevokePreload();
   };
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { closeLightbox(); return; }

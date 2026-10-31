@@ -139,6 +139,18 @@ public class AdminGalleriesController : Controller
 
         _db.Update(gallery);
         await _db.SaveChangesAsync();
+
+        // Derivative pre-flight: make sure every photo of this gallery has its
+        // watermarked preview (-wm.jpg) and thumb (-wt.jpg) baked on disk, so
+        // client navigation NEVER triggers on-demand SkiaSharp work (and a
+        // missing file can never be "fixed" by serving the clean original).
+        var allPhotos = await _db.Photos.Where(p => p.GalleryId == gallery.Id).ToListAsync();
+        foreach (var photo in allPhotos)
+        {
+            try { _storage.EnsureWatermarkedDerivatives(photo.FilePath, photo.PreviewPath); }
+            catch { /* best effort — the /Photos endpoints self-heal on demand */ }
+        }
+
         return RedirectToAction(nameof(Index));
     }
 
@@ -151,6 +163,18 @@ public class AdminGalleriesController : Controller
         {
             gallery.IsPublished = !gallery.IsPublished;
             await _db.SaveChangesAsync();
+
+            // Going public: pre-flight the watermarked derivatives so the
+            // gallery's first visit serves pre-baked files instantly.
+            if (gallery.IsPublished)
+            {
+                var photos = await _db.Photos.Where(p => p.GalleryId == id).ToListAsync();
+                foreach (var photo in photos)
+                {
+                    try { _storage.EnsureWatermarkedDerivatives(photo.FilePath, photo.PreviewPath); }
+                    catch { /* best effort — the /Photos endpoints self-heal on demand */ }
+                }
+            }
         }
         return RedirectToAction(nameof(Index));
     }

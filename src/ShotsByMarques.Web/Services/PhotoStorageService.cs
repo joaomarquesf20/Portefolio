@@ -51,14 +51,17 @@ public class PhotoStorageService
             await file.CopyToAsync(stream);
         }
 
-        // Watermarked preview (always JPEG, resized).
-        // If the watermark fails we DELETE the upload and let the error propagate —
-        // the preview must NEVER expose the full-resolution original.
+        // Watermarked preview (1600px, for the lightbox) + watermarked thumb
+        // (900px, for grids) — ALL derivatives pre-baked at upload time.
+        // If any watermark fails we DELETE the upload and let the error
+        // propagate: a watermarked derivative is never optional, otherwise a
+        // clean original would be one "missing file" away from leaking.
         var previewName = $"{Path.GetFileNameWithoutExtension(fileName)}-wm.jpg";
         var previewPath = Path.Combine(dir, previewName);
         try
         {
             GenerateWatermarkedDerivative(path, previewPath, PreviewMaxDimension, 88);
+            GenerateWatermarkedDerivative(path, Path.Combine(dir, $"{Path.GetFileNameWithoutExtension(fileName)}-wt.jpg"), ThumbMaxDimension, 82);
         }
         catch
         {
@@ -166,6 +169,47 @@ public class PhotoStorageService
     /// </summary>
     public static void GenerateWatermarkedThumb(string sourcePath, string targetPath) =>
         GenerateWatermarkedDerivative(sourcePath, targetPath, ThumbMaxDimension, 82);
+
+    /// <summary>WATERMARKED 1600px preview for the lightbox (quality 88) —
+    /// its relative path is stored as the photo's PreviewPath.</summary>
+    public static void GenerateWatermarkedPreview(string sourcePath, string targetPath) =>
+        GenerateWatermarkedDerivative(sourcePath, targetPath, PreviewMaxDimension, 88);
+
+    /// <summary>
+    /// Recreates any missing WATERMARKED derivative of an uploaded photo:
+    /// the 1600px preview ("-wm.jpg", relative path in previewRelativePath)
+    /// and the 900px thumb ("-wt.jpg"). Files already on disk are NOT
+    /// regenerated. Called by the admin upload/update/publish flows so that
+    /// /Photos/Preview and /Photos/Thumb always find their pre-baked files
+    /// when viewers navigate — no SkiaSharp processing during live traffic.
+    /// Legacy wwwroot sample paths are left untouched. Throws on generation
+    /// errors — callers decide whether to surface them.
+    /// </summary>
+    public void EnsureWatermarkedDerivatives(string? relativePath, string? previewRelativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath) || !relativePath.StartsWith("photos/"))
+            return; // legacy wwwroot sample asset — clean by design
+
+        var root = Path.GetFullPath(PhotosRoot);
+        var fullOriginal = Path.GetFullPath(Path.Combine(PhotosRoot, relativePath["photos/".Length..]));
+        if (!fullOriginal.StartsWith(root + Path.DirectorySeparatorChar) || !File.Exists(fullOriginal))
+            return;
+
+        var baseName = Path.Combine(
+            Path.GetDirectoryName(fullOriginal) ?? root,
+            Path.GetFileNameWithoutExtension(fullOriginal));
+
+        var thumbPath = baseName + "-wt.jpg";
+        if (!File.Exists(thumbPath))
+            GenerateWatermarkedThumb(fullOriginal, thumbPath);
+
+        if (!string.IsNullOrEmpty(previewRelativePath) && previewRelativePath.StartsWith("photos/"))
+        {
+            var previewPath = Path.GetFullPath(Path.Combine(PhotosRoot, previewRelativePath["photos/".Length..]));
+            if (previewPath.StartsWith(root + Path.DirectorySeparatorChar) && !File.Exists(previewPath))
+                GenerateWatermarkedPreview(fullOriginal, previewPath);
+        }
+    }
 
     /// <summary>High-res CLEAN derivative for covers and hero banners (1920px, quality 92).</summary>
     public static void GenerateCleanLarge(string sourcePath, string targetPath) =>

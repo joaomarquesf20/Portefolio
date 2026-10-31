@@ -8,16 +8,19 @@ using System.Security.Claims;
 namespace ShotsByMarques.Web.Controllers;
 
 /// <summary>
-/// Streams photo derivatives for files stored outside wwwroot:
+/// Streams photo derivatives for files stored outside wwwroot. Derivatives
+/// are PRE-BAKED at upload (and repaired by the admin update/publish flows)
+/// — these endpoints do not run SkiaSharp during normal viewer navigation:
 ///   /Photos/Thumb — WATERMARKED, small 900px (grid tiles + lightbox
 ///     initial frame: tiles show baked watermark pixels).
 ///   /Photos/Preview — WATERMARKED, larger 1600px (lightbox only; the page
 ///     never puts it in a src attribute — site.js fetches it into a blob: URL).
 ///   /Photos/Cover — CLEAN high-res 1920px, for covers / hero backgrounds.
-/// Every public derivative of an uploaded photo is watermarked except the
-/// cover/background asset; screenshots of grids or of the lightbox never
-/// capture clean pixels. The full-resolution original is only served by
-/// DownloadsController.File after payment/ownership checks.
+/// STRICT NO-FALLBACK: if a watermarked derivative is missing it is rebuilt
+/// from the original synchronously BEFORE responding (or the endpoint 404s) —
+/// the clean original is NEVER streamed from App_Data/photos/ by this
+/// controller under any circumstance. The full-resolution original is only
+/// served by DownloadsController.File after payment/ownership checks.
 /// </summary>
 public class PhotosController : Controller
 {
@@ -44,21 +47,48 @@ public class PhotosController : Controller
 
         var photosRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data", "photos"));
         var fullPath = Path.GetFullPath(Path.Combine(photosRoot, photo.PreviewPath["photos/".Length..]));
-        if (!fullPath.StartsWith(photosRoot + Path.DirectorySeparatorChar) || !System.IO.File.Exists(fullPath))
+        if (!fullPath.StartsWith(photosRoot + Path.DirectorySeparatorChar))
             return NotFound();
+
+        // STRICT NO-FALLBACK: the watermarked preview is the only thing that
+        // leaves this endpoint. If the baked file vanished (manual cleanup or
+        // an older row), rebuild it from the original SYNCHRONOUSLY first.
+        // The clean original file is NEVER streamed here, not even as a
+        // placeholder for a pending regeneration.
+        if (!System.IO.File.Exists(fullPath))
+        {
+            var originalPath = Path.GetFullPath(Path.Combine(photosRoot, photo.FilePath["photos/".Length..]));
+            if (!photo.FilePath.StartsWith("photos/")
+                || !originalPath.StartsWith(photosRoot + Path.DirectorySeparatorChar)
+                || !System.IO.File.Exists(originalPath))
+                return NotFound();
+
+            try
+            {
+                PhotoStorageService.GenerateWatermarkedPreview(originalPath, fullPath);
+            }
+            catch (IOException) when (System.IO.File.Exists(fullPath))
+            {
+                // Lost a generate-race to a concurrent request — the file exists now.
+            }
+            catch
+            {
+                return NotFound();
+            }
+        }
 
         return PhysicalFile(fullPath, ContentTypeFor(Path.GetExtension(fullPath)));
     }
 
     /// <summary>
-    /// WATERMARKED thumbnail (grid tiles, lightbox initial frame). The
-    /// watermark is BAKED into the pixels server-side (SkiaSharp) and cached
-    /// on disk as "{base}-wt.jpg" beside the original. Authorization mirrors
-    /// Preview: private galleries expose photos only to their owner (or
-    /// admins), and unpublished public galleries stay invisible. Anti-theft
-    /// guarantee: screenshots/screen-recording of grid tiles or the lightbox
-    /// always capture the baked watermark — no clean derivative is ever
-    /// served from this endpoint.
+    /// WATERMARKED thumbnail (grid tiles, lightbox initial frame). Served
+    /// pre-baked at upload ("{base}-wt.jpg" beside the original, SkiaSharp);
+    /// if the file is missing it is generated synchronously BEFORE responding
+    /// (never the clean original, never a partial frame). Authorization
+    /// mirrors Preview: private galleries expose photos only to their owner
+    /// (or admins), and unpublished public galleries stay invisible.
+    /// Anti-theft guarantee: screenshots/screen-recording of grid tiles or
+    /// the lightbox always capture the baked watermark.
     /// </summary>
     [Route("photos/thumb/{id:int}")]
     public async Task<IActionResult> Thumb(int id)
