@@ -20,7 +20,7 @@ public class PhotoStorageService
     /// <summary>Maximum width/height of the watermarked preview (keeps traffic low).</summary>
     private const int PreviewMaxDimension = 1600;
 
-    /// <summary>Maximum width/height of the CLEAN (watermark-free) grid thumbnail.</summary>
+    /// <summary>Maximum width/height of the WATERMARKED grid thumb (baked pixels, "-wt.jpg").</summary>
     public const int ThumbMaxDimension = 900;
 
     /// <summary>Maximum width/height of the CLEAN high-res derivative (covers / hero banners).</summary>
@@ -58,7 +58,7 @@ public class PhotoStorageService
         var previewPath = Path.Combine(dir, previewName);
         try
         {
-            GenerateWatermarkedPreview(path, previewPath);
+            GenerateWatermarkedDerivative(path, previewPath, PreviewMaxDimension, 88);
         }
         catch
         {
@@ -70,16 +70,18 @@ public class PhotoStorageService
     }
 
     /// <summary>
-    /// Resizes the image to PreviewMaxDimension and stamps a tiled diagonal
-    /// watermark so the preview clearly belongs to Shots By Marques.
+    /// Resizes the image to maxDimension and stamps a tiled diagonal watermark
+    /// baked into the pixels — shared by the 1600px lightbox preview and the
+    /// 900px grid thumb. Every public derivative of an uploaded photo (thumb,
+    /// preview) goes through this: NO clean pixels ever reach the browser.
     /// </summary>
-    public static void GenerateWatermarkedPreview(string sourcePath, string targetPath)
+    public static void GenerateWatermarkedDerivative(string sourcePath, string targetPath, int maxDimension, int quality)
     {
         using var source = SKBitmap.Decode(sourcePath)
             ?? throw new InvalidOperationException("Could not decode image.");
 
         // Scale down keeping aspect ratio.
-        var scale = Math.Min(1f, PreviewMaxDimension / (float)Math.Max(source.Width, source.Height));
+        var scale = Math.Min(1f, maxDimension / (float)Math.Max(source.Width, source.Height));
         var width = Math.Max(1, (int)Math.Round(source.Width * scale));
         var height = Math.Max(1, (int)Math.Round(source.Height * scale));
 
@@ -119,18 +121,18 @@ public class PhotoStorageService
         }
 
         using var image = SKImage.FromBitmap(resized);
-        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 88);
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
         using var output = File.Create(targetPath);
         data.SaveTo(output);
     }
 
     /// <summary>
-    /// CLEAN (watermark-free) JPEG derivatives of the photo. The security
-    /// split stays intact:
-    ///   thumb   → public, clean, small 900px (grid tiles)
-    ///   large   → public, clean, 1920px, quality 92 (covers, hero banners,
-    ///             full-bleed backgrounds — must stay razor-sharp on desktop)
-    ///   preview → lightbox only, ALWAYS watermarked, never in a src attr
+    /// CLEAN (watermark-free) JPEG derivative of the photo. Covers/backgrounds
+    /// are the site's public face — deliberately clean and sharp. The security
+    /// split STAYS intact because every other public asset is watermarked:
+    ///   thumb   → public, WATERMARKED 900px (grid tiles + lightbox frame)
+    ///   preview → public, WATERMARKED 1600px (lightbox only)
+    ///   large   → public, clean 1920px (covers / hero banners ONLY)
     ///   original→ DownloadsController only, after payment/ownership checks
     /// </summary>
     private static void GenerateCleanDerivative(string sourcePath, string targetPath, int maxDimension, int quality)
@@ -156,9 +158,14 @@ public class PhotoStorageService
         data.SaveTo(output);
     }
 
-    /// <summary>Small CLEAN thumb for grid tiles (900px, quality 92).</summary>
-    public static void GenerateCleanThumb(string sourcePath, string targetPath) =>
-        GenerateCleanDerivative(sourcePath, targetPath, ThumbMaxDimension, 92);
+    /// <summary>
+    /// WATERMARKED thumb for grid tiles and the lightbox initial frame
+    /// (900px, quality 82). Generated on demand by /Photos/Thumb into
+    /// "{base}-wt.jpg" — the same service that bakes the 1600px preview,
+    /// at smaller scale: screenshotting a grid tile captures a watermark.
+    /// </summary>
+    public static void GenerateWatermarkedThumb(string sourcePath, string targetPath) =>
+        GenerateWatermarkedDerivative(sourcePath, targetPath, ThumbMaxDimension, 82);
 
     /// <summary>High-res CLEAN derivative for covers and hero banners (1920px, quality 92).</summary>
     public static void GenerateCleanLarge(string sourcePath, string targetPath) =>
@@ -199,8 +206,8 @@ public class PhotoStorageService
 
     /// <summary>
     /// Deletes both the full-resolution file and its watermarked preview —
-    /// plus the on-demand CLEAN derivatives (thumb + high-res large) if one
-    /// was generated.
+    /// plus the on-demand derivatives (watermarked thumb, any legacy clean
+    /// thumb, and the clean high-res large) if one was generated.
     /// </summary>
     public void Delete(string? relativePath, string? previewPath = null)
     {
@@ -217,7 +224,9 @@ public class PhotoStorageService
         if (!fullPath.StartsWith(Path.GetFullPath(PhotosRoot) + Path.DirectorySeparatorChar))
             return;
         var baseName = Path.Combine(Path.GetDirectoryName(fullPath) ?? string.Empty, Path.GetFileNameWithoutExtension(fullPath));
-        foreach (var suffix in new[] { "-thumb.jpg", "-large.jpg" })
+        // "-thumb.jpg": legacy CLEAN thumbs (pre-watermark-baking) — swept on
+        // delete; "-wt.jpg": the WATERMARKED thumb; "-large.jpg": clean cover.
+        foreach (var suffix in new[] { "-thumb.jpg", "-wt.jpg", "-large.jpg" })
         {
             var file = baseName + suffix;
             if (File.Exists(file))

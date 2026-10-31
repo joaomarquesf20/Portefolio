@@ -9,11 +9,15 @@ namespace ShotsByMarques.Web.Controllers;
 
 /// <summary>
 /// Streams photo derivatives for files stored outside wwwroot:
-///   /Photos/Thumb — CLEAN, watermark-free, small (grid tiles + covers).
-///   /Photos/Preview — WATERMARKED, larger (lightbox only; the page never
-///     puts it in a src attribute — site.js fetches it into a blob: URL).
-/// The full-resolution original is only served by DownloadsController.File
-/// after payment/ownership checks.
+///   /Photos/Thumb — WATERMARKED, small 900px (grid tiles + lightbox
+///     initial frame: tiles show baked watermark pixels).
+///   /Photos/Preview — WATERMARKED, larger 1600px (lightbox only; the page
+///     never puts it in a src attribute — site.js fetches it into a blob: URL).
+///   /Photos/Cover — CLEAN high-res 1920px, for covers / hero backgrounds.
+/// Every public derivative of an uploaded photo is watermarked except the
+/// cover/background asset; screenshots of grids or of the lightbox never
+/// capture clean pixels. The full-resolution original is only served by
+/// DownloadsController.File after payment/ownership checks.
 /// </summary>
 public class PhotosController : Controller
 {
@@ -47,12 +51,14 @@ public class PhotosController : Controller
     }
 
     /// <summary>
-    /// Watermark-FREE thumbnail (grid tiles, covers). Built on demand from the
-    /// original and cached on disk beside it. Authorization mirrors Preview:
-    /// private galleries expose photos only to their owner (or admins), and
-    /// unpublished public galleries stay invisible. The ant-theft split is
-    /// enforced here: clients can grab this small clean image freely, but the
-    /// large watermarked preview (/Photos/Preview) is what the lightbox shows.
+    /// WATERMARKED thumbnail (grid tiles, lightbox initial frame). The
+    /// watermark is BAKED into the pixels server-side (SkiaSharp) and cached
+    /// on disk as "{base}-wt.jpg" beside the original. Authorization mirrors
+    /// Preview: private galleries expose photos only to their owner (or
+    /// admins), and unpublished public galleries stay invisible. Anti-theft
+    /// guarantee: screenshots/screen-recording of grid tiles or the lightbox
+    /// always capture the baked watermark — no clean derivative is ever
+    /// served from this endpoint.
     /// </summary>
     [Route("photos/thumb/{id:int}")]
     public async Task<IActionResult> Thumb(int id)
@@ -73,13 +79,13 @@ public class PhotosController : Controller
 
         var thumbPath = Path.Combine(
             Path.GetDirectoryName(fullPath) ?? photosRoot,
-            Path.GetFileNameWithoutExtension(fullPath) + "-thumb.jpg");
+            Path.GetFileNameWithoutExtension(fullPath) + "-wt.jpg");
 
         if (!System.IO.File.Exists(thumbPath))
         {
             try
             {
-                PhotoStorageService.GenerateCleanThumb(fullPath, thumbPath);
+                PhotoStorageService.GenerateWatermarkedThumb(fullPath, thumbPath);
             }
             catch (IOException) when (System.IO.File.Exists(thumbPath))
             {
@@ -96,12 +102,13 @@ public class PhotosController : Controller
     }
 
     /// <summary>
-    /// CLEAN, HIGH-RESOLUTION derivative (covers, masonry tiles, hero banners,
-    /// full-bleed page backgrounds). 1920px, JPEG quality 92 — sharp on desktop
+    /// CLEAN, HIGH-RESOLUTION derivative (covers, hero banners, full-bleed
+    /// page backgrounds). 1920px, JPEG quality 92 — sharp on desktop
     /// monitors. Authorization mirrors Preview/Thumb; still never the raw
     /// original (that only goes out after payment/ownership checks), and no
-    /// watermark — backgrounds/covers are the clean side of the anti-theft
-    /// split; only the lightbox shows the watermarked large preview.
+    /// watermark — covers/backgrounds are the ONLY clean public asset (the
+    /// site's public face); grid tiles and the lightbox show the watermarked
+    /// derivatives instead.
     /// </summary>
     [Route("photos/cover/{id:int}")]
     public async Task<IActionResult> Cover(int id)

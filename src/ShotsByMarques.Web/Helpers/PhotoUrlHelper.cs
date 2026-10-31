@@ -62,10 +62,12 @@ public static class PhotoUrlHelper
     public static string PreviewUrl(this Photo photo) => PreviewUrlInternal(photo);
 
     /// <summary>
-    /// CLEAN (watermark-free) thumbnail for light-theme grid tiles.
-    /// Uploaded photos resolve to the /Photos/Thumb endpoint (900px, quality
-    /// 92) — small enough to be low-theft-value. Legacy wwwroot sample assets
-    /// expose a clean variant; "-wm." is stripped.
+    /// WATERMARKED thumbnail for grid tiles and the lightbox initial frame.
+    /// Uploaded photos resolve to the /Photos/Thumb endpoint (900px derivative
+    /// with the watermark baked into the pixels server-side) — small AND
+    /// watermarked, so a screenshot of a grid tile never captures clean
+    /// pixels. Legacy wwwroot sample assets expose a clean variant; "-wm." is
+    /// stripped.
     /// </summary>
     public static string ThumbUrl(this Photo photo) =>
         photo.PreviewPath.StartsWith("photos/")

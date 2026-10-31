@@ -1,12 +1,18 @@
 @model ShotsByMarques.Web.ViewModels.GalleryDetailViewModel
 @{
     ViewData["Title"] = Model.Gallery.Title;
-    // Session galleries (private, tied to a booking) are already paid with the
-    // session — photos are ALWAYS included, never shown with a price, even if
-    // they were uploaded with one before the gallery became private.
-    var isSessionGallery = Model.Gallery.IsSession || Model.Gallery.BookingId.HasValue;
-    var hasForSalePhotos = !isSessionGallery && Model.Photos.Any(p => p.IsForSale);
-    var gridClass = hasForSalePhotos ? "gallery-grid pb-28" : "gallery-grid";
+    // Três modos de operação ESTRITAMENTE separados (ver Gallery.Mode):
+    //   A) Portfolio      — vitrine 100% limpa: sem preços, sem carrinho,
+    //                       sem botão "Selecionar", SEM selos "incluída".
+    //   B) ForSale        — preços unitários + "+ Selecionar" (carrinho);
+    //                       NENHUM texto "incluída na sessão" em lado algum.
+    //   C) PrivateDelivery— aviso "incluída na sessão — sem custo adicional"
+    //                       UMA VEZ no cabeçalho + "Descarregar" por foto.
+    // Nunca filtrar por flags soltas nos blocos abaixo — usar só estas vars.
+    var mode = Model.Gallery.Mode;
+    var isForSale = mode == GalleryMode.ForSale;
+    var isPrivateDelivery = mode == GalleryMode.PrivateDelivery;
+    var gridClass = isForSale || isPrivateDelivery ? "gallery-grid pb-28" : "gallery-grid";
     var packs = ViewData["PhotoPacks"] as List<ShotsByMarques.Web.Models.PhotoPack> ?? new();
     var isSessionOwner = User.Identity!.IsAuthenticated
         && Model.Gallery.IsPrivate
@@ -179,15 +185,8 @@
         z-index: 2;
     }
 
-    /* chip "incluído na sessão": vidro claro frosted */
-    #gd .included-chip {
-        z-index: 3;
-        border-color: rgba(20, 20, 20, .12);
-        background: rgba(250, 249, 247, .78);
-        color: rgba(20, 20, 20, .65);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-    }
+    /* (O antigo chip "incluída na sessão" saiu: é proibido nos modos A/B e,
+       no modo C, o aviso vive no cabeçalho — nunca no cartão.) */
 
     /* botão de seleção: pill branca → camel no hover e quando selecionada */
     #gd [data-toggle] {
@@ -306,20 +305,23 @@
 
         <div class="rv rv-d2 mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
             <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-black/45">@Model.Photos.Count @SharedLocalizer["PhotosCount"]</span>
-            @if (hasForSalePhotos)
+            @if (isForSale)
             {
                 <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-black/30">@SharedLocalizer["WatermarkNote"]</span>
             }
-            else if (isSessionGallery && Model.Photos.Count > 0)
+            else if (isPrivateDelivery && Model.Photos.Count > 0)
             {
+                @* Modo C: o único "incluída na sessão" da página — nunca repetido
+                   nos cartões das fotos (nem selo, nem texto). *@
                 <span class="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-[#a1843f]">
                     <span class="inline-block h-1 w-1 rotate-45 bg-[#a1843f]"></span>
                     @SharedLocalizer["SessionPhotosIncluded"]
                 </span>
             }
+            @* Modo A (Portfolio): SEM nenhum selo — vitrine limpa. *@
         </div>
 
-        @if (hasForSalePhotos && packs.Any())
+        @if (isForSale && packs.Any())
         {
             <div class="rv rv-d2 mt-6 flex flex-wrap gap-2">
                 @foreach (var pack in packs)
@@ -368,10 +370,13 @@
     </div>
 
     <!-- ============ GRELHA (IDs/classes usados pelo site.js — não alterar) ============ -->
-    <div id="gd-grid" class="@gridClass mt-6 sm:mt-8" data-layout="justified" data-ready="0">
+    <div id="gd-grid" class="@gridClass mt-6 sm:mt-8" data-layout="justified" data-ready="0"
+         data-default-layout="@(mode == GalleryMode.Portfolio ? "squares" : "justified")" data-portfolio="@(mode == GalleryMode.Portfolio ? "1" : "")">
         @foreach (var photo in Model.Photos)
         {
-            var photoIsForSale = isSessionGallery ? false : photo.IsForSale;
+            // Modo B vende Só fotos marcadas IsForSale; nos modos A e C nenhuma
+            // foto tem preço nem selo (A = vitrine limpa; C = entrega incluída).
+            var photoIsForSale = isForSale && photo.IsForSale;
             var photoPrice = photoIsForSale ? photo.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT")) : string.Empty;
             <div class="gallery-item rv" data-gallery-id="@Model.Gallery.Id" data-photo-id="@photo.Id"
                  data-title="@photo.Title" data-price="@photoPrice" data-sale="@photoIsForSale.ToString().ToLowerInvariant()"
@@ -382,10 +387,8 @@
                 {
                     <span class="selection-chip">✓</span>
                 }
-                else
-                {
-                    <span class="included-chip">@SharedLocalizer["IncludedInSession"]</span>
-                }
+                @* SEM included-chip em qualquer modo: o selo "Incluída na sessão"
+                   — proibido nos modos A e B — só existe no cabeçalho do modo C. *@
                 <div class="photo-overlay">
                     @if (photoIsForSale)
                     {
@@ -402,12 +405,13 @@
                             </button>
                         </div>
                     }
-                    else if (canDownload)
+                    else if (isPrivateDelivery && canDownload)
                     {
+                        @* Modo C: entrega privada — ação de download por foto (a
+                           nota "incluída" vive UMA vez no cabeçalho, não aqui). *@
                         <div class="flex items-end justify-between gap-2">
                             <div class="min-w-0">
                                 <p class="gd-title truncate font-display text-sm font-bold text-white">@photo.Title</p>
-                                <p class="gd-price mt-0.5 text-xs text-white/65">@SharedLocalizer["IncludedInSession"]</p>
                             </div>
                             <form asp-controller="Downloads" asp-action="SessionPhoto" asp-route-photoId="@photo.Id" method="post" data-session-download>
                                 @Html.AntiForgeryToken()
@@ -417,9 +421,10 @@
                     }
                     else
                     {
+                        @* Modo A (e fotos não à venda no modo B): card limpo —
+                           apenas o título no hover, sem tuple de preço/selo. *@
                         <div class="min-w-0">
                             <p class="gd-title truncate font-display text-sm font-bold text-white">@photo.Title</p>
-                            <p class="mt-0.5 text-xs text-white/65">@SharedLocalizer["IncludedInSession"]</p>
                         </div>
                     }
                 </div>
@@ -433,9 +438,9 @@
     }
 </section>
 
-@if (hasForSalePhotos)
+@if (isForSale)
 {
-    <!-- Barra sticky de checkout (só em galerias com fotos à venda) — vidro claro full-width -->
+    <!-- Barra sticky de checkout (só no modo B) — vidro claro full-width -->
     <div class="bottom-bar" data-checkout-container>
         <div class="border-t border-black/10 bg-[#faf9f7]/90 px-5 py-4 shadow-[0_-14px_44px_-26px_rgba(20,20,20,0.4)] backdrop-blur-xl sm:px-8 lg:px-12">
             <div class="flex items-center justify-between gap-4">
@@ -455,9 +460,9 @@
     </div>
 }
 
-@if (Model.Gallery.IsSession && canDownload && Model.Photos.Count > 0)
+@if (isPrivateDelivery && canDownload && Model.Photos.Count > 0)
 {
-    <!-- Download all button for session owners (photos already paid with the session) -->
+    <!-- Barra "descarregar tudo" (só modo C: entrega privada já paga) -->
     <div class="bottom-bar">
         <div class="border-t border-black/10 bg-[#faf9f7]/90 px-5 py-4 shadow-[0_-14px_44px_-26px_rgba(20,20,20,0.4)] backdrop-blur-xl sm:px-8 lg:px-12">
             <div class="flex items-center justify-between gap-4">
@@ -488,9 +493,11 @@
             var lastW = grid.clientWidth;
             var resizeTimer = null;
 
-            // colunas preferidas (2 a 5; usado só pela vista de quadrados)
+            // colunas preferidas (2 a 5; usado só pela vista de quadrados).
+            // Em modo PORTFOLIO (data-portfolio=1) o default no computador é 4
+            // — grelha mais de vitrine; a preferência gravada do cliente ganha.
             var COLS_KEY = "sbm_gcols";
-            var cols = 3;
+            var cols = (grid.dataset.portfolio === "1" && window.innerWidth >= 1024) ? 4 : 3;
             try {
                 var savedCols = parseInt(localStorage.getItem(COLS_KEY), 10);
                 if (savedCols >= 2 && savedCols <= 5) cols = savedCols;
@@ -690,7 +697,10 @@
             try {
                 var saved = null;
                 try { saved = localStorage.getItem(KEY); } catch (e) { /* storage opcional */ }
-                setMode(MODES.indexOf(saved) >= 0 ? saved : "justified", false);
+                // Ordem de inicialização: preferência gravada do cliente >
+                // layout por omissão do modo (data-default-layout; portfolio
+                // começa em "squares") > "justified".
+                setMode(MODES.indexOf(saved) >= 0 ? saved : (grid.dataset.defaultLayout || "justified"), false);
             } catch (e) {
                 clearRows();
                 grid.dataset.ready = "1";

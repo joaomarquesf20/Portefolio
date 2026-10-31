@@ -149,8 +149,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ----- Photo protection / anti-theft -----
   // Deterrents, not absolute protection — the real protection is the asset
-  // split: grid thumbs are small & watermark-free, the large lightbox preview
-  // is ALWAYS watermarked, and originals are only served after payment.
+  // split: ALL public derivatives are baked WATERMARKED server-side (grid
+  // thumbs and lightbox previews alike: screenshots/recordings capture the
+  // baked watermark), and originals are only served after payment.
   const adminShell = document.body.classList.contains("admin-page");
   if (!adminShell) {
     // Global right-click ban on public pages — except inside form fields,
@@ -333,7 +334,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const lbShow = () => {
     const el = lb.items[lb.index];
     lb.title.textContent = el.dataset.title + (el.dataset.price ? " — " + el.dataset.price : "");
-    // 1) Instant fallback: the clean (watermark-free, low-res) thumb already in the grid.
+    // 1) Instant fallback: the WATERMARKED thumb already in the grid. Every
+    //    public derivative is baked watermarked server-side, so not even this
+    //    first frame shows clean pixels.
     lb.img.src = el.querySelector("img").src;
     lbResetZoom();
     // 2) Anti-theft: the real (watermarked) high-res path NEVER lives in a src

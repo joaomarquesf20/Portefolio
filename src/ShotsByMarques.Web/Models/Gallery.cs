@@ -1,5 +1,19 @@
 namespace ShotsByMarques.Web.Models;
 
+/// <summary>
+/// Operational mode of a gallery, computed from its flags (see Gallery.Mode):
+///  - Portfolio: pure showcase — no prices, no cart, no "incluída" badges.
+///  - ForSale: photos sold individually / in packs — prices + "+ Selecionar".
+///  - PrivateDelivery: private booking gallery — photos already paid with the
+///    session; a single header notice + per-photo "Descarregar" for the owner.
+/// </summary>
+public enum GalleryMode
+{
+    Portfolio,
+    ForSale,
+    PrivateDelivery
+}
+
 public class Gallery
 {
     public int Id { get; set; }
@@ -29,4 +43,20 @@ public class Gallery
     public bool IsSession { get; set; }
 
     public List<Photo> Photos { get; set; } = new();
+
+    /// <summary>
+    /// Computed operational mode (get-only ⇒ EF Core never maps it — no
+    /// migration needed). The three modes are STRICTLY separated (views must
+    /// branch on this, not on ad-hoc flag combinations):
+    ///  - PrivateDelivery: private booking gallery — the photos ARE the
+    ///    delivery of an already-paid session (IsForSale leftovers are ignored).
+    ///  - ForSale: public event gallery with at least one photo for sale.
+    ///  - Portfolio: everything else — published session galleries and
+    ///    showcase galleries. 100% commercial-free display.
+    /// Note: relies on Photos being loaded (Detail includes it).
+    /// </summary>
+    public GalleryMode Mode =>
+        (IsPrivate && BookingId.HasValue) ? GalleryMode.PrivateDelivery
+        : (!IsSession && Photos.Count > 0 && Photos.Any(p => p.IsForSale)) ? GalleryMode.ForSale
+        : GalleryMode.Portfolio;
 }
