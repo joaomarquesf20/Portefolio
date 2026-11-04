@@ -277,6 +277,17 @@ public class AccountController : Controller
         if (user is null)
             return Fail("Esta conta Google não corresponde a nenhum utilizador registado.");
 
+        // Owner promotion hook: the seeded admin account (DbSeeder.AdminEmail)
+        // is (re)granted the Admin role BEFORE sign-in so the freshly issued
+        // auth cookie carries the Admin role claim — granting after SignInAsync
+        // would leave /Admin blocked until the NEXT login. No other email is
+        // ever promoted; the address comes from Google's VERIFIED claim only.
+        if (string.Equals(email, ShotsByMarques.Web.Data.DbSeeder.AdminEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            if (!await _userManager.IsInRoleAsync(user, "Admin"))
+                await _userManager.AddToRoleAsync(user, "Admin");
+        }
+
         // Persistent sign-in: the issued auth cookie must survive browser
         // restarts, same "trusted personal device" contract as password
         // login (the 30-day sliding lifetime comes from Program.cs).

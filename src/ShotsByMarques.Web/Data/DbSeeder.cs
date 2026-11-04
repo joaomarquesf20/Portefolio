@@ -15,6 +15,13 @@ public static class DbSeeder
     public const string AdminEmail = "marquesjoao2006@gmail.com";
     public const string AdminPassword = "Admin123!";
 
+    /// <summary>
+    /// Retired seeded administrator: on every startup this account loses ALL
+    /// roles and its user entity is deleted entirely, so no stale admin
+    /// credentials can ever authenticate or reach /Admin again.
+    /// </summary>
+    public const string RetiredAdminEmail = "admin@shotsbymarques.pt";
+
     public static async Task SeedAsync(IServiceProvider services)
     {
         var db = services.GetRequiredService<ApplicationDbContext>();
@@ -99,7 +106,7 @@ public static class DbSeeder
 
         // ---- Essential accounts (idempotent on every startup) ----
         await SeedRolesAsync(roleManager);
-        await SeedAdminAsync(userManager);
+        await SeedAdminAsync(db, userManager);
 
         // ---- Volume discount tiers ----
         // Ensure the default photo packs exist even on databases created before
@@ -158,8 +165,48 @@ public static class DbSeeder
             await roleManager.CreateAsync(new IdentityRole("Admin"));
     }
 
-    private static async Task SeedAdminAsync(UserManager<ApplicationUser> userManager)
+    private static async Task SeedAdminAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
     {
+        // ---- RETIRED ADMIN PURGE (idempotent, every startup) ----
+        // The old seeded administrator loses every role and its user entity is
+        // deleted entirely: no stale admin credentials can ever authenticate
+        // again. Dependent client rows (Booking / CartItem / Order + OrderItem)
+        // are removed first so no FK Restrict blocks the entity deletion.
+        var retired = await userManager.FindByEmailAsync(RetiredAdminEmail);
+        if (retired is not null)
+        {
+            var retiredRoles = await userManager.GetRolesAsync(retired);
+            if (retiredRoles.Count > 0)
+                await userManager.RemoveFromRolesAsync(retired, retiredRoles);
+
+            try
+            {
+                var retiredId = retired.Id;
+                db.Bookings.RemoveRange(await db.Bookings
+                    .Where(b => b.ClientUserId == retiredId).ToListAsync());
+                db.CartItems.RemoveRange(await db.CartItems
+                    .Where(c => c.ClientUserId == retiredId).ToListAsync());
+
+                var retiredOrderIds = await db.Orders
+                    .Where(o => o.ClientUserId == retiredId).Select(o => o.Id).ToListAsync();
+                db.OrderItems.RemoveRange(await db.OrderItems
+                    .Where(i => retiredOrderIds.Contains(i.OrderId)).ToListAsync());
+                db.Orders.RemoveRange(await db.Orders
+                    .Where(o => o.ClientUserId == retiredId).ToListAsync());
+
+                await db.SaveChangesAsync();
+                await userManager.DeleteAsync(retired);
+            }
+            catch
+            {
+                // A foreign key kept something attached: the account stays
+                // ROLE-LESS either way (already stripped above), so /Admin
+                // remains unreachable; the next startup retries the purge.
+            }
+        }
+
+        // ---- OWNER ADMIN (idempotent, every startup) ----
+        // Only DbSeeder.AdminEmail (marquesjoao2006@gmail.com) is ever seeded.
         var admin = await userManager.FindByEmailAsync(AdminEmail);
         if (admin is null)
         {
@@ -171,15 +218,23 @@ public static class DbSeeder
                 FirstName = "João",
                 LastName = "Marques"
             };
-            var result = await userManager.CreateAsync(admin, AdminPassword);
-            if (result.Succeeded)
-                await userManager.AddToRoleAsync(admin, "Admin");
+            await userManager.CreateAsync(admin, AdminPassword);
+            admin = await userManager.FindByEmailAsync(AdminEmail);
         }
+
+        // RECONCILE: an account that already exists (e.g. a database created
+        // before the role logic, a restored snapshot, or a role that was
+        // manually removed) is ALWAYS re-granted Admin on startup. No other
+        // email is ever promoted — the Google login hook re-checks the same
+        // exact address before every sign-in.
+        if (admin is not null && !await userManager.IsInRoleAsync(admin, "Admin"))
+            await userManager.AddToRoleAsync(admin, "Admin");
 
         // Admin accounts created before email confirmation was enforced (or
         // seeded directly) must remain able to sign in. Only the administrator
         // accounts are auto-confirmed; normal registrations still need the
-        // confirmation link sent to their address.
+        // confirmation link sent to their address. (Runs after the purge so
+        // the retired account can never be re-confirmed.)
         foreach (var adminUser in await userManager.GetUsersInRoleAsync("Admin"))
         {
             if (!adminUser.EmailConfirmed)
