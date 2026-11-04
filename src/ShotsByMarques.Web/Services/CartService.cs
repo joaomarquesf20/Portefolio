@@ -91,4 +91,38 @@ public class CartService
         _db.CartItems.RemoveRange(rows);
         await _db.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Subtotal + best automatic pack discount + final total for a photo
+    /// selection — the same pricing rules the checkout page renders, used by
+    /// the AJAX cart endpoints so JS updates totals from the server instead
+    /// of duplicating pack math in the browser. Count counts the FOR-SALE
+    /// photos actually found; PackName/MinPackPhotos mirror the checkout
+    /// view-model (name of the applied pack, smallest active pack threshold).
+    /// </summary>
+    public sealed record CartSummary(int Count, decimal Subtotal, decimal Discount, decimal Total, string? PackName, int? MinPackPhotos);
+
+    public async Task<CartSummary> GetSummaryAsync(IReadOnlyCollection<int> photoIds)
+    {
+        var prices = await _db.Photos.AsNoTracking()
+            .Where(p => photoIds.Contains(p.Id) && p.IsForSale)
+            .Select(p => p.Price)
+            .ToListAsync();
+
+        var packs = await _db.PhotoPacks.AsNoTracking()
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.MinPhotos)
+            .ToListAsync();
+
+        var subtotal = prices.Sum();
+        var pack = PackService.BestPack(packs, photoIds.Count, subtotal);
+
+        return new CartSummary(
+            Count: photoIds.Count,
+            Subtotal: pack.Subtotal,
+            Discount: pack.Discount,
+            Total: pack.Total,
+            PackName: pack.PackName,
+            MinPackPhotos: packs.FirstOrDefault()?.MinPhotos);
+    }
 }

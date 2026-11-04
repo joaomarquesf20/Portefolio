@@ -86,7 +86,9 @@ function cartPost(path, params) {
   const ticket = ++cartReqSeq;
   return fetch(path, {
     method: "POST",
-    headers: { "RequestVerificationToken": CSRF },
+    // X-Requested-With flags AJAX to /cart/remove (JSON totals payload
+    // instead of the non-JS redirect fallback).
+    headers: { "RequestVerificationToken": CSRF, "X-Requested-With": "XMLHttpRequest" },
     body: new URLSearchParams(params)
   })
     .then(r => (r.ok ? r.json() : Promise.reject(new Error("cart " + path))))
@@ -198,11 +200,15 @@ function clearCart() {
 
 // Remove a photo by id from the cart (used by the cart page) — local copy
 // AND the DB, immediately; queued through pendingDeleteIds so rapid taps
-// never bounce; the repaint kick keeps WebKit pages visible.
+// never bounce; the repaint kick keeps WebKit pages visible. RESOLVES with
+// the server's totals payload for authenticated visitors (or null for
+// anonymous/network failures) so the cart page can refresh totals without a
+// reload.
 function removeFromCart(photoId) {
-  if (!localCartIds().includes(photoId)) return; // already gone locally
-  cartRemovePhoto(photoId);
+  if (!localCartIds().includes(photoId)) return Promise.resolve(null);
+  const p = cartRemovePhoto(photoId);
   forceWebKitRepaint();
+  return p;
 }
 
 function countSelected() {

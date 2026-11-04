@@ -79,6 +79,37 @@ public class CheckoutController : Controller
         }
     }
 
+    /// <summary>GET Checkout/Summary?ids=1,2,3 — server-truth totals for the
+    /// current selection: { success, cartCount, isEmpty, subtotal, discount,
+    /// packName, minPackPhotos, totalAmount }. The cart page calls this after
+    /// a dynamic removal (and for anonymous visitors, whose /cart/remove
+    /// write never happens) so browser totals come from the SAME pack/pricing
+    /// rules the server enforces — no pricing math duplicated in JS.</summary>
+    [HttpGet("Checkout/Summary")]
+    [Produces("application/json")]
+    public async Task<IActionResult> Summary(string? ids)
+    {
+        var photoIds = (ids ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var id) ? id : 0)
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+
+        var summary = await _cart.GetSummaryAsync(photoIds);
+        return Ok(new
+        {
+            success = true,
+            cartCount = summary.Count,
+            isEmpty = summary.Count == 0,
+            subtotal = summary.Subtotal,
+            discount = summary.Discount,
+            packName = summary.PackName,
+            minPackPhotos = summary.MinPackPhotos,
+            totalAmount = summary.Total
+        });
+    }
+
     [HttpPost("validar-codigo")]
     [ValidateAntiForgeryToken]
     [Produces("application/json")]

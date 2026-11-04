@@ -49,7 +49,12 @@ public class CartController : Controller
     /// Rapid multi-deletes run as parallel requests, each answered with a
     /// fresh full snapshot; the client (site.js) guards against out-of-order
     /// snapshots with its pending-delete filter + ordered adoption, so the
-    /// server only has to keep returning the real DB list.</summary>
+    /// server only has to keep returning the real DB list.
+    /// AJAX callers (X-Requested-With: XMLHttpRequest) get the totals payload
+    /// the cart page needs for dynamic updates: success / cartCount /
+    /// totalAmount (best-pack discounted, server-truth) / isEmpty + the id
+    /// list + pack summary. Non-JS form posts keep the classic behavior and
+    /// land back on the cart page with the remaining DB ids.</summary>
     [HttpPost("cart/remove")]
     [ValidateAntiForgeryToken]
     [Produces("application/json")]
@@ -57,7 +62,27 @@ public class CartController : Controller
     {
         if (photoId > 0)
             await _cart.RemoveAsync(UserId(), photoId);
-        return Ok(new { photoIds = await _cart.GetPhotoIdsAsync(UserId()) });
+
+        var ids = await _cart.GetPhotoIdsAsync(UserId());
+        var summary = await _cart.GetSummaryAsync(ids);
+
+        var isAjax = Request.Headers.TryGetValue("X-Requested-With", out var xrw) &&
+            string.Equals(xrw.ToString(), "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
+        if (!isAjax)
+            return RedirectToAction("Index", "Checkout", new { ids = string.Join(",", ids) });
+
+        return Ok(new
+        {
+            success = true,
+            photoIds = ids,
+            cartCount = summary.Count,
+            isEmpty = summary.Count == 0,
+            subtotal = summary.Subtotal,
+            discount = summary.Discount,
+            packName = summary.PackName,
+            minPackPhotos = summary.MinPackPhotos,
+            totalAmount = summary.Total
+        });
     }
 
     /// <summary>POST /cart/clear — empties the DB cart (client UI clear or

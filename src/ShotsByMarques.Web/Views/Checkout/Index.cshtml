@@ -31,13 +31,12 @@
                 </div>
             }
 
-            @if (Model.Items.Count == 0)
-            {
+            <div id="cart-empty" class="@(Model.Items.Count == 0 ? "" : "hidden")">
                 <p class="text-black/50">@SharedLocalizer["CheckoutEmpty"]</p>
                 <a href="/portfolio" class="btn-outline mt-6 inline-block">@SharedLocalizer["GoHome"]</a>
-            }
-            else
-            {
+            </div>
+
+            <div id="cart-content" class="@(Model.Items.Count == 0 ? "hidden" : "")">
                 <div class="space-y-4 mb-8">
                     @foreach (var item in Model.Items)
                     {
@@ -57,21 +56,18 @@
                 <div class="card p-6 mb-8">
                     <div class="space-y-2">
                         <div class="flex justify-between text-sm">
-                            <span class="text-black/55">@SharedLocalizer["Subtotal"] (@Model.Items.Count)</span>
-                            <span class="tabular-nums">@Model.Subtotal.ToString("C", ptPT)</span>
+                            <span id="checkout-subtotal-text" data-label="@SharedLocalizer["Subtotal"]" class="text-black/55">@SharedLocalizer["Subtotal"] (@Model.Items.Count)</span>
+                            <span id="checkout-subtotal" class="tabular-nums">@Model.Subtotal.ToString("C", ptPT)</span>
                         </div>
 
-                        @if (Model.Discount > 0)
-                        {
-                            <div class="flex justify-between text-sm text-emerald-700">
-                                <span>Pack · @Model.PackName</span>
-                                <span class="tabular-nums">−@Model.Discount.ToString("C", ptPT)</span>
-                            </div>
-                        }
-                        else if (Model.MinPackPhotos.HasValue)
-                        {
-                            <p class="text-black/40 text-xs">@SharedLocalizer["PackHint"] @Model.MinPackPhotos+ @SharedLocalizer["PhotosCount"]</p>
-                        }
+                        <div id="pack-discount-row" class="flex justify-between text-sm text-emerald-700 @(Model.Discount > 0 ? "" : "hidden")">
+                            <span>Pack · <span id="pack-name">@Model.PackName</span></span>
+                            <span class="tabular-nums" id="pack-discount-value">−@Model.Discount.ToString("C", ptPT)</span>
+                        </div>
+                        <p id="pack-hint" data-prefix="@SharedLocalizer["PackHint"]" data-suffix="@SharedLocalizer["PhotosCount"]"
+                           class="text-black/40 text-xs @(Model.Discount > 0 ? "hidden" : "")">
+                            @SharedLocalizer["PackHint"] @Model.MinPackPhotos+ @SharedLocalizer["PhotosCount"]
+                        </p>
 
                         <div id="promo-discount-row" class="hidden">
                             <div class="flex justify-between text-sm text-emerald-600">
@@ -90,7 +86,7 @@
                     <form id="promo-form" asp-action="ValidateDiscount" method="post" class="mt-5 border-t border-black/10 pt-5"
                           data-base-price="@Model.Total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">
                         @Html.AntiForgeryToken()
-                        <input type="hidden" name="BasePrice"
+                        <input type="hidden" id="promo-base-price" name="BasePrice"
                                value="@Model.Total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
                         <label class="block text-xs font-semibold uppercase tracking-[0.16em] text-black/50"
                                for="promo-code">@SharedLocalizer["PromoCode"]</label>
@@ -116,7 +112,7 @@
 
                 <form asp-action="PlaceOrder" method="post" class="text-center">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="ids" value="@ids" />
+                    <input type="hidden" id="checkout-ids" name="ids" value="@ids" />
                     @* Mirrors the validated promo code so the server applies the
                        same discount as the summary shows (re-validated server-side). *@
                     <input type="hidden" name="promo" id="promo-payload" value="" />
@@ -124,7 +120,7 @@
                         @SharedLocalizer["PayNow"] — <span id="pay-cta-total">@Model.Total.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
                     </button>
                 </form>
-            }
+            </div>
         </div>
     </div>
 </section>
@@ -134,37 +130,24 @@
         (function () {
             var confirmEmpty = "@SharedLocalizer["ConfirmEmptyCart"]";
 
-            // Remove a single photo from the localStorage cart AND the DB
-            // (site.js removeFromCart), then reload remaining ids. Under iOS
-            // Safari the removal used to blank the screen until a scroll —
-            // force the WebKit repaint before navigating.
-            document.querySelectorAll(".remove-item-btn").forEach(function (btn) {
-                btn.addEventListener("click", function () {
-                    var item = btn.closest(".checkout-item");
-                    var photoId = Number(item.dataset.photoId);
-                    removeFromCart(photoId);
-                    if (window.SBM && typeof window.SBM.forceRepaint === "function") window.SBM.forceRepaint();
-                    var remaining = Array.from(document.querySelectorAll(".checkout-item"))
-                        .filter(function (el) { return el !== item; })
-                        .map(function (el) { return el.dataset.photoId; });
-                    window.location.href = remaining.length
-                        ? "/Checkout?ids=" + remaining.join(",")
-                        : "/Checkout";
-                });
+            // Shared refs (dynamic totals + promo engine both use these).
+            var moneyFormatter = new Intl.NumberFormat("pt-PT", {
+                style: "currency",
+                currency: "EUR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             });
-
-            // Empty the whole cart.
-            var emptyBtn = document.getElementById("empty-cart-btn");
-            if (emptyBtn) {
-                emptyBtn.addEventListener("click", function () {
-                    if (!confirm(confirmEmpty)) return;
-                    clearCart();
-                    if (window.SBM && typeof window.SBM.forceRepaint === "function") window.SBM.forceRepaint();
-                    window.location.href = "/Checkout";
-                });
-            }
-
-            // Validate a promo code asynchronously and refresh the totals.
+            var byId = function (id) { return document.getElementById(id); };
+            var contentEl = byId("cart-content");
+            var emptyEl = byId("cart-empty");
+            var subtotalTextEl = byId("checkout-subtotal-text");
+            var subtotalEl = byId("checkout-subtotal");
+            var packRow = byId("pack-discount-row");
+            var packNameEl = byId("pack-name");
+            var packValueEl = byId("pack-discount-value");
+            var packHintEl = byId("pack-hint");
+            var idsInput = byId("checkout-ids");
+            var basePriceInput = byId("promo-base-price");
             var promoForm = document.getElementById("promo-form");
             var promoBtn = document.getElementById("apply-promo-btn");
             var promoInput = document.getElementById("promo-code");
@@ -175,16 +158,7 @@
             var totalElement = document.getElementById("checkout-total");
             var payCtaTotal = document.getElementById("pay-cta-total");
             var promoPayload = document.getElementById("promo-payload");
-
-            var moneyFormatter = new Intl.NumberFormat("pt-PT", {
-                style: "currency",
-                currency: "EUR",
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
             var fallbackTotal = totalElement ? totalElement.textContent : "";
-
-            if (!promoForm || !promoBtn || !promoInput || !promoFeedback || !promoRow || !promoCodeLabel || !promoDiscountValue || !totalElement) return;
 
             var applyTotals = function (finalPriceText, appliedCode) {
                 totalElement.textContent = finalPriceText;
@@ -208,6 +182,112 @@
             var showPromoRow = function (show) {
                 promoRow.classList.toggle("hidden", !show);
             };
+
+            // ----- Dynamic totals (no pricing math in JS: server truth) -----
+            // Applies the summary payload served by /cart/remove (signed-in)
+            // or Checkout/Summary (anonymous/fallback): { success, cartCount,
+            // isEmpty, subtotal, discount, packName, minPackPhotos, totalAmount }.
+            var applySummary = function (payload) {
+                if (!payload || payload.success === false) return;
+                var count = Number(responseValue(payload, "cartCount")) || 0;
+                var totalAmount = Number(responseValue(payload, "totalAmount")) || 0;
+                var discount = Number(responseValue(payload, "discount")) || 0;
+                var totalText = moneyFormatter.format(totalAmount);
+
+                if (subtotalTextEl) subtotalTextEl.textContent = subtotalTextEl.getAttribute("data-label") + " (" + count + ")";
+                if (subtotalEl) subtotalEl.textContent = moneyFormatter.format(Number(responseValue(payload, "subtotal")) || 0);
+
+                var packName = responseValue(payload, "packName");
+                if (discount > 0 && packName) {
+                    if (packRow) {
+                        packRow.classList.remove("hidden");
+                        if (packNameEl) packNameEl.textContent = packName;
+                        if (packValueEl) packValueEl.textContent = "−" + moneyFormatter.format(discount);
+                    }
+                    if (packHintEl) packHintEl.classList.add("hidden");
+                } else {
+                    if (packRow) packRow.classList.add("hidden");
+                    if (packHintEl) {
+                        packHintEl.classList.remove("hidden");
+                        var minPack = responseValue(payload, "minPackPhotos") || packHintEl.getAttribute("data-min") || "";
+                        packHintEl.textContent = packHintEl.getAttribute("data-prefix") + " " + minPack + "+ " + packHintEl.getAttribute("data-suffix");
+                    }
+                }
+
+                if (basePriceInput) basePriceInput.value = totalAmount.toFixed(2);
+                if (promoForm) promoForm.setAttribute("data-base-price", totalAmount.toFixed(2));
+
+                // A promo validated against the OLD total no longer matches —
+                // clear its UI; the code can be re-applied for the new one.
+                if (promoPayload) promoPayload.value = "";
+                if (promoRow) promoRow.classList.add("hidden");
+                if (promoFeedback) promoFeedback.classList.add("hidden");
+
+                applyTotals(totalText, "");
+                fallbackTotal = totalText;
+                if (window.SBM && typeof window.SBM.forceRepaint === "function") window.SBM.forceRepaint();
+            };
+
+            var showEmptyState = function () {
+                if (emptyEl) emptyEl.classList.remove("hidden");
+                if (contentEl) contentEl.classList.add("hidden");
+            };
+
+            // ----- Dynamic removal (no page reload) -----
+            document.querySelectorAll(".checkout-item").forEach(function (row) {
+                var btn = row.querySelector(".remove-item-btn");
+                if (!btn) return;
+                btn.addEventListener("click", async function () {
+                    if (btn.dataset.busy === "1") return;
+                    btn.dataset.busy = "1";
+                    var photoId = Number(row.dataset.photoId);
+                    row.classList.add("removing");
+
+                    // site.js: optimistic local removal + queued DB mutation.
+                    // Signed-in callers resolve with the /cart/remove payload
+                    // (totals included); null means anonymous or a missed POST.
+                    var payload = await removeFromCart(photoId);
+                    if (window.SBM && typeof window.SBM.forceRepaint === "function") window.SBM.forceRepaint();
+
+                    var remainingIds = Array.prototype.map.call(
+                        document.querySelectorAll(".checkout-item:not(.removing)"),
+                        function (el) { return el.dataset.photoId; });
+                    if (idsInput) idsInput.value = remainingIds.join(",");
+
+                    if (!payload) {
+                        try {
+                            var response = await fetch("/Checkout/Summary?ids=" + encodeURIComponent(remainingIds.join(",")));
+                            payload = response.ok ? await response.json() : null;
+                        } catch (error) { payload = null; }
+                    }
+                    applySummary(payload);
+
+                    var isEmptyNow = payload ? !!responseValue(payload, "isEmpty") : remainingIds.length === 0;
+                    if (isEmptyNow) showEmptyState();
+
+                    // Fade the row out, then physically drop it from the DOM.
+                    row.style.transition = "opacity .22s ease, transform .22s ease";
+                    row.style.opacity = "0";
+                    row.style.transform = "translateY(6px)";
+                    setTimeout(function () { row.remove(); }, 230);
+                    btn.dataset.busy = "0";
+                });
+            });
+
+            // Empty the whole cart dynamically (local + DB in site.js), then
+            // swap to the empty-state block — no reload needed.
+            var emptyBtn = document.getElementById("empty-cart-btn");
+            if (emptyBtn) {
+                emptyBtn.addEventListener("click", function () {
+                    if (!confirm(confirmEmpty)) return;
+                    clearCart();
+                    showEmptyState();
+                    if (window.SBM && typeof window.SBM.forceRepaint === "function") window.SBM.forceRepaint();
+                });
+            }
+
+            // Validate a promo code asynchronously and refresh the totals.
+            if (!promoForm || !promoBtn || !promoInput || !promoFeedback || !promoRow || !promoCodeLabel || !promoDiscountValue || !totalElement) return;
 
             promoForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
