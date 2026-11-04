@@ -11,11 +11,16 @@ public class HomeController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly SitePageBackgroundService _backgrounds;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<HomeController> _logger;
 
-    public HomeController(ApplicationDbContext db, SitePageBackgroundService backgrounds)
+    public HomeController(ApplicationDbContext db, SitePageBackgroundService backgrounds,
+        IEmailService emailService, ILogger<HomeController> logger)
     {
         _db = db;
         _backgrounds = backgrounds;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<IActionResult> Index()
@@ -59,7 +64,7 @@ public class HomeController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SubmitContact(string Name, string Email, string Subject, string Message)
     {
-        _db.ContactMessages.Add(new ContactMessage
+        var contact = new ContactMessage
         {
             Name = Name?.Trim() ?? string.Empty,
             Email = Email?.Trim() ?? string.Empty,
@@ -67,8 +72,25 @@ public class HomeController : Controller
             Message = Message?.Trim() ?? string.Empty,
             CreatedAt = DateTime.UtcNow,
             IsRead = false
-        });
+        };
+        _db.ContactMessages.Add(contact);
         await _db.SaveChangesAsync();
+
+        // Notification failures must not affect the saved message or the user's
+        // success message, so they are logged and swallowed here.
+        try
+        {
+            var subject = $"[ShotsByMarques Contact] {contact.Subject} - {contact.Name}";
+            var body = $"<p><strong>Nome:</strong> {System.Net.WebUtility.HtmlEncode(contact.Name)}</p>" +
+                       $"<p><strong>Email:</strong> {System.Net.WebUtility.HtmlEncode(contact.Email)}</p>" +
+                       $"<p><strong>Assunto:</strong> {System.Net.WebUtility.HtmlEncode(contact.Subject)}</p>" +
+                       $"<p><strong>Mensagem:</strong></p><p>{System.Net.WebUtility.HtmlEncode(contact.Message).Replace("\n", "<br/>")}</p>";
+            await _emailService.SendAsync(subject, body, contact.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Falha ao enviar a notificação de contacto (ContactMessage {ContactMessageId}).", contact.Id);
+        }
 
         TempData["SuccessMessage"] = "Obrigado! A sua mensagem foi enviada.";
         return RedirectToAction(nameof(Index));
