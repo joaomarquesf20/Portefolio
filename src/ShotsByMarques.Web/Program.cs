@@ -64,8 +64,10 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
 }
 
 // ---- Localization (pt-PT default, en-US optional) ----
-// Resources are embedded with their full namespace name (ShotsByMarques.Web.Resources.SharedResource)
-builder.Services.AddLocalization();
+// SharedResource.resx/.en.resx are embedded with their full namespace name
+// (ShotsByMarques.Web.Resources.SharedResource). View-localizer resources
+// follow the same root — Resources/Views/...(culture-suffixed .en.resx).
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
@@ -81,7 +83,12 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
         options.RequestCultureProviders.OfType<Microsoft.AspNetCore.Localization.AcceptLanguageHeaderRequestCultureProvider>().First());
 });
 
-builder.Services.AddControllersWithViews();
+// IViewLocalizer (contact section partial) needs AddViewLocalization; the
+// .Suffix format keeps culture-specific view resources as one file pair per
+// view: Resources/Views/Shared/_ContactSectionPartial.resx (pt-PT default)
+// and _ContactSectionPartial.en.resx (English).
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix);
 
 // ---- Large photo uploads ----
 // 66+ high-resolution photos in one request can easily exceed Kestrel's
@@ -100,6 +107,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 
 // ---- Application services ----
 builder.Services.AddTransient<IEmailSender, EmailSender>();
+builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<DiscountCodeService>();
 builder.Services.AddScoped<StripeCheckoutService>();
