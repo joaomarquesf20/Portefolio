@@ -39,7 +39,6 @@ builder.Services.ConfigureApplicationCookie(options =>
     // calls — "Lembrar-me" default + Google callback). IsEssential keeps the
     // cookie outside any consent-suppression path. Cookie.Expiration is kept
     // in sync for completeness; ExpireTimeSpan on the ticket governs.
-    options.Cookie.Expiration = TimeSpan.FromDays(30);
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
     options.Cookie.IsEssential = true;

@@ -248,33 +248,3 @@
         </a>
     </div>
 </section>
-
-<!-- ============ CONTACTO — foto full-bleed, lavagem de luz ============ -->
-<section id="contacto" class="relative scroll-mt-16 overflow-hidden">
-    <img src="@(ViewData["BgHomeContact"] ?? Pick(3))" alt="" loading="lazy" class="absolute inset-0 h-full w-full object-cover" />
-    <div class="absolute inset-0 bg-[#faf9f7]/85"></div>
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(250,249,247,0.9)_100%)]"></div>
-
-    <div class="relative z-[2] mx-auto max-w-4xl px-5 py-28 text-center sm:px-8 sm:py-40">
-        <p class="rv inline-flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.4em] text-black/50">
-            <span class="rule inline-block h-px w-8"></span>
-            Contacto
-            <span class="rule inline-block h-px w-8"></span>
-        </p>
-        <h2 class="rv rv-d1 mt-6 font-display text-[clamp(2.4rem,5.5vw,4.5rem)] font-bold leading-[1.05] tracking-[-0.03em] text-[#141414]">
-            @SharedLocalizer["ContactTitle"]
-        </h2>
-        <p class="rv rv-d2 mt-5 text-lg text-black/55">@SharedLocalizer["GetInTouch"]</p>
-
-        <div class="rv rv-d3 mt-10">
-            <a href="mailto:marquesphotography06@gmail.com" class="inline-flex items-center justify-center gap-3 bg-[#141414] px-8 py-4 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:opacity-90">
-                @SharedLocalizer["ContactCta"]
-            </a>
-        </div>
-
-        <p class="rv rv-d4 mt-12 text-sm text-black/40">
-            Instagram:
-            <a href="https://www.instagram.com/shots.by.marques/" target="_blank" rel="noopener" class="u-link ml-1 text-black/70 transition hover:text-[#a1843f]">@@shots.by.marques</a>
-        </p>
-    </div>
-</section>

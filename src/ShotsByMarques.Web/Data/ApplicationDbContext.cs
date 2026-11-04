@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<SitePageSetting> SitePageSettings => Set<SitePageSetting>();
     public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

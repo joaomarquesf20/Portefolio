@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ShotsByMarques.Web.Data;
 using ShotsByMarques.Web.Helpers;
+using ShotsByMarques.Web.Models;
 using ShotsByMarques.Web.Services;
 
 namespace ShotsByMarques.Web.Controllers;
@@ -52,6 +53,25 @@ public class HomeController : Controller
             Sessions = sessions,
             Events = events
         });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SubmitContact(string Name, string Email, string Subject, string Message)
+    {
+        _db.ContactMessages.Add(new ContactMessage
+        {
+            Name = Name?.Trim() ?? string.Empty,
+            Email = Email?.Trim() ?? string.Empty,
+            Subject = Subject?.Trim() ?? string.Empty,
+            Message = Message?.Trim() ?? string.Empty,
+            CreatedAt = DateTime.UtcNow,
+            IsRead = false
+        });
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Obrigado! A sua mensagem foi enviada.";
+        return RedirectToAction(nameof(Index));
     }
 
     [Route("servicos")]

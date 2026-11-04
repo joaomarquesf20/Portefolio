@@ -281,7 +281,7 @@
                 <a href="/portfolio" class="nlink @(NavActive("/portfolio") ? "on" : "")">@SharedLocalizer["NavPortfolio"]</a>
                 <a href="/servicos" class="nlink @(NavActive("/servicos") ? "on" : "")">@SharedLocalizer["NavServices"]</a>
                 <a href="/sessoes" class="nlink @(NavActive("/sessoes") ? "on" : "")">@SharedLocalizer["NavSessions"]</a>
-                <a href="/#contacto" class="nlink">@SharedLocalizer["NavContact"]</a>
+                <a href="#contact" class="inline-flex items-center rounded-full border border-[#a1843f]/70 px-4 py-2 text-[#a1843f] transition duration-300 hover:-translate-y-0.5 hover:border-[#a1843f] hover:bg-[#a1843f] hover:text-white">@SharedLocalizer["NavContact"]</a>
                 @if (User.IsInRole("Admin"))
                 {
                     <a href="/admin" class="nlink acc @(NavActive("/admin") ? "on" : "")">@SharedLocalizer["NavDashboard"]</a>
@@ -342,7 +342,7 @@
             <a href="/portfolio" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">01</span>@SharedLocalizer["NavPortfolio"]</a>
             <a href="/servicos" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">02</span>@SharedLocalizer["NavServices"]</a>
             <a href="/sessoes" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">03</span>@SharedLocalizer["NavSessions"]</a>
-            <a href="/#contacto" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">04</span>@SharedLocalizer["NavContact"]</a>
+            <a href="#contact" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">04</span>@SharedLocalizer["NavContact"]</a>
             <a href="/Checkout" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">05</span>@SharedLocalizer["NavCart"]</a>
         </nav>
 
@@ -374,12 +374,16 @@
     @* ================= BODY ================= *@
     <main id="main" class="@(isAdminArea ? "admin-main" : (isHome ? "" : "pt-16"))">
         @* Toasts (fixed, auto-fade) *@
-        @if (TempData["Success"] is not null || TempData["Error"] is not null)
+        @if (TempData["Success"] is not null || TempData["SuccessMessage"] is not null || TempData["Error"] is not null)
         {
             <div class="pointer-events-none fixed inset-x-0 top-[5.5rem] z-40 flex flex-col items-center gap-3 px-4">
                 @if (TempData["Success"] is not null)
                 {
                     <div data-toast class="pointer-events-auto rounded-full border border-black/10 bg-white/95 px-5 py-3 text-sm font-medium text-emerald-700 shadow-xl backdrop-blur">@TempData["Success"]</div>
+                }
+                @if (TempData["SuccessMessage"] is not null)
+                {
+                    <div data-toast class="pointer-events-auto rounded-full border border-black/10 bg-white/95 px-5 py-3 text-sm font-medium text-emerald-700 shadow-xl backdrop-blur">@TempData["SuccessMessage"]</div>
                 }
                 @if (TempData["Error"] is not null)
                 {
@@ -401,6 +405,8 @@
         }
     </main>
 
+    <partial name="_ContactSectionPartial" />
+
     @* ================= FOOTER (papel, editorial) ================= *@
     <footer class="border-t border-black/10 bg-[#faf9f7]">
         <div class="px-5 pb-10 pt-16 sm:px-8 sm:pt-20 lg:px-12">
@@ -418,7 +424,7 @@
                         <li><a href="/portfolio" class="u-link transition hover:text-black">@SharedLocalizer["NavPortfolio"]</a></li>
                         <li><a href="/servicos" class="u-link transition hover:text-black">@SharedLocalizer["NavServices"]</a></li>
                         <li><a href="/sessoes" class="u-link transition hover:text-black">@SharedLocalizer["NavSessions"]</a></li>
-                        <li><a href="/#contacto" class="u-link transition hover:text-black">@SharedLocalizer["NavContact"]</a></li>
+                        <li><a href="#contact" class="u-link transition hover:text-black">@SharedLocalizer["NavContact"]</a></li>
                     </ul>
                 </div>
                 <div class="lg:col-span-2 lg:col-start-11">
