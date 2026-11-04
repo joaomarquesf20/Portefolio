@@ -1,0 +1,15 @@
+# Compilação .NET e IDEs
+bin/
+obj/
+.vs/
+*.user
+
+# Base de dados SQLite e fotos locais
+App_Data/
+wwwroot/uploads/
+*.db
+*.db-shm
+*.db-wal
+
+# Utilitários locais
+ngrok.exe
