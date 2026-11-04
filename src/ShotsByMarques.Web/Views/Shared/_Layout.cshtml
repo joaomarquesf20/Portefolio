@@ -405,7 +405,14 @@
         }
     </main>
 
-    <partial name="_ContactSectionPartial" />
+    @* Global contact section — public pages only: admin routes never render
+       it. Public pages can opt out individually via ViewData["HideContactSection"]. *@
+    @if (!(Context.Request.Path.StartsWithSegments("/admin", StringComparison.OrdinalIgnoreCase)
+        || currentController.StartsWith("Admin", StringComparison.OrdinalIgnoreCase))
+        && ViewData["HideContactSection"] == null)
+    {
+        <partial name="_ContactSectionPartial" />
+    }
 
     @* ================= FOOTER (papel, editorial) ================= *@
     <footer class="border-t border-black/10 bg-[#faf9f7]">
