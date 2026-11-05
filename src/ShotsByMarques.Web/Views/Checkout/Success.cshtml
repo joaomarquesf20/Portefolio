@@ -18,10 +18,10 @@
         @if (Model is not null)
         {
             <div class="text-center">
-                <h1 class="font-display text-4xl">@SharedLocalizer["PaymentSuccess"]</h1>
-                <p class="text-white/60 mt-4">@SharedLocalizer["PaymentSuccessMsg"]</p>
+                <h1 class="font-display text-4xl">@SharedLocalizer["Pagamento concluído com sucesso!"]</h1>
+                <p class="text-white/60 mt-4">@SharedLocalizer["As tuas fotos já estão disponíveis para download."]</p>
                 <p class="text-white/45 text-sm mt-2 tabular-nums">
-                    @SharedLocalizer["OrderNumber"]: <span class="text-[#d5b878]">@Model.OrderNumber</span>
+                    @SharedLocalizer["Encomenda"]: <span class="text-[#d5b878]">@Model.OrderNumber</span>
                     · @Model.Items.Count fotos · @SharedLocalizer["Total"]: @Model.Total.ToString("C", ptPT)
                 </p>
             </div>
@@ -30,14 +30,14 @@
             <div class="mt-10 flex flex-col items-center gap-4">
                 <form asp-controller="Downloads" asp-action="OrderZip" asp-route-orderId="@Model.Id" method="post" class="w-full sm:w-auto">
                     @Html.AntiForgeryToken()
-                    <button class="btn-primary w-full sm:w-auto sm:px-10">↓ @SharedLocalizer["DownloadAllZip"]</button>
+                    <button class="btn-primary w-full sm:w-auto sm:px-10">↓ @SharedLocalizer["Descarregar Tudo em ZIP"]</button>
                 </form>
-                <p class="text-white/40 text-xs">@SharedLocalizer["YourPhotos"] — @SharedLocalizer["HighRes"]</p>
+                <p class="text-white/40 text-xs">@SharedLocalizer["As tuas fotos"] — @SharedLocalizer["Alta resolução"]</p>
             </div>
 
             @* One-by-one downloads (iOS-friendly: the button sits UNDER the
                photo, always visible — no hover needed) *@
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40 mt-12 mb-4 border-b border-white/10 pb-3">@SharedLocalizer["YourPhotos"]</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40 mt-12 mb-4 border-b border-white/10 pb-3">@SharedLocalizer["As tuas fotos"]</p>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 @foreach (var item in Model.Items)
                 {
@@ -47,7 +47,7 @@
                             <p class="text-xs font-medium text-white/85 truncate">@item.Title</p>
                             <form asp-controller="Downloads" asp-action="File" asp-route-orderItemId="@item.Id" method="post" class="mt-2">
                                 @Html.AntiForgeryToken()
-                                <button class="w-full rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/20">↓ @SharedLocalizer["Download"]</button>
+                                <button class="w-full rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/90 transition hover:bg-white/20">↓ @SharedLocalizer["Descarregar"]</button>
                             </form>
                         </div>
                     </div>
@@ -55,17 +55,17 @@
             </div>
 
             <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/downloads" class="btn-outline">@SharedLocalizer["GoDownloads"]</a>
-                <a href="/portfolio" class="btn-outline">@SharedLocalizer["GoHome"]</a>
+                <a href="/downloads" class="btn-outline">@SharedLocalizer["Ir para downloads"]</a>
+                <a href="/portfolio" class="btn-outline">@SharedLocalizer["Voltar ao início"]</a>
             </div>
         }
         else
         {
-            <h1 class="font-display text-4xl text-center">@SharedLocalizer["PaymentSuccess"]</h1>
-            <p class="text-white/60 mt-4 text-center">@SharedLocalizer["PaymentSuccessMsg"]</p>
+            <h1 class="font-display text-4xl text-center">@SharedLocalizer["Pagamento concluído com sucesso!"]</h1>
+            <p class="text-white/60 mt-4 text-center">@SharedLocalizer["As tuas fotos já estão disponíveis para download."]</p>
             <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/downloads" class="btn-primary">@SharedLocalizer["GoDownloads"]</a>
-                <a href="/portfolio" class="btn-outline">@SharedLocalizer["GoHome"]</a>
+                <a href="/downloads" class="btn-primary">@SharedLocalizer["Ir para downloads"]</a>
+                <a href="/portfolio" class="btn-outline">@SharedLocalizer["Voltar ao início"]</a>
             </div>
         }
         <script>
@@ -84,8 +84,8 @@
         <h1 class="font-display text-4xl text-center">Pagamento em processamento</h1>
         <p class="text-white/60 mt-4 text-center">Aprova o pagamento na app MB Way. Assim que for confirmado, esta página atualiza-se sozinha e as tuas fotos ficam disponíveis aqui mesmo para descarregar (pode demorar alguns segundos).</p>
         <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/downloads" class="btn-primary">@SharedLocalizer["GoDownloads"]</a>
-            <a href="/portfolio" class="btn-outline">@SharedLocalizer["GoHome"]</a>
+            <a href="/downloads" class="btn-primary">@SharedLocalizer["Ir para downloads"]</a>
+            <a href="/portfolio" class="btn-outline">@SharedLocalizer["Voltar ao início"]</a>
         </div>
         <script>
             // Payment started — clear the photo selection cart.
@@ -102,6 +102,6 @@
         </div>
         <h1 class="font-display text-4xl text-center">Pagamento não confirmado</h1>
         <p class="text-white/60 mt-4 text-center">Não recebemos a confirmação do pagamento. Se já pagaste e isto é um erro, tenta novamente ou contacta-nos.</p>
-        <a href="/portfolio" class="btn-primary mt-10 inline-block">@SharedLocalizer["GoHome"]</a>
+        <a href="/portfolio" class="btn-primary mt-10 inline-block">@SharedLocalizer["Voltar ao início"]</a>
     }
 </section>

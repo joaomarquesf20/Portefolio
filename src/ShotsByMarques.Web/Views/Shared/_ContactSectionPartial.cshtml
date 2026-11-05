@@ -4,13 +4,13 @@
     <div class="px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
         <div class="grid grid-cols-1 gap-16 lg:grid-cols-12">
             <div class="lg:col-span-5">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/40">@Localizer["ContactKicker"]</p>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/40">@Localizer["Contacto"]</p>
                 <h2 class="fd mt-5 text-[clamp(2.4rem,5vw,4.5rem)] font-bold leading-[0.95] tracking-[-0.04em]">
-                    @Localizer["ContactHeadingLine1"]<br /><span class="text-[#c9a961]">@Localizer["ContactHeadingAccent"]</span> @Localizer["ContactHeadingLine2"]
+                    @Localizer["Vamos criar"]<br /><span class="text-[#c9a961]">@Localizer["algo"]</span> @Localizer["juntos."]
                 </h2>
                 <span class="mt-8 block h-px w-24 bg-[#c9a961]"></span>
                 <p class="mt-6 max-w-sm text-sm leading-relaxed text-white/55">
-                    @Localizer["ContactSectionSubtitle"]
+                    @Localizer["Sessões privadas, cobertura de eventos, licenciamento de fotografia. Responderei o mais brevemente possível."]
                 </p>
             </div>
 
@@ -18,29 +18,29 @@
                 @Html.AntiForgeryToken()
 
                 <label class="flex flex-col gap-2">
-                    <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">@Localizer["ContactFieldName"]</span>
+                    <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">@Localizer["Nome"]</span>
                     <input type="text" name="Name" required maxlength="120" autocomplete="name"
                            class="border-0 border-b border-white/20 bg-transparent px-0 py-2 text-white placeholder-white/30 outline-none transition focus:border-[#c9a961]" />
                 </label>
 
                 <label class="flex flex-col gap-2">
-                    <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">@Localizer["ContactFieldEmail"]</span>
+                    <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">@Localizer["Email"]</span>
                     <input type="email" name="Email" required maxlength="200" autocomplete="email"
                            class="border-0 border-b border-white/20 bg-transparent px-0 py-2 text-white placeholder-white/30 outline-none transition focus:border-[#c9a961]" />
                 </label>
 
                 <label class="flex flex-col gap-2 sm:col-span-2">
-                    <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">@Localizer["ContactFieldSubject"]</span>
+                    <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">@Localizer["Assunto"]</span>
                     <select name="Subject" required
                             class="border-0 border-b border-white/20 bg-[#141414] px-0 py-2 text-white outline-none transition focus:border-[#c9a961]">
-                        <option value="Sessao Privada">@Localizer["ContactSubjectPrivate"]</option>
-                        <option value="Cobertura Evento">@Localizer["ContactSubjectEvent"]</option>
-                        <option value="Outro">@Localizer["ContactSubjectOther"]</option>
+                        <option value="Sessao Privada">@Localizer["Sessão Privada"]</option>
+                        <option value="Cobertura Evento">@Localizer["Cobertura de Evento"]</option>
+                        <option value="Outro">@Localizer["Outro Assunto"]</option>
                     </select>
                 </label>
 
                 <label class="flex flex-col gap-2 sm:col-span-2">
-                    <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">@Localizer["ContactFieldMessage"]</span>
+                    <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">@Localizer["Mensagem"]</span>
                     <textarea name="Message" rows="4" required maxlength="4000"
                               class="resize-y border-0 border-b border-white/20 bg-transparent px-0 py-2 text-white outline-none transition focus:border-[#c9a961]"></textarea>
                 </label>
@@ -48,7 +48,7 @@
                 <div class="sm:col-span-2">
                     <button type="submit"
                             class="inline-flex items-center rounded-full border border-[#c9a961] bg-[#c9a961] px-8 py-3 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#141414] transition duration-300 hover:-translate-y-0.5 hover:bg-transparent hover:text-[#c9a961]">
-                        @Localizer["ContactSubmitButton"]
+                        @Localizer["Enviar mensagem"]
                     </button>
                 </div>
             </form>

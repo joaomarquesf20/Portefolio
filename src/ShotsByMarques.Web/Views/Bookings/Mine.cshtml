@@ -1,13 +1,13 @@
 @model ShotsByMarques.Web.ViewModels.BookingMineViewModel
 @{
-    ViewData["Title"] = SharedLocalizer["NavMyBookings"];
+    ViewData["Title"] = SharedLocalizer["As minhas marcações"];
     var pt = new System.Globalization.CultureInfo("pt-PT");
     string StatusLabel(ShotsByMarques.Web.Models.BookingStatus s) => s switch
     {
-        ShotsByMarques.Web.Models.BookingStatus.Confirmed => SharedLocalizer["BookingStatusConfirmed"],
-        ShotsByMarques.Web.Models.BookingStatus.Cancelled => SharedLocalizer["BookingStatusCancelled"],
-        ShotsByMarques.Web.Models.BookingStatus.Completed => SharedLocalizer["BookingStatusCompleted"],
-        _ => SharedLocalizer["BookingStatusPending"]
+        ShotsByMarques.Web.Models.BookingStatus.Confirmed => SharedLocalizer["Confirmada"],
+        ShotsByMarques.Web.Models.BookingStatus.Cancelled => SharedLocalizer["Cancelada"],
+        ShotsByMarques.Web.Models.BookingStatus.Completed => SharedLocalizer["Concluída"],
+        _ => SharedLocalizer["Pendente"]
     };
     string StatusChip(ShotsByMarques.Web.Models.BookingStatus s) => s switch
     {
@@ -24,14 +24,14 @@
         <span class="rule inline-block h-px w-10"></span>
         A tua área
     </p>
-    <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.4rem,5vw,4rem)] font-bold leading-[0.95] tracking-[-0.04em] text-[#141414]">@SharedLocalizer["NavMyBookings"]</h1>
+    <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.4rem,5vw,4rem)] font-bold leading-[0.95] tracking-[-0.04em] text-[#141414]">@SharedLocalizer["As minhas marcações"]</h1>
     <p class="rv rv-d2 mt-4 max-w-xl text-black/55">Aqui tens as tuas sessões, os pagamentos e os downloads — tudo num só sítio.</p>
 
     @if (Model.Bookings.Count == 0)
     {
         <div class="rv rv-d2 mt-10 border border-dashed border-black/15 p-10 text-center">
             <p class="text-black/50">Ainda não tens marcações.</p>
-            <a href="/sessoes" class="btn-primary mt-6 inline-block">@SharedLocalizer["BookNow"]</a>
+            <a href="/sessoes" class="btn-primary mt-6 inline-block">@SharedLocalizer["Marcar"]</a>
         </div>
     }
 
@@ -106,7 +106,7 @@
                                 <p class="text-[#a1843f] font-display font-semibold mt-2 tabular-nums">@booking.Price.ToString("C", pt)</p>
                                 @if (!isMini)
                                 {
-                                    <p class="text-xs text-black/40 mt-0.5 tabular-nums">@SharedLocalizer["Deposit"]: @booking.DepositAmount.ToString("C", pt) · @SharedLocalizer["Balance"]: @booking.BalanceAmount.ToString("C", pt)</p>
+                                    <p class="text-xs text-black/40 mt-0.5 tabular-nums">@SharedLocalizer["Depósito (50% ao marcar)"]: @booking.DepositAmount.ToString("C", pt) · @SharedLocalizer["Saldo (50% na entrega)"]: @booking.BalanceAmount.ToString("C", pt)</p>
                                 }
                             </div>
                         </div>
@@ -122,30 +122,30 @@
                             <div class="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-black/10 text-sm">
                                 @if (booking.DepositPaid)
                                 {
-                                    <span class="text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-600/25 bg-emerald-600/10 text-emerald-700">✓ @SharedLocalizer["DepositPaid"]</span>
+                                    <span class="text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-600/25 bg-emerald-600/10 text-emerald-700">✓ @SharedLocalizer["Depósito pago"]</span>
                                 }
                                 else
                                 {
                                     <form asp-action="PayDeposit" asp-route-id="@booking.Id" method="post">
                                         @Html.AntiForgeryToken()
-                                        <button class="btn-primary !py-2 !px-4 !text-xs">@SharedLocalizer["PayDeposit"] — @booking.DepositAmount.ToString("C", pt)</button>
+                                        <button class="btn-primary !py-2 !px-4 !text-xs">@SharedLocalizer["Pagar depósito"] — @booking.DepositAmount.ToString("C", pt)</button>
                                     </form>
                                 }
 
                                 @if (booking.BalancePaid)
                                 {
-                                    <span class="text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-600/25 bg-emerald-600/10 text-emerald-700">✓ @SharedLocalizer["BalancePaid"]</span>
+                                    <span class="text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-600/25 bg-emerald-600/10 text-emerald-700">✓ @SharedLocalizer["Saldo pago"]</span>
                                 }
                                 else if (booking.DepositPaid)
                                 {
                                     <form asp-action="PayBalance" asp-route-id="@booking.Id" method="post">
                                         @Html.AntiForgeryToken()
-                                        <button class="btn-outline !py-2 !px-4 !text-xs">@SharedLocalizer["PayBalance"] — @booking.BalanceAmount.ToString("C", pt)</button>
+                                        <button class="btn-outline !py-2 !px-4 !text-xs">@SharedLocalizer["Pagar saldo"] — @booking.BalanceAmount.ToString("C", pt)</button>
                                     </form>
                                 }
                                 else
                                 {
-                                    <span class="text-black/40 text-xs">@SharedLocalizer["BookingNeedsDeposit"]</span>
+                                    <span class="text-black/40 text-xs">@SharedLocalizer["Paga o depósito para confirmar a marcação."]</span>
                                 }
                             </div>
                         }

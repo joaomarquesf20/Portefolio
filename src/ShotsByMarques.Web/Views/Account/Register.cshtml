@@ -1,6 +1,6 @@
-﻿@model ShotsByMarques.Web.ViewModels.RegisterViewModel
+@model ShotsByMarques.Web.ViewModels.RegisterViewModel
 @{
-    ViewData["Title"] = SharedLocalizer["RegisterTitle"];
+    ViewData["Title"] = SharedLocalizer["Criar conta"];
 }
 
 <section class="relative flex min-h-screen flex-col justify-center overflow-hidden px-5 pb-24 pt-24 sm:px-8">
@@ -11,7 +11,7 @@
                     <span class="rule inline-block h-px w-10"></span>
                     Shots By Marques
                 </p>
-                <h1 class="mt-5 font-display text-4xl font-bold tracking-[-0.04em] text-[#141414]">@SharedLocalizer["RegisterTitle"]</h1>
+                <h1 class="mt-5 font-display text-4xl font-bold tracking-[-0.04em] text-[#141414]">@SharedLocalizer["Criar conta"]</h1>
             </div>
 
             <div class="rv rv-d1 card p-8">
@@ -74,12 +74,12 @@
                         <span asp-validation-for="ConfirmPassword" class="text-red-700 text-xs"></span>
                     </div>
 
-                    <button type="submit" class="btn-primary w-full text-center">@SharedLocalizer["NavRegister"]</button>
+                    <button type="submit" class="btn-primary w-full text-center">@SharedLocalizer["Criar conta"]</button>
                 </form>
 
                 <p class="mt-7 text-center text-sm text-black/50">
                     Já tens conta?
-                    <a asp-action="Login" class="font-medium text-[#a1843f] transition hover:text-[#8a7034] hover:underline">@SharedLocalizer["NavLogin"]</a>
+                    <a asp-action="Login" class="font-medium text-[#a1843f] transition hover:text-[#8a7034] hover:underline">@SharedLocalizer["Entrar"]</a>
                 </p>
             </div>
         </div>

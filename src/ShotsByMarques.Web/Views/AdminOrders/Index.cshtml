@@ -1,11 +1,11 @@
 @model List<ShotsByMarques.Web.Models.Order>
 @{
-    ViewData["Title"] = SharedLocalizer["Orders"];
+    ViewData["Title"] = SharedLocalizer["Encomendas"];
 }
 
 <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
-    <h1 class="font-display text-4xl mb-8 fade-up">@SharedLocalizer["Orders"]</h1>
+    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["Voltar ao painel"]</a>
+    <h1 class="font-display text-4xl mb-8 fade-up">@SharedLocalizer["Encomendas"]</h1>
 
     <div id="bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
         <label class="flex items-center gap-2 text-white/70 cursor-pointer">
@@ -63,10 +63,10 @@
                     </div>
                 }
                 <div class="flex justify-end mt-4 pt-4 border-t border-[color:var(--border)]">
-                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('@SharedLocalizer["Tens a certeza que queres eliminar?"]')">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@order.Id" />
-                        <button class="text-xs px-3 py-1.5 rounded-full border border-red-400/40 text-red-300 hover:bg-red-500/10 transition">🗑 @SharedLocalizer["Delete"]</button>
+                        <button class="text-xs px-3 py-1.5 rounded-full border border-red-400/40 text-red-300 hover:bg-red-500/10 transition">🗑 @SharedLocalizer["Eliminar"]</button>
                     </form>
                 </div>
             </div>
@@ -105,7 +105,7 @@
             });
 
             window.bulkSubmit = function () {
-                return confirm('@SharedLocalizer["ConfirmDelete"]');
+                return confirm('@SharedLocalizer["Tens a certeza que queres eliminar?"]');
             };
             refresh();
         })();

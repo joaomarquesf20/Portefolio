@@ -278,13 +278,13 @@
             </a>
 
             <nav class="hidden items-center gap-8 text-[13px] font-medium uppercase tracking-[0.14em] md:flex">
-                <a href="/portfolio" class="nlink @(NavActive("/portfolio") ? "on" : "")">@SharedLocalizer["NavPortfolio"]</a>
-                <a href="/servicos" class="nlink @(NavActive("/servicos") ? "on" : "")">@SharedLocalizer["NavServices"]</a>
-                <a href="/sessoes" class="nlink @(NavActive("/sessoes") ? "on" : "")">@SharedLocalizer["NavSessions"]</a>
-                <a href="#contact" class="inline-flex items-center rounded-full border border-[#a1843f]/70 px-4 py-2 text-[#a1843f] transition duration-300 hover:-translate-y-0.5 hover:border-[#a1843f] hover:bg-[#a1843f] hover:text-white">@SharedLocalizer["NavContact"]</a>
+                <a href="/portfolio" class="nlink @(NavActive("/portfolio") ? "on" : "")">@SharedLocalizer["Portefólio"]</a>
+                <a href="/servicos" class="nlink @(NavActive("/servicos") ? "on" : "")">@SharedLocalizer["Serviços"]</a>
+                <a href="/sessoes" class="nlink @(NavActive("/sessoes") ? "on" : "")">@SharedLocalizer["Sessões"]</a>
+                <a href="#contact" class="inline-flex items-center rounded-full border border-[#a1843f]/70 px-4 py-2 text-[#a1843f] transition duration-300 hover:-translate-y-0.5 hover:border-[#a1843f] hover:bg-[#a1843f] hover:text-white">@SharedLocalizer["Contacto"]</a>
                 @if (User.IsInRole("Admin"))
                 {
-                    <a href="/admin" class="nlink acc @(NavActive("/admin") ? "on" : "")">@SharedLocalizer["NavDashboard"]</a>
+                    <a href="/admin" class="nlink acc @(NavActive("/admin") ? "on" : "")">@SharedLocalizer["Painel admin"]</a>
                 }
             </nav>
 
@@ -296,7 +296,7 @@
                     <button name="culture" value="en-US" class="rounded-full px-2.5 py-1 transition @(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "bg-[#141414] text-white" : "text-current opacity-50 hover:opacity-100")">EN</button>
                 </form>
 
-                <a href="/Checkout" class="relative block text-current opacity-80 transition hover:opacity-100" title="@SharedLocalizer["NavCart"]" aria-label="@SharedLocalizer["NavCart"]">
+                <a href="/Checkout" class="relative block text-current opacity-80 transition hover:opacity-100" title="@SharedLocalizer["Carrinho"]" aria-label="@SharedLocalizer["Carrinho"]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-[22px] w-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
                     </svg>
@@ -306,19 +306,19 @@
                 @if (User.Identity!.IsAuthenticated)
                 {
                     <div class="hidden items-center gap-4 text-[13px] md:flex">
-                        <a href="/as-minhas-marcacoes" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavMyBookings"]</a>
-                        <a href="/downloads" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavDownloads"]</a>
+                        <a href="/as-minhas-marcacoes" class="nlink !tracking-normal !normal-case">@SharedLocalizer["As minhas marcações"]</a>
+                        <a href="/downloads" class="nlink !tracking-normal !normal-case">@SharedLocalizer["Downloads"]</a>
                         <form asp-controller="Account" asp-action="Logout" method="post" class="inline" onsubmit="try{localStorage.removeItem('sbm_cart');localStorage.setItem('sbm_cart_user','guest')}catch(e){}">
                             @Html.AntiForgeryToken()
-                            <button class="opacity-60 transition hover:opacity-100">@SharedLocalizer["NavLogout"]</button>
+                            <button class="opacity-60 transition hover:opacity-100">@SharedLocalizer["Sair"]</button>
                         </form>
                     </div>
                 }
                 else
                 {
                     <div class="hidden items-center gap-4 text-[13px] md:flex">
-                        <a href="/Account/Login" class="nlink !tracking-normal !normal-case">@SharedLocalizer["NavLogin"]</a>
-                        <a href="/Account/Register" class="inline-flex items-center rounded-full bg-[#141414] px-4 py-2 text-[12px] font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:opacity-90">@SharedLocalizer["NavRegister"]</a>
+                        <a href="/Account/Login" class="nlink !tracking-normal !normal-case">@SharedLocalizer["Entrar"]</a>
+                        <a href="/Account/Register" class="inline-flex items-center rounded-full bg-[#141414] px-4 py-2 text-[12px] font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:opacity-90">@SharedLocalizer["Criar conta"]</a>
                     </div>
                 }
 
@@ -339,27 +339,27 @@
         <button data-menu-close class="fixed right-4 top-4 p-2 text-3xl leading-none text-black/40 transition hover:text-black" aria-label="Fechar menu">✕</button>
 
         <nav class="flex flex-col gap-1 font-display text-3xl font-bold tracking-[-0.02em]">
-            <a href="/portfolio" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">01</span>@SharedLocalizer["NavPortfolio"]</a>
-            <a href="/servicos" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">02</span>@SharedLocalizer["NavServices"]</a>
-            <a href="/sessoes" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">03</span>@SharedLocalizer["NavSessions"]</a>
-            <a href="#contact" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">04</span>@SharedLocalizer["NavContact"]</a>
-            <a href="/Checkout" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">05</span>@SharedLocalizer["NavCart"]</a>
+            <a href="/portfolio" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">01</span>@SharedLocalizer["Portefólio"]</a>
+            <a href="/servicos" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">02</span>@SharedLocalizer["Serviços"]</a>
+            <a href="/sessoes" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">03</span>@SharedLocalizer["Sessões"]</a>
+            <a href="#contact" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">04</span>@SharedLocalizer["Contacto"]</a>
+            <a href="/Checkout" class="flex items-baseline gap-4 py-3 transition hover:text-[#a1843f]"><span class="fd text-xs tabular-nums text-black/30">05</span>@SharedLocalizer["Carrinho"]</a>
         </nav>
 
         <div class="mt-8 space-y-3 border-t border-black/10 pt-8 text-sm text-black/60">
             @if (User.Identity!.IsAuthenticated)
             {
-                <a href="/as-minhas-marcacoes" class="block transition hover:text-black">@SharedLocalizer["NavMyBookings"]</a>
-                <a href="/downloads" class="block transition hover:text-black">@SharedLocalizer["NavDownloads"]</a>
+                <a href="/as-minhas-marcacoes" class="block transition hover:text-black">@SharedLocalizer["As minhas marcações"]</a>
+                <a href="/downloads" class="block transition hover:text-black">@SharedLocalizer["Downloads"]</a>
                 <form asp-controller="Account" asp-action="Logout" method="post" onsubmit="try{localStorage.removeItem('sbm_cart');localStorage.setItem('sbm_cart_user','guest')}catch(e){}">
                     @Html.AntiForgeryToken()
-                    <button class="transition hover:text-[#a1843f]">@SharedLocalizer["NavLogout"]</button>
+                    <button class="transition hover:text-[#a1843f]">@SharedLocalizer["Sair"]</button>
                 </form>
             }
             else
             {
-                <a href="/Account/Login" class="block transition hover:text-black">@SharedLocalizer["NavLogin"]</a>
-                <a href="/Account/Register" class="block transition hover:text-[#a1843f]">@SharedLocalizer["NavRegister"]</a>
+                <a href="/Account/Login" class="block transition hover:text-black">@SharedLocalizer["Entrar"]</a>
+                <a href="/Account/Register" class="block transition hover:text-[#a1843f]">@SharedLocalizer["Criar conta"]</a>
             }
         </div>
 
@@ -423,19 +423,19 @@
                         SHOTS<br /><span class="opacity-35">BY MARQUES</span>
                     </span>
                     <span class="rule mt-8 block h-px w-24"></span>
-                    <p class="mt-6 max-w-sm text-sm leading-relaxed text-black/45">@SharedLocalizer["FooterTagline"]</p>
+                    <p class="mt-6 max-w-sm text-sm leading-relaxed text-black/45">@SharedLocalizer["Fotografia automóvel — sessões de carros e cobertura de eventos, com entrega em galeria online."]</p>
                 </div>
                 <div class="lg:col-span-2 lg:col-start-9">
-                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-black/35">@SharedLocalizer["FooterNav"]</p>
+                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-black/35">@SharedLocalizer["Navegação"]</p>
                     <ul class="space-y-3 text-sm text-black/60">
-                        <li><a href="/portfolio" class="u-link transition hover:text-black">@SharedLocalizer["NavPortfolio"]</a></li>
-                        <li><a href="/servicos" class="u-link transition hover:text-black">@SharedLocalizer["NavServices"]</a></li>
-                        <li><a href="/sessoes" class="u-link transition hover:text-black">@SharedLocalizer["NavSessions"]</a></li>
-                        <li><a href="#contact" class="u-link transition hover:text-black">@SharedLocalizer["NavContact"]</a></li>
+                        <li><a href="/portfolio" class="u-link transition hover:text-black">@SharedLocalizer["Portefólio"]</a></li>
+                        <li><a href="/servicos" class="u-link transition hover:text-black">@SharedLocalizer["Serviços"]</a></li>
+                        <li><a href="/sessoes" class="u-link transition hover:text-black">@SharedLocalizer["Sessões"]</a></li>
+                        <li><a href="#contact" class="u-link transition hover:text-black">@SharedLocalizer["Contacto"]</a></li>
                     </ul>
                 </div>
                 <div class="lg:col-span-2 lg:col-start-11">
-                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-black/35">@SharedLocalizer["FooterContact"]</p>
+                    <p class="mb-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-black/35">@SharedLocalizer["Contacto"]</p>
                     <ul class="space-y-3 text-sm text-black/60">
                         <li><a href="mailto:marquesphotography06@gmail.com" class="u-link transition hover:text-black">marquesphotography06@gmail.com</a></li>
                         <li><a href="https://www.instagram.com/shots.by.marques/" target="_blank" rel="noopener" class="u-link transition hover:text-black">Instagram — @@shots.by.marques</a></li>
@@ -443,8 +443,8 @@
                 </div>
             </div>
             <div class="mt-16 flex flex-col items-start justify-between gap-3 border-t border-black/10 pt-7 text-[11px] text-black/35 sm:flex-row">
-                <span>© @DateTime.Now.Year Shots By Marques. @SharedLocalizer["FooterRights"]</span>
-                <span>@SharedLocalizer["FooterMade"]</span>
+                <span>© @DateTime.Now.Year Shots By Marques. @SharedLocalizer["Todos os direitos reservados."]</span>
+                <span>@SharedLocalizer["Feito com paixão por carros e luz."]</span>
             </div>
         </div>
     </footer>

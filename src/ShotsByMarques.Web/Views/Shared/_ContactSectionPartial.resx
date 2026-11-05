@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Sessões privadas, cobertura de eventos, licenciamento de fotografia. Responderei o mais brevemente possível." xml:space="preserve"><value>Sessões privadas, cobertura de eventos, licenciamento de fotografia. Responderei o mais brevemente possível.</value></data>
+  <data name="Vamos criar" xml:space="preserve"><value>Vamos criar</value></data>
+  <data name="Sessão Privada" xml:space="preserve"><value>Sessão Privada</value></data>
+  <data name="juntos." xml:space="preserve"><value>juntos.</value></data>
+  <data name="algo" xml:space="preserve"><value>algo</value></data>
+  <data name="Mensagem" xml:space="preserve"><value>Mensagem</value></data>
+  <data name="Outro Assunto" xml:space="preserve"><value>Outro Assunto</value></data>
+  <data name="Assunto" xml:space="preserve"><value>Assunto</value></data>
+  <data name="Contacto" xml:space="preserve"><value>Contacto</value></data>
+  <data name="Cobertura de Evento" xml:space="preserve"><value>Cobertura de Evento</value></data>
+  <data name="Nome" xml:space="preserve"><value>Nome</value></data>
+  <data name="Enviar mensagem" xml:space="preserve"><value>Enviar mensagem</value></data>
+  <data name="Email" xml:space="preserve"><value>Email</value></data>
+</root>

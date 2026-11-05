@@ -1,7 +1,7 @@
 @model ShotsByMarques.Web.ViewModels.AvailabilityCalendarViewModel
 @using ShotsByMarques.Web.Models
 @{
-    ViewData["Title"] = SharedLocalizer["Availability"];
+    ViewData["Title"] = SharedLocalizer["Disponibilidade"];
     var culture = System.Globalization.CultureInfo.CurrentCulture;
     var first = new DateTime(Model.Year, Model.Month, 1);
     var previous = first.AddMonths(-1);
@@ -45,7 +45,7 @@
 }
 
 <section class="admin-availability-page max-w-7xl mx-auto px-4 sm:px-6 py-10">
-    <a href="/admin" class="admin-back-link">← @SharedLocalizer["BackToDashboard"]</a>
+    <a href="/admin" class="admin-back-link">← @SharedLocalizer["Voltar ao painel"]</a>
 
     <header class="availability-header mt-6">
         <div>

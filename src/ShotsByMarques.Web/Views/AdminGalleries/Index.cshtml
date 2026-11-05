@@ -1,14 +1,14 @@
 @model List<ShotsByMarques.Web.Models.Gallery>
 @{
-    ViewData["Title"] = SharedLocalizer["Galleries"];
+    ViewData["Title"] = SharedLocalizer["Galerias"];
     var filter = ViewData["Filter"] as string;
 }
 
 <section class="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["BackToDashboard"]</a>
+    <a href="/admin" class="text-white/50 hover:text-accent text-sm transition inline-flex items-center gap-2 mb-6">← @SharedLocalizer["Voltar ao painel"]</a>
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <h1 class="font-display text-4xl fade-up">@SharedLocalizer["Galleries"]</h1>
-        <a href="/AdminGalleries/Create" class="btn-primary fade-up">+ @SharedLocalizer["NewGallery"]</a>
+        <h1 class="font-display text-4xl fade-up">@SharedLocalizer["Galerias"]</h1>
+        <a href="/AdminGalleries/Create" class="btn-primary fade-up">+ @SharedLocalizer["Nova galeria"]</a>
     </div>
 
     <div class="flex flex-wrap gap-2 mb-8 text-sm">
@@ -22,7 +22,7 @@
     <div id="bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
         <label class="flex items-center gap-2 text-white/70 cursor-pointer">
             <input type="checkbox" id="select-all" class="accent-[color:var(--accent)] w-4 h-4" />
-            <span id="select-all-label">@SharedLocalizer["SelectAll"]</span>
+            <span id="select-all-label">@SharedLocalizer["Selecionar todas"]</span>
         </label>
         <span class="text-white/40" id="selected-count">0</span>
         <div class="flex-1"></div>
@@ -36,7 +36,7 @@
             </button>
             <button type="submit" id="bulk-delete-btn" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled
                     onclick="return bulkSubmit('delete')">
-                @SharedLocalizer["DeleteSelected"]
+                @SharedLocalizer["Eliminar selecionadas"]
             </button>
         </form>
     </div>
@@ -75,7 +75,7 @@
                 </div>
                 <div class="flex items-center gap-4 text-sm">
                     <a href="/galeria/@gallery.Id" target="_blank" class="text-white/60 hover:text-accent transition" title="Abrir no site">↗</a>
-                    <a href="/AdminGalleries/Photos/@gallery.Id" class="btn-primary !py-2 !px-5">@SharedLocalizer["Edit"]</a>
+                    <a href="/AdminGalleries/Photos/@gallery.Id" class="btn-primary !py-2 !px-5">@SharedLocalizer["Editar"]</a>
                     @if (!gallery.IsPrivate)
                     {
                         @if (gallery.IsPublished)
@@ -91,14 +91,14 @@
                             <form asp-action="TogglePublish" method="post" class="inline">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@gallery.Id" />
-                                <button class="text-white/60 hover:text-accent transition">@SharedLocalizer["Publish"]</button>
+                                <button class="text-white/60 hover:text-accent transition">@SharedLocalizer["Publicar"]</button>
                             </form>
                         }
                     }
-                    <form asp-action="Delete" method="post" class="inline" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                    <form asp-action="Delete" method="post" class="inline" onsubmit="return confirm('@SharedLocalizer["Tens a certeza que queres eliminar?"]')">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@gallery.Id" />
-                        <button class="text-red-400 hover:text-red-300 transition">@SharedLocalizer["Delete"]</button>
+                        <button class="text-red-400 hover:text-red-300 transition">@SharedLocalizer["Eliminar"]</button>
                     </form>
                 </div>
             </div>
@@ -127,15 +127,15 @@
                 var selected = checks.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
                 bulkIds.value = selected.join(",");
                 countEl.textContent = selected.length > 0
-                    ? selected.length + " " + "@SharedLocalizer["Selected"]"
+                    ? selected.length + " " + "@SharedLocalizer["selecionadas"]"
                     : "";
                 bulkBar.classList.toggle("hidden", selected.length === 0);
                 bulkPrivate.disabled = selected.length === 0;
                 bulkDelete.disabled = selected.length === 0;
                 selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
                 selectAllLabel.textContent = selectAll.checked
-                    ? "@SharedLocalizer["DeselectAll"]"
-                    : "@SharedLocalizer["SelectAll"]";
+                    ? "@SharedLocalizer["Desmarcar todas"]"
+                    : "@SharedLocalizer["Selecionar todas"]";
             }
 
             checks.forEach(function (c) { c.addEventListener("change", refresh); });
@@ -146,7 +146,7 @@
 
             window.bulkSubmit = function (action) {
                 if (action === "delete" &&
-                    !confirm("@Html.Raw(SharedLocalizer["ConfirmBulkDelete"])")) {
+                    !confirm("@Html.Raw(SharedLocalizer["Tens a certeza que queres eliminar as galerias selecionadas? Esta ação não pode ser desfeita."])")) {
                     return false;
                 }
                 bulkIds.value = checks.filter(function (c) { return c.checked; })

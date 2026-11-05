@@ -1,6 +1,6 @@
 @model List<ShotsByMarques.Web.Models.SessionType>
 @{
-    ViewData["Title"] = SharedLocalizer["SessionTypes"];
+    ViewData["Title"] = SharedLocalizer["Tipos de sessão"];
     var activeCount = Model.Count(s => s.IsActive);
     var inactiveCount = Model.Count - activeCount;
 }
@@ -9,10 +9,10 @@
     <div class="admin-page-heading">
         <div>
             <p class="admin-section-eyebrow">Conteúdo / Serviços</p>
-            <h1 class="font-display text-4xl fade-up">@SharedLocalizer["SessionTypes"]</h1>
+            <h1 class="font-display text-4xl fade-up">@SharedLocalizer["Tipos de sessão"]</h1>
             <p class="admin-page-intro">Define os serviços que aparecem na página de sessões e controla os respetivos preços.</p>
         </div>
-        <a href="/AdminSessionTypes/Create" class="btn-primary admin-heading-action fade-up">+ @SharedLocalizer["NewSessionType"]</a>
+        <a href="/AdminSessionTypes/Create" class="btn-primary admin-heading-action fade-up">+ @SharedLocalizer["Novo tipo de sessão"]</a>
     </div>
 
     <div class="admin-session-summary fade-up" aria-label="Resumo dos tipos de sessão">
@@ -93,7 +93,7 @@
                         <input type="hidden" name="id" value="@session.Id" />
                         <button class="admin-row-action">@(session.IsActive ? "Desativar" : "Ativar")</button>
                     </form>
-                    <form asp-action="Delete" method="post" class="inline" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                    <form asp-action="Delete" method="post" class="inline" onsubmit="return confirm('@SharedLocalizer["Tens a certeza que queres eliminar?"]')">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@session.Id" />
                         <button class="admin-row-action danger">Eliminar</button>
@@ -139,7 +139,7 @@
             });
 
             window.bulkSubmit = function () {
-                return confirm('@SharedLocalizer["ConfirmDelete"]');
+                return confirm('@SharedLocalizer["Tens a certeza que queres eliminar?"]');
             };
             refresh();
         })();

@@ -28,17 +28,17 @@
             Fotografia Automóvel · Portugal
         </p>
         <h1 class="rv rv-d1 mt-6 max-w-6xl font-display text-[clamp(3.4rem,10vw,9rem)] font-bold leading-[0.92] tracking-[-0.04em] text-white">
-            @SharedLocalizer["HomeName"]
+            @SharedLocalizer["João Marques"]
         </h1>
-        <p class="rv rv-d2 mt-6 max-w-md text-base leading-relaxed text-white/70 sm:text-lg">@SharedLocalizer["HeroSubtitle"]</p>
+        <p class="rv rv-d2 mt-6 max-w-md text-base leading-relaxed text-white/70 sm:text-lg">@SharedLocalizer["Fotografia automóvel — sessões de carros e cobertura de eventos, com entrega em galeria online."]</p>
 
         <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <a href="#portfolio" class="rv rv-d3 inline-flex items-center justify-center gap-3 bg-white px-8 py-4 text-sm font-semibold text-[#141414] transition duration-300 hover:bg-white/85">
-                @SharedLocalizer["HeroCta"]
+                @SharedLocalizer["Ver portefólio"]
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m0 0l-6.75-6.75M12 19.5l6.75-6.75" /></svg>
             </a>
             <a href="/sessoes" class="rv rv-d4 inline-flex items-center justify-center gap-3 border border-white/40 px-8 py-4 text-sm font-medium text-white transition duration-300 hover:bg-white/10 hover:border-white/70">
-                @SharedLocalizer["NavSessions"]
+                @SharedLocalizer["Sessões"]
             </a>
         </div>
     </div>
@@ -77,11 +77,11 @@
         <div>
             <p class="text-[11px] font-medium uppercase tracking-[0.4em] text-black/45">Trabalho em destaque</p>
             <h2 class="mt-4 font-display text-[clamp(2.4rem,5vw,4.4rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
-                @SharedLocalizer["NavPortfolio"]
+                @SharedLocalizer["Portefólio"]
             </h2>
         </div>
         <a href="/portfolio" class="u-link group hidden items-center gap-3 text-[11px] font-medium uppercase tracking-[0.3em] text-black/50 transition hover:text-black sm:inline-flex">
-            @SharedLocalizer["LearnMore"]
+            @SharedLocalizer["Saber mais"]
             <span class="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
         </a>
     </div>
@@ -99,7 +99,7 @@
                 <span class="absolute left-5 top-5 font-display text-xs tabular-nums text-white/70">01</span>
                 <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 sm:p-8">
                     <div>
-                        <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@(featured.IsSession ? "Sessão" : "Evento") · @featured.Photos.Count @SharedLocalizer["PhotosCount"]</p>
+                        <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@(featured.IsSession ? "Sessão" : "Evento") · @featured.Photos.Count @SharedLocalizer["fotos"]</p>
                         <h3 class="mt-2 font-display text-2xl font-bold tracking-[-0.02em] text-white sm:text-4xl">@featured.Title</h3>
                     </div>
                     <span class="hidden h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/40 text-lg text-white transition duration-300 group-hover:bg-white group-hover:text-[#141414] sm:flex">→</span>
@@ -115,7 +115,7 @@
                     <span class="absolute left-5 top-5 font-display text-xs tabular-nums text-white/70">02</span>
                     <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 sm:p-6">
                         <div>
-                            <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@(second.IsSession ? "Sessão" : "Evento") · @second.Photos.Count @SharedLocalizer["PhotosCount"]</p>
+                            <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@(second.IsSession ? "Sessão" : "Evento") · @second.Photos.Count @SharedLocalizer["fotos"]</p>
                             <h3 class="mt-2 font-display text-lg font-bold tracking-[-0.02em] text-white sm:text-xl">@second.Title</h3>
                         </div>
                         <span class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/40 text-white transition duration-300 group-hover:bg-white group-hover:text-[#141414] sm:flex">→</span>
@@ -140,7 +140,7 @@
                     <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent opacity-90"></div>
                     <span class="absolute left-5 top-5 font-display text-xs tabular-nums text-white/70">@((ci + 2).ToString("00"))</span>
                     <div class="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-                        <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@(gallery.IsSession ? "Sessão" : "Evento") · @gallery.Photos.Count @SharedLocalizer["PhotosCount"]</p>
+                        <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@(gallery.IsSession ? "Sessão" : "Evento") · @gallery.Photos.Count @SharedLocalizer["fotos"]</p>
                         <h3 class="mt-2 font-display text-lg font-bold tracking-[-0.02em] text-white sm:text-xl">@gallery.Title</h3>
                     </div>
                 </a>
@@ -160,7 +160,7 @@
                         <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent opacity-90"></div>
                         <span class="absolute left-5 top-5 font-display text-xs tabular-nums text-white/70">@((si + 5).ToString("00"))</span>
                         <div class="absolute inset-x-0 bottom-0 p-5">
-                            <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@(gallery.IsSession ? "Sessão" : "Evento") · @gallery.Photos.Count @SharedLocalizer["PhotosCount"]</p>
+                            <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@(gallery.IsSession ? "Sessão" : "Evento") · @gallery.Photos.Count @SharedLocalizer["fotos"]</p>
                             <h3 class="mt-2 font-display text-lg font-bold tracking-[-0.02em] text-white sm:text-xl">@gallery.Title</h3>
                         </div>
                     </a>
@@ -191,12 +191,12 @@
         <div>
             <p class="text-[11px] font-medium uppercase tracking-[0.4em] text-black/45">O que faço</p>
             <h2 class="mt-4 font-display text-[clamp(2.4rem,5vw,4.4rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
-                @SharedLocalizer["NavServices"]
+                @SharedLocalizer["Serviços"]
             </h2>
-            <p class="mt-4 max-w-xl text-black/50">@SharedLocalizer["ServicesSubtitle"]</p>
+            <p class="mt-4 max-w-xl text-black/50">@SharedLocalizer["Conhece os meus serviços"]</p>
         </div>
         <a href="/servicos" class="u-link group hidden items-center gap-3 text-[11px] font-medium uppercase tracking-[0.3em] text-black/50 transition hover:text-black sm:inline-flex">
-            @SharedLocalizer["LearnMore"]
+            @SharedLocalizer["Saber mais"]
             <span class="inline-block">→</span>
         </a>
     </div>
@@ -205,13 +205,13 @@
         <a href="/portfolio#eventos" class="group grid grid-cols-12 gap-x-6 gap-y-3 border-t border-black/10 px-5 py-9 transition-colors duration-500 hover:bg-[#141414] sm:px-8 sm:py-12 lg:px-12">
             <span class="col-span-2 font-display text-2xl tabular-nums text-black/20 transition-colors duration-500 group-hover:text-[#a1843f] md:col-span-1">01</span>
             <div class="col-span-10 md:col-span-7">
-                <h3 class="font-display text-lg font-bold uppercase tracking-[-0.01em] text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-2xl">@SharedLocalizer["Nr01Title"]</h3>
-                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-black/45 transition-colors duration-500 group-hover:text-white/55 sm:text-[15px]">@SharedLocalizer["Nr01Desc"]</p>
+                <h3 class="font-display text-lg font-bold uppercase tracking-[-0.01em] text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-2xl">@SharedLocalizer["eventos"]</h3>
+                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-black/45 transition-colors duration-500 group-hover:text-white/55 sm:text-[15px]">@SharedLocalizer["Se estiveste com a tua máquina num evento, concentração ou trackday e me viste por lá com a câmara, o mais provável é ter fotos do teu carro. As fotos podem ser adquiridas individualmente ou em packs digitais já editadas e prontas a partilhar nas redes."]</p>
             </div>
             <div class="col-span-12 flex items-center justify-between self-start pl-2 md:col-span-4 md:justify-end md:gap-10 md:pl-0">
-                <span class="text-sm font-semibold tabular-nums text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-base">@SharedLocalizer["Nr01Price"]</span>
+                <span class="text-sm font-semibold tabular-nums text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-base">@SharedLocalizer["A partir de 3€"]</span>
                 <span class="hidden items-center gap-3 text-[10px] font-medium uppercase tracking-[0.25em] text-black/40 transition-colors duration-500 group-hover:text-white/75 md:flex">
-                    @SharedLocalizer["Nr01Cta"]
+                    @SharedLocalizer["Pedir Fotos"]
                     <span class="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
                 </span>
             </div>
@@ -220,13 +220,13 @@
         <a href="/sessoes" class="group grid grid-cols-12 gap-x-6 gap-y-3 border-t border-black/10 px-5 py-9 transition-colors duration-500 hover:bg-[#141414] sm:px-8 sm:py-12 lg:px-12">
             <span class="col-span-2 font-display text-2xl tabular-nums text-black/20 transition-colors duration-500 group-hover:text-[#a1843f] md:col-span-1">02</span>
             <div class="col-span-10 md:col-span-7">
-                <h3 class="font-display text-lg font-bold uppercase tracking-[-0.01em] text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-2xl">@SharedLocalizer["Nr02Title"]</h3>
-                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-black/45 transition-colors duration-500 group-hover:text-white/55 sm:text-[15px]">@SharedLocalizer["Nr02Desc"]</p>
+                <h3 class="font-display text-lg font-bold uppercase tracking-[-0.01em] text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-2xl">@SharedLocalizer["sessões"]</h3>
+                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-black/45 transition-colors duration-500 group-hover:text-white/55 sm:text-[15px]">@SharedLocalizer["Uma sessão fotográfica dedicada inteiramente ao teu carro, combinada num local à tua escolha. Vamos com calma procurar os melhores ângulos e aproveitar a luz ideal para valorizar cada linha, a pintura e os detalhes que tornam o teu projeto único."]</p>
             </div>
             <div class="col-span-12 flex items-center justify-between self-start pl-2 md:col-span-4 md:justify-end md:gap-10 md:pl-0">
-                <span class="text-sm font-semibold tabular-nums text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-base">@SharedLocalizer["Nr02Price"]</span>
+                <span class="text-sm font-semibold tabular-nums text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-base">@SharedLocalizer["A partir de 45€"]</span>
                 <span class="hidden items-center gap-3 text-[10px] font-medium uppercase tracking-[0.25em] text-black/40 transition-colors duration-500 group-hover:text-white/75 md:flex">
-                    @SharedLocalizer["Nr02Cta"]
+                    @SharedLocalizer["Reservar Sessão"]
                     <span class="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
                 </span>
             </div>
@@ -235,13 +235,13 @@
         <a href="mailto:marquesphotography06@gmail.com?subject=Orçamento%20—%20Stands" class="group grid grid-cols-12 gap-x-6 gap-y-3 border-t border-black/10 px-5 py-9 transition-colors duration-500 hover:bg-[#141414] sm:px-8 sm:py-12 lg:px-12">
             <span class="col-span-2 font-display text-2xl tabular-nums text-black/20 transition-colors duration-500 group-hover:text-[#a1843f] md:col-span-1">03</span>
             <div class="col-span-10 md:col-span-7">
-                <h3 class="font-display text-lg font-bold uppercase tracking-[-0.01em] text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-2xl">@SharedLocalizer["Nr03Title"]</h3>
-                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-black/45 transition-colors duration-500 group-hover:text-white/55 sm:text-[15px]">@SharedLocalizer["Nr03Desc"]</p>
+                <h3 class="font-display text-lg font-bold uppercase tracking-[-0.01em] text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-2xl">@SharedLocalizer["STANDS"]</h3>
+                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-black/45 transition-colors duration-500 group-hover:text-white/55 sm:text-[15px]">@SharedLocalizer["Fotografia focada para stands de automóveis e negócios do setor. Imagens limpas e profissionais de exterior, interior e pormenores mecânicos essenciais para destacar os veículos nos anúncios e ajudar a acelerar as vendas."]</p>
             </div>
             <div class="col-span-12 flex items-center justify-between self-start pl-2 md:col-span-4 md:justify-end md:gap-10 md:pl-0">
-                <span class="text-sm font-semibold tabular-nums text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-base">@SharedLocalizer["Nr03Price"]</span>
+                <span class="text-sm font-semibold tabular-nums text-[#141414] transition-colors duration-500 group-hover:text-white sm:text-base">@SharedLocalizer["A partir de 35€ / carro"]</span>
                 <span class="hidden items-center gap-3 text-[10px] font-medium uppercase tracking-[0.25em] text-black/40 transition-colors duration-500 group-hover:text-white/75 md:flex">
-                    @SharedLocalizer["Nr03Cta"]
+                    @SharedLocalizer["Pedir Orçamento"]
                     <span class="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
                 </span>
             </div>

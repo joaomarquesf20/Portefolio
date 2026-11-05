@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = SharedLocalizer["Dashboard"];
+    ViewData["Title"] = SharedLocalizer["Painel de administração"];
     var recentBookings = ViewData["RecentBookings"] as List<ShotsByMarques.Web.Models.Booking> ?? new();
     var recentOrders = ViewData["RecentOrders"] as List<ShotsByMarques.Web.Models.Order> ?? new();
     var revenue = (decimal?)ViewData["Revenue"] ?? 0m;
@@ -30,10 +30,10 @@
         @{
             (string Label, string Value, string ValueClass, string Link)[] stats =
             {
-                (SharedLocalizer["Galleries"], ViewData["GalleryCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminGalleries"),
-                (SharedLocalizer["Photos"], ViewData["PhotoCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminGalleries"),
+                (SharedLocalizer["Galerias"], ViewData["GalleryCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminGalleries"),
+                (SharedLocalizer["Fotos"], ViewData["PhotoCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminGalleries"),
                 ("Pendentes", ViewData["BookingCount"]?.ToString() ?? "0", "text-amber-700", "/AdminBookings"),
-                (SharedLocalizer["Orders"], ViewData["OrderCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminOrders"),
+                (SharedLocalizer["Encomendas"], ViewData["OrderCount"]?.ToString() ?? "0", "text-[#141414]", "/AdminOrders"),
                 ("Receita", revenue.ToString("C", currency), "text-[#a1843f]", "/AdminOrders")
             };
         }

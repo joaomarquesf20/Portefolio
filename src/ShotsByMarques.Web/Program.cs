@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using ShotsByMarques.Web.Data;
 using ShotsByMarques.Web.Models;
-using ShotsByMarques.Web.Resources;
 using ShotsByMarques.Web.Services;
 using System.Globalization;
 
@@ -64,10 +63,15 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
 }
 
 // ---- Localization (pt-PT default, en-US optional) ----
-// SharedResource.resx/.en.resx are embedded with their full namespace name
-// (ShotsByMarques.Web.Resources.SharedResource). View-localizer resources
-// follow the same root — Resources/Views/...(culture-suffixed .en.resx).
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+// ResourcesPath stays EMPTY: ResourceManagerStringLocalizerFactory then derives base
+// names directly from the marker type's full name (ShotsByMarques.Web.Resources.SharedResource)
+// and from the view path for IViewLocalizer (ShotsByMarques.Web.Views.Shared._ContactSectionPartial).
+// With ResourcesPath="Resources" the shared base name would double its segment
+// (".Resources.Resources.") and every lookup would silently miss, rendering the key.
+// For embedding names to mirror those bases, each resx sits next to its type/view:
+//        Resources/SharedResource(.en).resx            (marker: Resources/SharedResource.cs)
+//        Views/Shared/_ContactSectionPartial(.en).resx (view-localizer, beside the view)
+builder.Services.AddLocalization();
 
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
@@ -79,8 +83,16 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.DefaultRequestCulture = new RequestCulture("pt-PT");
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
-    options.RequestCultureProviders.Remove(
-        options.RequestCultureProviders.OfType<Microsoft.AspNetCore.Localization.AcceptLanguageHeaderRequestCultureProvider>().First());
+    // .NET 10 no longer seeds useful defaults here (the framework default list
+    // isn't guaranteed across versions) — register the switchers explicitly:
+    // ?culture=…/ui-culture=… query parameter and the .AspNetCore.Culture
+    // cookie. Accept-Language stays excluded (visitors must opt in via the
+    // site's own switcher, not their browser locale).
+    options.RequestCultureProviders.Clear();
+    options.RequestCultureProviders.Add(
+        new Microsoft.AspNetCore.Localization.QueryStringRequestCultureProvider());
+    options.RequestCultureProviders.Add(
+        new Microsoft.AspNetCore.Localization.CookieRequestCultureProvider());
 });
 
 // IViewLocalizer (contact section partial) needs AddViewLocalization; the

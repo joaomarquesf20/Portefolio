@@ -1,6 +1,6 @@
 @model ShotsByMarques.Web.ViewModels.MiniSessionBookingViewModel
 @{
-    ViewData["Title"] = SharedLocalizer["MiniSessionBook"];
+    ViewData["Title"] = SharedLocalizer["Reservar mini sessão"];
     var ptPT = System.Globalization.CultureInfo.GetCultureInfo("pt-PT");
     var open = Model.Remaining > 0;
     var scheduleable = open && Model.HasSchedule;
@@ -19,32 +19,32 @@
 
         <div class="rv rv-d2 mt-8 grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
             <div>
-                <span class="block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["Date"]</span>
+                <span class="block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["Data"]</span>
                 <span class="mt-1 block font-semibold text-[#141414]"><span class="capitalize">@Model.Date.ToString("dddd", ptPT)</span></span>
                 <span class="block text-sm text-black/50">@Model.Date.ToString("dd MMMM yyyy", ptPT)</span>
             </div>
             <div>
-                <span class="block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["Location"]</span>
+                <span class="block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["Localidade"]</span>
                 <span class="mt-1 block font-semibold text-[#141414]">@Model.Zone@(string.IsNullOrEmpty(Model.Location) ? "" : $" — {Model.Location}")</span>
             </div>
             <div>
-                <span class="block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["Price"]</span>
+                <span class="block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["Preço"]</span>
                 <span class="mt-1 block font-display text-xl font-bold text-[#a1843f]">@Model.Price.ToString("N0", ptPT) €</span>
             </div>
             <div>
-                <span class="block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["Status"]</span>
+                <span class="block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["Estado"]</span>
                 @if (open)
                 {
-                    <span class="mt-1 block font-semibold text-[#141414]">@String.Format(ptPT, SharedLocalizer["MiniSessionSlotsLeft"].ToString()!, Model.Remaining, Model.MaxMiniSessions)</span>
+                    <span class="mt-1 block font-semibold text-[#141414]">@String.Format(ptPT, SharedLocalizer["{0} de {1} vagas livres"].ToString()!, Model.Remaining, Model.MaxMiniSessions)</span>
                 }
                 else
                 {
-                    <span class="mt-1 block font-semibold text-black/40">@SharedLocalizer["MiniSessionSoldOut"]</span>
+                    <span class="mt-1 block font-semibold text-black/40">@SharedLocalizer["Esgotado"]</span>
                 }
             </div>
         </div>
 
-        <p class="rv rv-d2 mt-6 max-w-xl text-sm leading-relaxed text-black/55">@SharedLocalizer["MiniSessionDesc"]</p>
+        <p class="rv rv-d2 mt-6 max-w-xl text-sm leading-relaxed text-black/55">@SharedLocalizer["Mini sessão no dia do evento, só para o teu carro. As fotos ficam incluídas no preço e são entregues numa galeria privada (sem marca de água)."]</p>
     </div>
 </section>
 
@@ -57,22 +57,22 @@
                 Inicia sessão para concluir a reserva
                 <a asp-controller="Account" asp-action="Login"
                    asp-route-returnUrl="@Url.Action("MiniSession", "Bookings", new { date = Model.Date.ToString("yyyy-MM-dd") })"
-                   class="ml-1 font-semibold text-[#a1843f] underline underline-offset-4">@SharedLocalizer["NavLogin"] →</a>
+                   class="ml-1 font-semibold text-[#a1843f] underline underline-offset-4">@SharedLocalizer["Entrar"] →</a>
             </div>
         }
 
         @if (!open)
         {
             <div class="mt-10 border-t border-black/10 py-14">
-                <p class="font-display text-2xl font-bold text-black/45">@SharedLocalizer["MiniSessionSoldOut"]</p>
-                <p class="mt-2 text-sm text-black/45">@SharedLocalizer["MiniSessionFull"]</p>
+                <p class="font-display text-2xl font-bold text-black/45">@SharedLocalizer["Esgotado"]</p>
+                <p class="mt-2 text-sm text-black/45">@SharedLocalizer["As mini sessões deste evento já estão esgotadas."]</p>
             </div>
         }
         else if (!Model.HasSchedule)
         {
             <div class="mt-10 border-t border-black/10 py-14">
-                <p class="font-display text-2xl font-bold text-black/45">@SharedLocalizer["MiniSessionNoSchedule"]</p>
-                <p class="mt-2 text-sm text-black/45">@SharedLocalizer["MiniSessionNoScheduleHint"]</p>
+                <p class="font-display text-2xl font-bold text-black/45">@SharedLocalizer["Os horários deste evento ainda não foram definidos."]</p>
+                <p class="mt-2 text-sm text-black/45">@SharedLocalizer["O fotógrafo vai publicar em breve os horários das mini sessões. Volta mais tarde para reservar."]</p>
             </div>
         }
         else
@@ -81,24 +81,24 @@
                 @Html.AntiForgeryToken()
                 <div asp-validation-summary="ModelOnly" class="mb-4 text-sm text-red-700"></div>
 
-                <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-black/45">@SharedLocalizer["ChooseTime"]</p>
-                <div id="mini-slots" data-hint="@SharedLocalizer["SlotBarHint"]"></div>
+                <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-black/45">@SharedLocalizer["Escolhe o horário"]</p>
+                <div id="mini-slots" data-hint="@SharedLocalizer["Escolhe um horário disponível"]"></div>
                 @if (!Model.SlotOptions.Any(o => !o.Taken))
                 {
-                    <p class="mt-3 text-sm text-black/45">@SharedLocalizer["NoSlots"]</p>
+                    <p class="mt-3 text-sm text-black/45">@SharedLocalizer["Sem horários disponíveis neste dia."]</p>
                 }
                 <input type="hidden" asp-for="TimeSlot" id="TimeSlot" />
                 <span asp-validation-for="TimeSlot" class="block mt-2 text-xs text-red-700"></span>
 
                 <div class="mt-8 border-t border-black/10 pt-5">
-                    <div class="flex justify-between text-sm"><span class="text-black/50">@SharedLocalizer["Price"]</span><span class="font-medium text-[#141414]">@Model.Price.ToString("N2", ptPT) €</span></div>
-                    <div class="mt-3 flex justify-between border-t border-black/10 pt-3 font-semibold"><span class="text-[#141414]">@SharedLocalizer["TotalPrice"]</span><span class="text-[#a1843f]">@Model.Price.ToString("N2", ptPT) €</span></div>
-                    <div class="mt-3 flex justify-between text-xs"><span class="text-black/50">@SharedLocalizer["Deposit"]</span><span class="text-black/60">@Model.DepositAmount.ToString("N2", ptPT) €</span></div>
-                    <div class="mt-2 flex justify-between text-xs"><span class="text-black/50">@SharedLocalizer["Balance"]</span><span class="text-black/60">@Model.BalanceAmount.ToString("N2", ptPT) €</span></div>
+                    <div class="flex justify-between text-sm"><span class="text-black/50">@SharedLocalizer["Preço"]</span><span class="font-medium text-[#141414]">@Model.Price.ToString("N2", ptPT) €</span></div>
+                    <div class="mt-3 flex justify-between border-t border-black/10 pt-3 font-semibold"><span class="text-[#141414]">@SharedLocalizer["Total"]</span><span class="text-[#a1843f]">@Model.Price.ToString("N2", ptPT) €</span></div>
+                    <div class="mt-3 flex justify-between text-xs"><span class="text-black/50">@SharedLocalizer["Depósito (50% ao marcar)"]</span><span class="text-black/60">@Model.DepositAmount.ToString("N2", ptPT) €</span></div>
+                    <div class="mt-2 flex justify-between text-xs"><span class="text-black/50">@SharedLocalizer["Saldo (50% na entrega)"]</span><span class="text-black/60">@Model.BalanceAmount.ToString("N2", ptPT) €</span></div>
                 </div>
 
                 <button type="submit" class="mt-8 inline-flex items-center justify-center gap-3 bg-[#a1843f] px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#faf9f7] transition hover:bg-[#8a7034]">
-                    @SharedLocalizer["MiniSessionBook"] <span class="opacity-60">·</span> @SharedLocalizer["Deposit"] <span id="submit-deposit">@Model.DepositAmount.ToString("N2", ptPT) €</span>
+                    @SharedLocalizer["Reservar mini sessão"] <span class="opacity-60">·</span> @SharedLocalizer["Depósito (50% ao marcar)"] <span id="submit-deposit">@Model.DepositAmount.ToString("N2", ptPT) €</span>
                 </button>
             </form>
         }

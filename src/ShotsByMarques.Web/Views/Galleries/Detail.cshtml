@@ -283,7 +283,7 @@
         <div class="rv flex flex-wrap items-center gap-x-4 gap-y-2">
             <a href="/portfolio" class="group inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.3em] text-black/45 transition hover:text-[#141414]">
                 <span class="inline-block transition-transform duration-300 group-hover:-translate-x-1">←</span>
-                @SharedLocalizer["Back"]
+                @SharedLocalizer["Voltar"]
             </a>
             <span class="h-px w-6 bg-black/15"></span>
             <span class="text-[11px] font-medium uppercase tracking-[0.3em] text-[#a1843f]">@(Model.Gallery.IsSession ? "Sessão" : "Evento")</span>
@@ -304,10 +304,10 @@
         }
 
         <div class="rv rv-d2 mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-            <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-black/45">@Model.Photos.Count @SharedLocalizer["PhotosCount"]</span>
+            <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-black/45">@Model.Photos.Count @SharedLocalizer["fotos"]</span>
             @if (isForSale)
             {
-                <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-black/30">@SharedLocalizer["WatermarkNote"]</span>
+                <span class="text-[10px] font-medium uppercase tracking-[0.28em] text-black/30">@SharedLocalizer["As prévias têm marca de água — as fotos compradas são descarregadas sem marca em alta resolução."]</span>
             }
             else if (isPrivateDelivery && Model.Photos.Count > 0)
             {
@@ -315,7 +315,7 @@
                    nos cartões das fotos (nem selo, nem texto). *@
                 <span class="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-[#a1843f]">
                     <span class="inline-block h-1 w-1 rotate-45 bg-[#a1843f]"></span>
-                    @SharedLocalizer["SessionPhotosIncluded"]
+                    @SharedLocalizer["As fotos desta galeria estão incluídas na sessão — sem custo adicional."]
                 </span>
             }
             @* Modo A (Portfolio): SEM nenhum selo — vitrine limpa. *@
@@ -328,7 +328,7 @@
                 {
                     <span class="inline-flex items-center gap-2.5 rounded-full border border-black/10 bg-white/70 px-4 py-2 text-[11px] font-medium tracking-wide text-black/60 backdrop-blur">
                         <span class="inline-block h-1 w-1 rotate-45 bg-[#a1843f]"></span>
-                        @pack.Name — −@pack.DiscountPercent.ToString("0.#")% (@SharedLocalizer["PackFrom"] @pack.MinPhotos+ @SharedLocalizer["PhotosCount"])
+                        @pack.Name — −@pack.DiscountPercent.ToString("0.#")% (@SharedLocalizer["a partir de"] @pack.MinPhotos+ @SharedLocalizer["fotos"])
                     </span>
                 }
             </div>
@@ -406,10 +406,10 @@
                                 <p class="gd-price mt-0.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75">@photoPrice</p>
                             </div>
                             <button type="button" data-toggle
-                                    data-add-text="+ @SharedLocalizer["AddToSelection"]"
-                                    data-remove-text="✓ @SharedLocalizer["RemoveFromSelection"]"
+                                    data-add-text="+ @SharedLocalizer["Selecionar"]"
+                                    data-remove-text="✓ @SharedLocalizer["Remover"]"
                                     class="gd-toggle shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">
-                                + @SharedLocalizer["AddToSelection"]
+                                + @SharedLocalizer["Selecionar"]
                             </button>
                         </div>
                     }
@@ -426,7 +426,7 @@
                             }
                             <form asp-controller="Downloads" asp-action="SessionPhoto" asp-route-photoId="@photo.Id" method="post" data-session-download>
                                 @Html.AntiForgeryToken()
-                                <button class="gd-toggle shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">↓ @SharedLocalizer["Download"]</button>
+                                <button class="gd-toggle shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold">↓ @SharedLocalizer["Descarregar"]</button>
                             </form>
                         </div>
                     }
@@ -458,14 +458,14 @@
                 <div class="min-w-0">
                     <p class="flex items-baseline gap-2 text-sm text-black/55">
                         <span data-cart-count class="font-display text-xl font-bold tabular-nums text-[#a1843f]">0</span>
-                        @SharedLocalizer["SelectedCount"]
+                        @SharedLocalizer["selecionadas"]
                     </p>
                     <div class="mt-1.5 flex items-center gap-4">
-                        <button data-select-all class="text-[11px] font-medium uppercase tracking-[0.16em] text-black/50 transition hover:text-[#a1843f]">☑ @SharedLocalizer["SelectAll"]</button>
-                        <button data-clear-cart class="text-[11px] font-medium uppercase tracking-[0.16em] text-black/40 transition hover:text-[#a1843f]">@SharedLocalizer["ClearSelection"]</button>
+                        <button data-select-all class="text-[11px] font-medium uppercase tracking-[0.16em] text-black/50 transition hover:text-[#a1843f]">☑ @SharedLocalizer["Selecionar todas"]</button>
+                        <button data-clear-cart class="text-[11px] font-medium uppercase tracking-[0.16em] text-black/40 transition hover:text-[#a1843f]">@SharedLocalizer["Limpar"]</button>
                     </div>
                 </div>
-                <button data-checkout-continue class="hidden shrink-0 rounded-full bg-[#141414] px-6 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-[#a1843f]">@SharedLocalizer["ContinueCheckout"] →</button>
+                <button data-checkout-continue class="hidden shrink-0 rounded-full bg-[#141414] px-6 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-[#a1843f]">@SharedLocalizer["Continuar para pagamento"] →</button>
             </div>
         </div>
     </div>
@@ -477,8 +477,8 @@
     <div class="bottom-bar">
         <div class="border-t border-black/10 bg-[#faf9f7]/90 px-5 py-4 shadow-[0_-14px_44px_-26px_rgba(20,20,20,0.4)] backdrop-blur-xl sm:px-8 lg:px-12">
             <div class="flex items-center justify-between gap-4">
-                <p class="min-w-0 text-sm text-black/55">@SharedLocalizer["SessionPhotosHint"]</p>
-                <button data-download-all data-done-text="@SharedLocalizer["DownloadAll"]" class="shrink-0 rounded-full bg-[#a1843f] px-6 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:brightness-110">↓ @SharedLocalizer["DownloadAll"]</button>
+                <p class="min-w-0 text-sm text-black/55">@SharedLocalizer["Fotos das tuas sessões — já incluídas no preço da sessão, sem custo adicional."]</p>
+                <button data-download-all data-done-text="@SharedLocalizer["Descarregar todas"]" class="shrink-0 rounded-full bg-[#a1843f] px-6 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:brightness-110">↓ @SharedLocalizer["Descarregar todas"]</button>
             </div>
         </div>
     </div>

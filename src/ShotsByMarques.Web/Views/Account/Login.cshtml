@@ -1,7 +1,7 @@
-﻿@model ShotsByMarques.Web.ViewModels.LoginViewModel
+@model ShotsByMarques.Web.ViewModels.LoginViewModel
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
 @{
-    ViewData["Title"] = SharedLocalizer["LoginTitle"];
+    ViewData["Title"] = SharedLocalizer["Iniciar sessão"];
 }
 
 <section class="relative flex min-h-screen flex-col justify-center overflow-hidden px-5 pb-24 pt-24 sm:px-8">
@@ -12,7 +12,7 @@
                     <span class="rule inline-block h-px w-10"></span>
                     Shots By Marques
                 </p>
-                <h1 class="mt-5 font-display text-4xl font-bold tracking-[-0.04em] text-[#141414]">@SharedLocalizer["LoginTitle"]</h1>
+                <h1 class="mt-5 font-display text-4xl font-bold tracking-[-0.04em] text-[#141414]">@SharedLocalizer["Iniciar sessão"]</h1>
             </div>
 
             <div class="rv rv-d1 card p-8">
@@ -33,7 +33,7 @@
                     </div>
 
                     <div class="mb-6">
-                        <label asp-for="Password" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-black/50">@SharedLocalizer["Password"]</label>
+                        <label asp-for="Password" class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-black/50">@SharedLocalizer["Palavra-passe"]</label>
                         <div class="relative">
                             <input asp-for="Password" class="w-full rounded-md border border-black/15 bg-white px-4 py-3 pr-12 text-sm text-[#141414] outline-none transition placeholder:text-black/25 focus:border-[#a1843f] focus:shadow-[0_0_0_3px_rgba(161,132,63,0.12)]" />
                             <button type="button" data-password-toggle aria-controls="Password" aria-pressed="false" aria-label="Mostrar palavra-passe"
@@ -54,7 +54,7 @@
                         <input asp-for="RememberMe" class="accent-[#a1843f]" /> Lembrar-me
                     </label>
 
-                    <button type="submit" class="btn-primary w-full text-center">@SharedLocalizer["NavLogin"]</button>
+                    <button type="submit" class="btn-primary w-full text-center">@SharedLocalizer["Entrar"]</button>
                 </form>
 
                 @if (ViewData["ShowResendConfirmation"] is true)
@@ -92,7 +92,7 @@
 
                 <p class="mt-7 text-center text-sm text-black/50">
                     Ainda não tens conta?
-                    <a asp-action="Register" class="font-medium text-[#a1843f] transition hover:text-[#8a7034] hover:underline">@SharedLocalizer["NavRegister"]</a>
+                    <a asp-action="Register" class="font-medium text-[#a1843f] transition hover:text-[#8a7034] hover:underline">@SharedLocalizer["Criar conta"]</a>
                 </p>
             </div>
         </div>

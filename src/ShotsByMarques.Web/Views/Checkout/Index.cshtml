@@ -1,6 +1,6 @@
 @model ShotsByMarques.Web.ViewModels.CheckoutIndexViewModel
 @{
-    ViewData["Title"] = SharedLocalizer["CheckoutTitle"];
+    ViewData["Title"] = SharedLocalizer["Finalizar compra"];
     var ptPT = new System.Globalization.CultureInfo("pt-PT");
     var ids = string.Join(",", Model.Items.Select(i => i.PhotoId));
 }
@@ -21,19 +21,19 @@
                     <span class="rule inline-block h-px w-10"></span>
                     Carrinho
                 </p>
-                <h1 class="mt-5 font-display text-4xl font-bold tracking-[-0.04em] text-[#141414]">@SharedLocalizer["CheckoutTitle"]</h1>
+                <h1 class="mt-5 font-display text-4xl font-bold tracking-[-0.04em] text-[#141414]">@SharedLocalizer["Finalizar compra"]</h1>
             </div>
 
             @if (!Model.StripeConfigured)
             {
                 <div class="border border-red-600/25 bg-red-600/[0.06] text-red-700 px-5 py-4 text-sm mb-8">
-                    ◉ @SharedLocalizer["StripeNotConfigured"]
+                    ◉ @SharedLocalizer["As chaves do Stripe ainda não estão configuradas. Adiciona-as em appsettings.json (modo de teste)."]
                 </div>
             }
 
             <div id="cart-empty" class="@(Model.Items.Count == 0 ? "" : "hidden")">
-                <p class="text-black/50">@SharedLocalizer["CheckoutEmpty"]</p>
-                <a href="/portfolio" class="btn-outline mt-6 inline-block">@SharedLocalizer["GoHome"]</a>
+                <p class="text-black/50">@SharedLocalizer["Não tens fotos selecionadas. Escolhe as tuas favoritas numa galeria."]</p>
+                <a href="/portfolio" class="btn-outline mt-6 inline-block">@SharedLocalizer["Voltar ao início"]</a>
             </div>
 
             <div id="cart-content" class="@(Model.Items.Count == 0 ? "hidden" : "")">
@@ -48,7 +48,7 @@
                             </div>
                             <span class="text-[#a1843f] font-semibold tabular-nums text-sm shrink-0">@item.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
                             <button type="button" class="remove-item-btn text-red-700 transition hover:text-red-900 text-sm shrink-0"
-                                    title="@SharedLocalizer["RemoveItem"]">✕</button>
+                                    title="@SharedLocalizer["Remover"]">✕</button>
                         </div>
                     }
                 </div>
@@ -64,14 +64,14 @@
                             <span>Pack · <span id="pack-name">@Model.PackName</span></span>
                             <span class="tabular-nums" id="pack-discount-value">−@Model.Discount.ToString("C", ptPT)</span>
                         </div>
-                        <p id="pack-hint" data-prefix="@SharedLocalizer["PackHint"]" data-suffix="@SharedLocalizer["PhotosCount"]"
+                        <p id="pack-hint" data-prefix="@SharedLocalizer["Compra"]" data-suffix="@SharedLocalizer["fotos"]"
                            class="text-black/40 text-xs @(Model.Discount > 0 ? "hidden" : "")">
-                            @SharedLocalizer["PackHint"] @Model.MinPackPhotos+ @SharedLocalizer["PhotosCount"]
+                            @SharedLocalizer["Compra"] @Model.MinPackPhotos+ @SharedLocalizer["fotos"]
                         </p>
 
                         <div id="promo-discount-row" class="hidden">
                             <div class="flex justify-between text-sm text-emerald-600">
-                                <span><span>@SharedLocalizer["Discount"]</span> · <span id="promo-code-label"></span></span>
+                                <span><span>@SharedLocalizer["Desconto"]</span> · <span id="promo-code-label"></span></span>
                                 <span class="tabular-nums" id="promo-discount-value"></span>
                             </div>
                         </div>
@@ -81,7 +81,7 @@
                             <span id="checkout-total" class="text-[#a1843f] font-display tabular-nums">@Model.Total.ToString("C", ptPT)</span>
                         </div>
                     </div>
-                    <p class="text-black/40 text-xs mt-2">@SharedLocalizer["HighRes"] · @SharedLocalizer["FreeDelivery"]</p>
+                    <p class="text-black/40 text-xs mt-2">@SharedLocalizer["Alta resolução"] · @SharedLocalizer["Entrega digital"]</p>
 
                     <form id="promo-form" asp-action="ValidateDiscount" method="post" class="mt-5 border-t border-black/10 pt-5"
                           data-base-price="@Model.Total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">
@@ -89,24 +89,24 @@
                         <input type="hidden" id="promo-base-price" name="BasePrice"
                                value="@Model.Total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
                         <label class="block text-xs font-semibold uppercase tracking-[0.16em] text-black/50"
-                               for="promo-code">@SharedLocalizer["PromoCode"]</label>
+                               for="promo-code">@SharedLocalizer["Código promocional"]</label>
                         <div class="mt-2 flex flex-col gap-2 sm:flex-row">
                             <input id="promo-code" name="Code" type="text" maxlength="50" autocomplete="off" required
-                                   placeholder="@SharedLocalizer["PromoCode"]"
+                                   placeholder="@SharedLocalizer["Código promocional"]"
                                    class="flex-1 rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm text-[#141414] transition focus:border-[#a1843f] focus:outline-none focus:ring-2 focus:ring-[#a1843f]/20" />
                             <button type="submit" id="apply-promo-btn"
                                     class="rounded-xl bg-black px-6 py-2.5 text-sm font-semibold text-white transition duration-300 hover:bg-[#a1843f]">
-                                @SharedLocalizer["Apply"]
+                                @SharedLocalizer["Aplicar"]
                             </button>
                         </div>
-                        <p class="mt-2 text-xs text-black/40">@SharedLocalizer["PromoCodeHint"]</p>
+                        <p class="mt-2 text-xs text-black/40">@SharedLocalizer["Experimenta o teu código promocional."]</p>
                         <p id="promo-feedback" class="hidden mt-2 text-sm" aria-live="polite"></p>
                     </form>
                 </div>
 
                 <div class="text-center mb-4">
                     <button type="button" id="empty-cart-btn" class="text-black/40 transition hover:text-red-700 text-sm underline underline-offset-4">
-                        @SharedLocalizer["EmptyCart"]
+                        @SharedLocalizer["Esvaziar carrinho"]
                     </button>
                 </div>
 
@@ -117,7 +117,7 @@
                        same discount as the summary shows (re-validated server-side). *@
                     <input type="hidden" name="promo" id="promo-payload" value="" />
                     <button type="submit" class="btn-primary w-full sm:w-auto sm:px-12" @(Model.StripeConfigured ? "" : "disabled style=opacity:.4;pointer-events:none")>
-                        @SharedLocalizer["PayNow"] — <span id="pay-cta-total">@Model.Total.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
+                        @SharedLocalizer["Pagar com cartão ou MB Way"] — <span id="pay-cta-total">@Model.Total.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</span>
                     </button>
                 </form>
             </div>
@@ -128,7 +128,7 @@
 @section Scripts {
     <script>
         (function () {
-            var confirmEmpty = "@SharedLocalizer["ConfirmEmptyCart"]";
+            var confirmEmpty = "@SharedLocalizer["Tens a certeza que queres esvaziar o carrinho?"]";
 
             // Shared refs (dynamic totals + promo engine both use these).
             var moneyFormatter = new Intl.NumberFormat("pt-PT", {

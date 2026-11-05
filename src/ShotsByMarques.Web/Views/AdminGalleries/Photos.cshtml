@@ -7,8 +7,8 @@
 }
 
 <section class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-    <a href="/AdminGalleries" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Back"]</a>
-    <h1 class="font-display text-4xl mt-3 mb-8 fade-up">@Model.Title — @SharedLocalizer["Photos"]</h1>
+    <a href="/AdminGalleries" class="text-white/50 hover:text-accent text-sm transition">← @SharedLocalizer["Voltar"]</a>
+    <h1 class="font-display text-4xl mt-3 mb-8 fade-up">@Model.Title — @SharedLocalizer["Fotos"]</h1>
 
     @if (Model.IsPrivate && Model.Booking?.ClientUser != null)
     {
@@ -35,7 +35,7 @@
 
     @* ----- Gallery settings (type, title, description, cover) — merged into this page *@
     <div class="card p-6 mb-10 fade-up">
-        <h2 class="font-semibold mb-4">@SharedLocalizer["GalleryType"]</h2>
+        <h2 class="font-semibold mb-4">@SharedLocalizer["Tipo de galeria"]</h2>
         <form asp-action="Edit" method="post" enctype="multipart/form-data" class="space-y-5">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
@@ -45,13 +45,13 @@
             <div class="grid grid-cols-2 gap-3">
                 <label class="card p-4 cursor-pointer transition hover:border-accent has-[:checked]:ring-2 has-[:checked]:ring-[color:var(--accent)]">
                     <input type="radio" name="IsSession" value="false" @(!Model.IsSession ? "checked" : "") class="sr-only" />
-                    <p class="font-semibold">📷 @SharedLocalizer["GalleryTypeEvent"]</p>
-                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["GalleryTypeEventHint"]</p>
+                    <p class="font-semibold">📷 @SharedLocalizer["Evento"]</p>
+                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["Fotos vendidas individualmente ou em packs"]</p>
                 </label>
                 <label class="card p-4 cursor-pointer transition hover:border-accent has-[:checked]:ring-2 has-[:checked]:ring-[color:var(--accent)]">
                     <input type="radio" name="IsSession" value="true" @(Model.IsSession ? "checked" : "") class="sr-only" />
-                    <p class="font-semibold">🚗 @SharedLocalizer["GalleryTypeSession"]</p>
-                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["GalleryTypeSessionHint"]</p>
+                    <p class="font-semibold">🚗 @SharedLocalizer["Sessão"]</p>
+                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["Fotos incluídas no preço da sessão"]</p>
                 </label>
             </div>
 
@@ -85,7 +85,7 @@
                 <div class="pt-6">
                     <label class="flex items-center gap-3 text-sm cursor-pointer">
                         <input asp-for="IsPublished" class="accent-[color:var(--accent)]" />
-                        <span>@SharedLocalizer["Publish"]</span>
+                        <span>@SharedLocalizer["Publicar"]</span>
                     </label>
                 </div>
             </div>
@@ -107,13 +107,13 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-primary">@SharedLocalizer["Save"]</button>
+            <button type="submit" class="btn-primary">@SharedLocalizer["Guardar"]</button>
         </form>
     </div>
 
     @* ----- Upload + price ----- *@
     <div class="card p-6 mb-10 fade-up">
-        <h2 class="font-semibold mb-4">@SharedLocalizer["UploadPhotos"]</h2>
+        <h2 class="font-semibold mb-4">@SharedLocalizer["Carregar fotos"]</h2>
         <form asp-action="UploadPhotos" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@Model.Id" />
@@ -135,7 +135,7 @@
                 @if (isEvent)
                 {
                     <div data-price-section>
-                        <label class="block text-sm font-medium mb-2">@SharedLocalizer["Price"] (€)</label>
+                        <label class="block text-sm font-medium mb-2">@SharedLocalizer["Preço"] (€)</label>
                         <input type="number" name="price" step="0.01" min="0" value="3"
                                class="w-28 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg)] px-4 py-2.5 focus:outline-none focus:border-accent transition" />
                     </div>
@@ -159,7 +159,7 @@
                         Galeria de sessão — as fotos ficam <b>incluídas no preço da sessão</b> (sem custo para o cliente).
                     </p>
                 }
-                <button class="btn-primary">@SharedLocalizer["UploadPhotos"]</button>
+                <button class="btn-primary">@SharedLocalizer["Carregar fotos"]</button>
             </div>
         </form>
         <p class="text-white/40 text-xs mt-3">✅ Cada upload gera automaticamente a prévia com marca de água (© Shots By Marques) — o cliente só recebe o ficheiro original depois de pagar.</p>
@@ -200,13 +200,13 @@
     @if (Model.Photos.Count > 0)
     {
         <div class="flex flex-wrap items-center justify-between gap-4 mb-6 fade-up">
-            <h2 class="font-display text-2xl">@SharedLocalizer["Photos"] (@Model.Photos.Count)</h2>
+            <h2 class="font-display text-2xl">@SharedLocalizer["Fotos"] (@Model.Photos.Count)</h2>
         </div>
 
         <div id="photo-bulk-bar" class="hidden card p-4 mb-6 flex flex-wrap items-center gap-4 text-sm fade-up">
             <label class="flex items-center gap-2 text-white/70 cursor-pointer">
                 <input type="checkbox" id="photo-select-all" class="accent-[color:var(--accent)] w-4 h-4" />
-                <span id="photo-select-all-label">@SharedLocalizer["SelectAll"]</span>
+                <span id="photo-select-all-label">@SharedLocalizer["Selecionar todas"]</span>
             </label>
             <span class="text-white/40" id="photo-selected-count">0</span>
             <div class="flex-1"></div>
@@ -229,7 +229,7 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="ids" id="photo-bulk-delete-ids" value="" />
                 <button type="submit" id="photo-bulk-delete" class="btn !px-4 !py-2 !bg-red-500/15 !border-red-400/40 !text-red-300" disabled>
-                    🗑️ @SharedLocalizer["DeleteSelected"]
+                    🗑️ @SharedLocalizer["Eliminar selecionadas"]
                 </button>
             </form>
         </div>
@@ -255,17 +255,17 @@
                                 @if (photo.IsForSale)
                                 {
                                     <p class="text-accent text-sm font-semibold mt-1">@photo.Price.ToString("C", new System.Globalization.CultureInfo("pt-PT"))</p>
-                                    <span class="inline-block mt-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/15 rounded-full px-2 py-0.5">@SharedLocalizer["ForSale"]</span>
+                                    <span class="inline-block mt-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/15 rounded-full px-2 py-0.5">@SharedLocalizer["À venda"]</span>
                                 }
                                 else
                                 {
-                                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["IncludedInSession"]</p>
+                                    <p class="text-white/50 text-xs mt-1">@SharedLocalizer["Incluída na sessão"]</p>
                                 }
                             </div>
                         }
                         else
                         {
-                            <p class="text-white/50 text-xs mt-1">@SharedLocalizer["IncludedInSession"]</p>
+                            <p class="text-white/50 text-xs mt-1">@SharedLocalizer["Incluída na sessão"]</p>
                         }
                         <div class="flex items-center gap-3 mt-3">
                             @if (isEvent)
@@ -284,10 +284,10 @@
                                     @(Model.CoverPath == photo.PreviewPath ? "★ É a capa" : "★ Definir capa")
                                 </button>
                             </form>
-                            <form asp-action="DeletePhoto" method="post" onsubmit="return confirm('@SharedLocalizer["ConfirmDelete"]')">
+                            <form asp-action="DeletePhoto" method="post" onsubmit="return confirm('@SharedLocalizer["Tens a certeza que queres eliminar?"]')">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@photo.Id" />
-                                <button class="text-xs text-red-400 hover:text-red-300 transition">@SharedLocalizer["Delete"]</button>
+                                <button class="text-xs text-red-400 hover:text-red-300 transition">@SharedLocalizer["Eliminar"]</button>
                             </form>
                         </div>
                     </div>
@@ -455,8 +455,8 @@
                     selectAll.checked = checks.length > 0 && checks.every(function (c) { return c.checked; });
                     if (selectAllLabel) {
                         selectAllLabel.textContent = selectAll.checked
-                            ? "@SharedLocalizer["DeselectAll"]"
-                            : "@SharedLocalizer["SelectAll"]";
+                            ? "@SharedLocalizer["Desmarcar todas"]"
+                            : "@SharedLocalizer["Selecionar todas"]";
                     }
                 }
             }
@@ -480,7 +480,7 @@
             window.photoBulkDeleteConfirm = function () {
                 var selected = checks.filter(function (c) { return c.checked; }).length;
                 if (selected === 0) return false;
-                return confirm("@SharedLocalizer["ConfirmDelete"]");
+                return confirm("@SharedLocalizer["Tens a certeza que queres eliminar?"]");
             };
 
             refresh();

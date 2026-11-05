@@ -1,6 +1,6 @@
 @model ShotsByMarques.Web.ViewModels.BookingsIndexViewModel
 @{
-    ViewData["Title"] = SharedLocalizer["NavSessions"];
+    ViewData["Title"] = SharedLocalizer["Sessões"];
     var pageCover = "/sample-photos/cars-cover.svg";
     var pt = System.Globalization.CultureInfo.CurrentCulture;
     var money = System.Globalization.CultureInfo.GetCultureInfo("pt-PT");
@@ -48,9 +48,9 @@
                 Shots By Marques · Sessões
             </p>
             <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.8rem,7vw,6rem)] font-bold leading-[0.95] tracking-[-0.04em] text-[#141414]">
-                @SharedLocalizer["NavSessions"]
+                @SharedLocalizer["Sessões"]
             </h1>
-            <p class="rv rv-d2 mt-5 max-w-xl text-lg leading-relaxed text-black/55">@SharedLocalizer["ServicesSubtitle"]</p>
+            <p class="rv rv-d2 mt-5 max-w-xl text-lg leading-relaxed text-black/55">@SharedLocalizer["Conhece os meus serviços"]</p>
         </div>
 
         <div class="rv rv-d2 flex gap-10 sm:gap-14">
@@ -127,7 +127,7 @@
                             else
                             {
                                 <span class="inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition group-hover:text-[#a1843f]">
-                                    @SharedLocalizer["BookNow"] <span aria-hidden="true">→</span>
+                                    @SharedLocalizer["Marcar"] <span aria-hidden="true">→</span>
                                 </span>
                             }
                         </div>
@@ -149,9 +149,9 @@
                     02
                 </p>
                 <h2 class="mt-3 font-display text-[clamp(1.9rem,4vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
-                    @SharedLocalizer["MiniSessionsTitle"]
+                    @SharedLocalizer["Mini sessões em eventos"]
                 </h2>
-                <p class="mt-3 max-w-xl text-sm leading-relaxed text-black/50">@SharedLocalizer["MiniSessionsSubtitle"]</p>
+                <p class="mt-3 max-w-xl text-sm leading-relaxed text-black/50">@SharedLocalizer["Nos dias de evento faço mini sessões para o teu carro — as fotos ficam incluídas no preço. Reserva já o teu lugar (limitado)."]</p>
             </div>
             <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-black/40 tabular-nums">@miniDays.Count @(miniDays.Count == 1 ? "evento" : "eventos")</span>
         </div>
@@ -195,13 +195,13 @@
                         @if (open)
                         {
                             <span class="inline-flex items-center gap-2 border border-[#a1843f]/35 bg-[#a1843f]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6d5420]">
-                                @String.Format(pt, SharedLocalizer["MiniSessionSlotsLeft"].ToString()!, m.Remaining, m.MaxMiniSessions)
+                                @String.Format(pt, SharedLocalizer["{0} de {1} vagas livres"].ToString()!, m.Remaining, m.MaxMiniSessions)
                             </span>
                         }
                         else
                         {
                             <span class="inline-flex items-center border border-black/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-black/35">
-                                @SharedLocalizer["MiniSessionSoldOut"]
+                                @SharedLocalizer["Esgotado"]
                             </span>
                         }
                     </div>

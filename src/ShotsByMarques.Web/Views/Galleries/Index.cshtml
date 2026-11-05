@@ -1,6 +1,6 @@
 @model ShotsByMarques.Web.ViewModels.PortfolioViewModel
 @{
-    ViewData["Title"] = SharedLocalizer["NavPortfolio"];
+    ViewData["Title"] = SharedLocalizer["Portefólio"];
 
     var sessions = Model.Sessions.ToList();
     var events = Model.Events.ToList();
@@ -49,9 +49,9 @@
                 Shots By Marques · Portefólio
             </p>
             <h1 class="rv rv-d1 mt-5 font-display text-[clamp(2.8rem,7vw,6rem)] font-bold leading-[0.95] tracking-[-0.04em] text-[#141414]">
-                @SharedLocalizer["NavPortfolio"]
+                @SharedLocalizer["Portefólio"]
             </h1>
-            <p class="rv rv-d2 mt-5 max-w-xl text-lg leading-relaxed text-black/55">@SharedLocalizer["PortfolioSubtitle"]</p>
+            <p class="rv rv-d2 mt-5 max-w-xl text-lg leading-relaxed text-black/55">@SharedLocalizer["Conhece os meus trabalhos mais recentes"]</p>
         </div>
 
         <div class="rv rv-d2 flex gap-10 sm:gap-14">
@@ -65,7 +65,7 @@
             </div>
             <div>
                 <span class="block font-display text-3xl font-bold tabular-nums text-[#141414] sm:text-4xl">@totalPhotos</span>
-                <span class="mt-1 block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["PhotosCount"]</span>
+                <span class="mt-1 block text-[10px] font-medium uppercase tracking-[0.3em] text-black/40">@SharedLocalizer["fotos"]</span>
             </div>
         </div>
     </div>
@@ -82,7 +82,7 @@
                     01
                 </p>
                 <h2 class="mt-3 font-display text-[clamp(1.9rem,4vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
-                    @SharedLocalizer["SessionsTitle"]
+                    @SharedLocalizer["Sessões"]
                 </h2>
             </div>
             <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-black/40 tabular-nums">@sessions.Count galerias</span>
@@ -100,7 +100,7 @@
                     <span class="absolute left-4 top-4 font-display text-xs tabular-nums text-white/70">@(gi.ToString("00"))</span>
                     <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 sm:p-7">
                         <div class="min-w-0">
-                            <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@gallery.Photos.Count @SharedLocalizer["PhotosCount"]</p>
+                            <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@gallery.Photos.Count @SharedLocalizer["fotos"]</p>
                             <h3 class="mt-2 truncate font-display font-bold tracking-[-0.02em] text-white @(big ? "text-2xl sm:text-4xl" : "text-lg sm:text-2xl")">@gallery.Title</h3>
                             @if (!string.IsNullOrEmpty(gallery.Subtitle))
                             {
@@ -129,7 +129,7 @@
                     02
                 </p>
                 <h2 class="mt-3 font-display text-[clamp(1.9rem,4vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.03em] text-[#141414]">
-                    @SharedLocalizer["EventsTitle"]
+                    @SharedLocalizer["Eventos"]
                 </h2>
             </div>
             <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-black/40 tabular-nums">@events.Count galerias</span>
@@ -147,7 +147,7 @@
                     <span class="absolute left-4 top-4 font-display text-xs tabular-nums text-white/70">@(gi.ToString("00"))</span>
                     <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 sm:p-7">
                         <div class="min-w-0">
-                            <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@gallery.Photos.Count @SharedLocalizer["PhotosCount"]</p>
+                            <p class="text-[10px] uppercase tracking-[0.3em] text-white/60">@gallery.Photos.Count @SharedLocalizer["fotos"]</p>
                             <h3 class="mt-2 truncate font-display font-bold tracking-[-0.02em] text-white @(big ? "text-2xl sm:text-4xl" : "text-lg sm:text-2xl")">@gallery.Title</h3>
                             @if (!string.IsNullOrEmpty(gallery.Subtitle))
                             {
