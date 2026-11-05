@@ -17,8 +17,8 @@ public class BookingCreateViewModel
     [Display(Name = "Horário")]
     public string TimeSlot { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Escreve a zona ou localidade onde queres a sessão.")]
-    [Display(Name = "Zona / localidade")]
+    [Required(ErrorMessage = "Indica onde queres fazer a sessão (ex.: Parque da Cidade, Senhora da Graça).")]
+    [Display(Name = "Local pretendido")]
     [StringLength(200)]
     public string Location { get; set; } = string.Empty;
 

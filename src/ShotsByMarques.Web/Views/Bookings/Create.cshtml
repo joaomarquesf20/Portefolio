@@ -123,26 +123,43 @@
             <section id="location-section" class="booking-step hidden" data-step="3">
                 <div class="booking-step-heading">
                     <span class="booking-step-number">03</span>
-                    <div><h2>Onde será a sessão?</h2><p>Escolhe a zona e depois a localidade. A base é em Ancede.</p></div>
+                    <div><h2>Onde será a sessão?</h2><p>Indica o local onde queres a sessão. A base é em Ancede.</p></div>
                 </div>
+
+                <!-- Cobertura padrão: deslocação incluída na região base -->
+                <div class="booking-coverage-note">
+                    <span class="booking-coverage-icon">📍</span>
+                    <div>
+                        <strong>Deslocação incluída na região de Baião / Vila Real (raio padrão)</strong>
+                        <small>Sessões até @Model.Travel.FreeKm km desde Ancede já contam no preço da sessão.</small>
+                    </div>
+                </div>
+
+                <!-- Zona fixa do dia (definida pelo fotógrafo no calendário) — apenas informativa -->
                 <div id="zone-fixed" class="booking-fixed-place hidden"><span>📍</span><div><small>Zona definida para este dia</small><strong id="zone-fixed-name"></strong></div></div>
-                <div id="zone-picker" class="booking-location-grid">
-                    <label id="zone-choice">Zona
-                        <select asp-for="SelectedRegion" id="LocationRegion">
-                            <option value="">Escolher zona</option>
-                            @foreach (var region in Model.Regions)
-                            {
-                                <option value="@region">@region</option>
-                            }
-                        </select>
+
+                <div class="booking-location-grid">
+                    <label>Local pretendido
+                        <input asp-for="Location" id="Location" type="text" list="local-cities" autocomplete="off"
+                               placeholder="Local pretendido (Ex: Parque da Cidade, Senhora da Graça, etc.)" />
                     </label>
-                    <label>Localidade
-                        <select asp-for="Location" id="Location" data-choose="Escolher localidade" data-first="Escolhe primeiro a zona" data-posted="@Model.Location" disabled>
-                            <option value="">Escolhe primeiro a zona</option>
-                        </select>
-                    </label>
+                    <datalist id="local-cities">
+                        @foreach (var city in Model.Cities)
+                        {
+                            <option value="@city.Name"></option>
+                        }
+                    </datalist>
                 </div>
-                <p class="booking-travel-note">Até @Model.Travel.FreeKm km desde @Model.Travel.BaseCity incluídos. Depois: @Model.Travel.PricePerKm.ToString("C", fmt)/km.</p>
+
+                <!-- Fora da área padrão: pedir orçamento dedicado -->
+                <div class="booking-out-of-area">
+                    <div>
+                        <strong>A tua localização fica fora da área de cobertura padrão?</strong>
+                        <small>Sessões mais distantes da base pedem uma avaliação dedicada de deslocação.</small>
+                    </div>
+                    <a href="/#contact" class="booking-out-of-area-link">Pedir Orçamento Personalizado</a>
+                </div>
+
                 <span asp-validation-for="Location" class="booking-field-error"></span>
             </section>
 
@@ -223,7 +240,54 @@
     .booking-fixed-place { border-color: rgba(20,20,20,.12); background: rgba(20,20,20,.02); }
     .booking-page .booking-fixed-place small { color: rgba(20,20,20,.45); }
     .booking-page .booking-fixed-place strong { color: #141414; }
-    .booking-travel-note { color: rgba(20,20,20,.4); }
+    /* ==== Cobertura padrão + chamada para orçamento personalizado (passo 03) ==== */
+    .booking-coverage-note {
+        display: flex;
+        gap: .8rem;
+        align-items: flex-start;
+        border: 1px solid rgba(161,132,63,.45);
+        background: rgba(161,132,63,.08);
+        border-radius: .75rem;
+        padding: .9rem 1rem;
+    }
+    .booking-page .booking-coverage-note strong { color: #6d5420; }
+    .booking-page .booking-coverage-note small { color: rgba(20,20,20,.55); }
+    .booking-coverage-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 2.1rem;
+        height: 2.1rem;
+        border-radius: 9999px;
+        background: rgba(161,132,63,.16);
+        font-size: .95rem;
+    }
+    .booking-out-of-area {
+        display: flex;
+        gap: .8rem;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        border: 1px dashed rgba(20,20,20,.25);
+        border-radius: .75rem;
+        padding: .9rem 1rem;
+    }
+    .booking-page .booking-out-of-area strong { color: #141414; }
+    .booking-page .booking-out-of-area small { color: rgba(20,20,20,.5); }
+    .booking-out-of-area-link {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        flex: 0 0 auto;
+        border: 1px solid #a1843f;
+        border-radius: 9999px;
+        padding: .5rem .95rem;
+        font-size: .813rem;
+        font-weight: 600;
+        color: #a1843f;
+    }
+    .booking-out-of-area-link:hover { background: rgba(161,132,63,.12); }
     .booking-how-it-works span { color: rgba(20,20,20,.35); }
     .booking-how-it-works b { color: rgba(20,20,20,.75); }
     .booking-how-it-works small { color: rgba(20,20,20,.4); }
@@ -294,8 +358,7 @@
     const slots = document.getElementById('slots');
     const timeSection = document.getElementById('time-section');
     const locationSection = document.getElementById('location-section');
-    const regionSelect = document.getElementById('LocationRegion');
-    const locationSelect = document.getElementById('Location');
+    const locationInput = document.getElementById('Location');
     const summaryDate = document.getElementById('summary-date');
     const summaryTime = document.getElementById('summary-time');
     const summaryLocation = document.getElementById('summary-location');
@@ -315,14 +378,14 @@
         return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(q)));
     }
     function updateTotals() {
-        const city = cities.find(item => norm(item.Name) === norm(locationSelect.value));
+        const city = cities.find(item => norm(item.Name) === norm(locationInput.value));
         let fee = 0;
         if (city) {
             const km = Math.round(distanceKm(baseLat, baseLon, city.Lat, city.Lon));
             fee = km > freeKm ? Math.round((km - freeKm) * pricePerKm * 100) / 100 : 0;
             document.getElementById('travel-note').classList.add('hidden');
         } else {
-            document.getElementById('travel-note').classList.toggle('hidden', !locationSelect.value);
+            document.getElementById('travel-note').classList.toggle('hidden', !locationInput.value);
         }
         const total = sessionPrice + fee;
         const deposit = Math.round(total * 50) / 100;
@@ -332,35 +395,18 @@
         document.getElementById('sum-balance').textContent = money(total - deposit);
         document.getElementById('submit-deposit').textContent = money(deposit);
     }
-    function fillLocations(keep) {
-        const region = regionSelect.value;
-        locationSelect.innerHTML = '<option value="">' + (region ? 'Escolher localidade' : 'Escolhe primeiro a zona') + '</option>';
-        cities.filter(city => city.Region === region).forEach(city => {
-            const option = document.createElement('option'); option.value = city.Name; option.textContent = city.Name; locationSelect.appendChild(option);
-        });
-        locationSelect.disabled = !region;
-        if (keep && Array.from(locationSelect.options).some(option => option.value === keep)) locationSelect.value = keep;
-        updateTotals();
-    }
-    function applyZone(button) {
+    // Zona fixa definida pelo fotógrafo no calendário — apenas informativa;
+    // o cliente escreve livremente o local da sessão.
+    function showZoneInfo(button) {
         const zone = button.dataset.zone || '';
         document.getElementById('zone-fixed').classList.toggle('hidden', !zone);
-        document.getElementById('zone-choice').classList.toggle('hidden', !!zone);
-        if (zone) {
-            document.getElementById('zone-fixed-name').textContent = zone;
-            regionSelect.value = zone;
-            regionSelect.disabled = true;
-            fillLocations('');
-        } else {
-            regionSelect.disabled = false;
-            fillLocations(locationSelect.dataset.posted || '');
-        }
+        if (zone) document.getElementById('zone-fixed-name').textContent = zone;
     }
     function markStep(step) {
         document.querySelectorAll('.booking-step').forEach(section => section.classList.toggle('complete', Number(section.dataset.step) < step));
     }
     function refreshSubmit() {
-        const ready = !!dateInput.value && !!timeInput.value && !!locationSelect.value;
+        const ready = !!dateInput.value && !!timeInput.value && !!locationInput.value.trim();
         document.getElementById('submit-btn').disabled = !ready;
     }
     // Grelha de pills de horário (página de marcação do cliente). LOCAL a esta
@@ -429,16 +475,14 @@
                 timeInput.value = time;
                 summaryTime.textContent = time;
                 locationSection.classList.remove('hidden');
-                applyZone(button);
+                showZoneInfo(button);
                 markStep(3);
                 refreshSubmit();
             }
         });
     }
     document.querySelectorAll('[data-cal-day][data-available="true"]').forEach(button => button.addEventListener('click', () => loadSlots(button)));
-    regionSelect.addEventListener('change', () => fillLocations(''));
-    locationSelect.addEventListener('change', () => { summaryLocation.textContent = locationSelect.value || 'Por escolher'; updateTotals(); refreshSubmit(); });
-    fillLocations(locationSelect.dataset.posted || '');
+    locationInput.addEventListener('input', () => { summaryLocation.textContent = locationInput.value.trim() || 'Por escolher'; updateTotals(); refreshSubmit(); });
     updateTotals();
     refreshSubmit();
 })();

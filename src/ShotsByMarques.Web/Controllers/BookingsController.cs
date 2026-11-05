@@ -179,10 +179,17 @@ public class BookingsController : Controller
         if (ModelState.IsValid && !await _bookingService.IsSlotAvailableAsync(id, startLocal))
             ModelState.AddModelError(nameof(model.TimeSlot), "Esse horário já não está disponível. Escolhe outro.");
 
-        // Travel: estimate the distance from the base and the surcharge beyond the free radius.
+        // The location is now free descriptive text — but it must not be blank.
+        if (string.IsNullOrWhiteSpace(model.Location))
+            ModelState.AddModelError(nameof(model.Location),
+                "Indica onde queres fazer a sessão (ex.: Parque da Cidade, Senhora da Graça).");
+
+        // Travel: estimate the distance from the base and the surcharge beyond the free radius,
+        // whenever the written place matches a known city.
         var match = PortugalCities.TryFind(model.Location);
         model.LocationRecognized = match is not null;
-        // Keep the zone the client picked even if the locality is unrecognized/empty.
+        // SelectedRegion is no longer collected in the UI (free-text location now),
+        // but it is still derived from the recognized city for model compatibility.
         model.SelectedRegion = match?.Region ?? model.SelectedRegion;
         if (match is not null)
         {
@@ -193,11 +200,13 @@ public class BookingsController : Controller
                 : 0m;
         }
 
-        // The day's fixed zone wins: if the photographer said they'll be in zone X
-        // that day, the client cannot book a locality outside it (server-enforced).
-        var dayZone = (await _db.DayAvailability.FirstOrDefaultAsync(d => d.Date == model.Date.Date))?.Zone;
-        if (!string.IsNullOrWhiteSpace(dayZone)
-            && (match is null || !string.Equals(match.Region, dayZone, StringComparison.OrdinalIgnoreCase)))
+        // The day's fixed zone (set by the photographer on the calendar) is enforced
+        // softly: only a RECOGNIZED locality outside that zone is rejected. Free-text
+        // places we don't know can't be classified geographically, so they pass into
+        // the normal travel estimation (fee confirmed later if needed).
+        var dayZone = dayOverride?.Zone;
+        if (!string.IsNullOrWhiteSpace(dayZone) && match is not null
+            && !string.Equals(match.Region, dayZone, StringComparison.OrdinalIgnoreCase))
         {
             ModelState.AddModelError(nameof(model.Location),
                 $"Esse dia é na zona {dayZone} — a localidade tem de ser nessa zona.");
