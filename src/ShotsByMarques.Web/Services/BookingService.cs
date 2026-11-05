@@ -23,6 +23,13 @@ public class BookingService
     internal static TimeSpan NormalizeWindowEnd(TimeSpan end) =>
         end == TimeSpan.Zero ? new TimeSpan(24, 0, 0) : end;
 
+    /// <summary>
+    /// Start-time granularity of the client time picker: the iOS-style wheel
+    /// offers quarter-hour starts, so both the offered grid and the POST
+    /// validation stick to 15-minute boundaries.
+    /// </summary>
+    internal static readonly TimeSpan SlotStep = TimeSpan.FromMinutes(15);
+
     public async Task<List<string>> GetAvailableSlotsAsync(int sessionTypeId, DateTime date)
     {
         return (await GetSlotOptionsAsync(sessionTypeId, date))
@@ -54,11 +61,14 @@ public class BookingService
         var bookings = await ActiveBookingsNearAsync(startUtc, endUtc);
         var slots = new List<SlotOption>();
 
-        // Hourly steps through the day; from 20:00 onwards the cadence drops to
-        // 30 minutes so the night tail reaches 23:30 (night rolls, city lights).
-        for (var current = startLocal;
+        // Quarter-hour starts across the exact window — the client wheel offers
+        // every 15-minute start and overlap with existing bookings marks them
+        // busy (the first candidate is aligned up to the next quarter hour).
+        var misaligned = startLocal.TimeOfDay.Ticks % SlotStep.Ticks;
+        var first = misaligned == 0 ? startLocal : startLocal.AddTicks(SlotStep.Ticks - misaligned);
+        for (var current = first;
              current < endLocal;
-             current = current.AddMinutes(current.TimeOfDay >= new TimeSpan(20, 0, 0) ? 30 : 60))
+             current = current.AddMinutes(SlotStep.TotalMinutes))
         {
             var slotStartUtc = ToUtc(current);
             var slotEndUtc = ToUtc(current.AddMinutes(type.DurationMinutes));
@@ -75,10 +85,20 @@ public class BookingService
         return slots;
     }
 
+    /// <summary>
+    /// Validates a client-picked start: anywhere inside the day's availability
+    /// window (start-in-window semantics; a night session may finish past the
+    /// window end), on 15-minute boundaries, in the future, and not colliding
+    /// with any active booking on that date.
+    /// </summary>
     public async Task<bool> IsSlotAvailableAsync(int sessionTypeId, DateTime startLocal)
     {
         var type = await _db.SessionTypes.FindAsync(sessionTypeId);
         if (type is null || type.IsMiniSessionType)
+            return false;
+
+        // The wheel only submits quarter-hour starts — reject anything finer.
+        if (startLocal.TimeOfDay.Ticks % SlotStep.Ticks != 0)
             return false;
 
         var day = await _db.DayAvailability.FirstOrDefaultAsync(d => d.Date == startLocal.Date);
@@ -87,8 +107,9 @@ public class BookingService
 
         var windowStart = day.WindowStart ?? new TimeSpan(9, 0, 0);
         var windowEnd = NormalizeWindowEnd(day.WindowEnd ?? new TimeSpan(24, 0, 0));
-        // Night slots may start up to (and including) 23:30 and finish past the
-        // window end — the overlap checks below use the real UTC session spans.
+        // Any quarter-hour within [windowStart, windowEnd) is a valid start —
+        // the session may finish past the window end; the overlap checks below
+        // use the real UTC session spans.
         if (startLocal.TimeOfDay < windowStart || startLocal.TimeOfDay >= windowEnd)
             return false;
 

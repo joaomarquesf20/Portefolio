@@ -171,6 +171,10 @@ public class BookingsController : Controller
 
         if (!TimeSpan.TryParse(model.TimeSlot, out var time))
             ModelState.AddModelError(nameof(model.TimeSlot), "Escolhe um horário válido.");
+        // The wheel submits quarter-hour starts (00/15/30/45) — a crafted POST
+        // must obey the same granularity before the deeper service checks run.
+        else if (time.Seconds != 0 || time.Minutes % 15 != 0)
+            ModelState.AddModelError(nameof(model.TimeSlot), "Escolhe um início aos 00, 15, 30 ou 45 minutos.");
 
         // Store the booking in UTC (slot chosen in local wall-clock time)
         var startLocal = model.Date.Date.Add(time);
@@ -274,8 +278,8 @@ public class BookingsController : Controller
         if (day?.Status == DayStatus.Event)
             return Json(Array.Empty<SlotOption>());
 
-        // Full grid with taken flags so the client can render unavailable hours
-        // as disabled instead of hiding them.
+        // Quarter-hour starts with taken flags so the client wheel can render
+        // unavailable times as struck-out instead of hiding them.
         var slots = await _bookingService.GetSlotOptionsAsync(sessionTypeId, date);
         return Json(slots);
     }

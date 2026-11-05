@@ -723,3 +723,196 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Escape") setMenu(false);
   });
 });
+
+// ============================================================================
+// iOS/watchOS-style wheel time picker (client booking flow)
+// ============================================================================
+// Two snap-scrolling columns (hours + quarter-hour minutes) that behave like
+// the system time picker: rows spin past a fixed center selection band, the
+// centered row enlarges, and occupied/out-of-window rows keep their place but
+// read as struck-out/dimmed (iOS never hides rows).
+//
+// SBM.buildTimeWheel(root, opts):
+//   root                — container that receives the two columns
+//   opts.hours          — array of 24h hours, e.g. [7, 8, ..., 23]
+//   opts.minutes        — array of minutes, e.g. [0, 15, 30, 45]
+//   opts.preferred      — "HH:mm" tried first when restoring a posted value
+//   opts.state(h, m)    — "free" | "taken" | "off" for a candidate start
+//   opts.onChange(state)— { value, h, m, kind } on every centered-combo change
+//                         (value is the free "HH:mm", or null when taken/off)
+// Returns { apply, setEnabled }.
+window.SBM.buildTimeWheel = function (root, opts) {
+  const pad2 = value => String(value).padStart(2, "0");
+  const fmt = (h, m) => pad2(h) + ":" + pad2(m);
+
+  const cols = [];
+  let raf = 0;
+  let lastValue = null;
+  let lastKind = null;
+
+  function spacer() {
+    const el = document.createElement("div");
+    el.className = "time-wheel-spacer";
+    el.setAttribute("aria-hidden", "true");
+    return el;
+  }
+
+  function buildCol(part, values) {
+    const col = document.createElement("div");
+    col.className = "time-wheel-col";
+    col.setAttribute("data-wheel", part);
+    col.tabIndex = 0;
+    col.setAttribute("role", "listbox");
+    col.setAttribute("aria-label", part === "hour" ? "Horas" : "Minutos");
+    col.appendChild(spacer());
+    values.forEach(value => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "time-wheel-item";
+      item.dataset.v = value;
+      item._v = value;
+      if (part === "hour" && value >= 20) item.classList.add("is-night");
+      item.textContent = pad2(value);
+      col.appendChild(item);
+    });
+    col.appendChild(spacer());
+    col._values = values;
+    col._items = Array.from(col.querySelectorAll(".time-wheel-item"));
+    cols.push(col);
+    return col;
+  }
+
+  function rowSize(col) {
+    return (col._items[0] && col._items[0].offsetHeight) || 42;
+  }
+
+  function centerIndex(col) {
+    const row = rowSize(col);
+    const top = row > 0 ? col.scrollTop / row : 0;
+    return Math.max(0, Math.min(col._items.length - 1, Math.round(top)));
+  }
+
+  function centerTo(col, index, behavior) {
+    col._index = index;
+    col.scrollTo({ top: index * rowSize(col), behavior: behavior || "auto" });
+  }
+
+  function paint(item, kind, hour) {
+    item.classList.toggle("is-taken", kind === "taken");
+    item.classList.toggle("is-off", kind === "off");
+    item.title = kind === "taken" ? "Ocupado"
+      : kind === "off" ? "Fora da disponibilidade"
+      : hour >= 20 ? "Livre — Sessão Noturna 🌙" : "Livre";
+  }
+
+  function refresh() {
+    const hourCol = cols[0], minuteCol = cols[1];
+    const hour = hourCol._values[hourCol._index || 0];
+    // The minute column depends on the hour, so it is repainted on every sync.
+    minuteCol._items.forEach(item => paint(item, opts.state(hour, item._v), hour));
+    // An hour reads as free when ANY of its quarter-hours is free, as taken
+    // when some of its time is inside the window (all busy), else off-window.
+    hourCol._items.forEach(item => {
+      let hasFree = false, hasWindow = false;
+      minuteCol._values.some(minute => {
+        const kind = opts.state(item._v, minute);
+        if (kind === "free") { hasFree = true; return true; }
+        if (kind !== "off") hasWindow = true;
+        return false;
+      });
+      paint(item, hasFree ? "free" : hasWindow ? "taken" : "off", item._v);
+    });
+
+    const kind = opts.state(hour, minuteCol._values[minuteCol._index || 0]);
+    const value = kind === "free" ? fmt(hour, minuteCol._values[minuteCol._index || 0]) : null;
+    if (value !== lastValue || kind !== lastKind) {
+      lastValue = value;
+      lastKind = kind;
+      if (opts.onChange) opts.onChange({ value: value, h: hour, m: minuteCol._values[minuteCol._index || 0], kind: kind });
+    }
+  }
+
+  function sync() {
+    raf = 0;
+    let changed = false;
+    cols.forEach(col => {
+      const index = centerIndex(col);
+      if (col._index !== index) {
+        col._items.forEach(item => item.classList.remove("is-active"));
+        col._items[index].classList.add("is-active");
+        col._index = index;
+        changed = true;
+      }
+    });
+    if (changed) refresh();
+  }
+
+  function keepSelectedIfFree() {
+    const hour = cols[0]._values[cols[0]._index || 0];
+    const minute = cols[1]._values[cols[1]._index || 0];
+    return opts.state(hour, minute) === "free" ? [hour, minute] : null;
+  }
+
+  function resolveSelection(preferred) {
+    const current = keepSelectedIfFree();
+    if (current) return current;
+    const parts = String(preferred || "").split(":").map(Number);
+    if (parts.length === 2 && !Number.isNaN(parts[0]) && opts.state(parts[0], parts[1]) === "free")
+      return [parts[0], parts[1]];
+    for (const hour of cols[0]._values)
+      for (const minute of cols[1]._values)
+        if (opts.state(hour, minute) === "free") return [hour, minute];
+    return null;
+  }
+
+  root.classList.add("time-wheel");
+  buildCol("hour", opts.hours);
+  buildCol("minute", opts.minutes);
+  root.append(cols[0], cols[1]);
+
+  cols.forEach((col, index) => {
+    col.addEventListener("scroll", () => {
+      if (!raf) raf = requestAnimationFrame(sync);
+      clearTimeout(col._settle);
+      col._settle = setTimeout(sync, 130); // settle pass when scroll-snap is unsupported
+    }, { passive: true });
+    col.addEventListener("click", event => {
+      const item = event.target.closest(".time-wheel-item");
+      if (!item) return;
+      centerTo(col, col._items.indexOf(item), "smooth");
+    });
+    col.addEventListener("keydown", event => {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+      event.preventDefault();
+      const index = Math.max(0, Math.min(col._items.length - 1,
+        (col._index || 0) + (event.key === "ArrowDown" ? 1 : -1)));
+      centerTo(col, index, "smooth");
+    });
+  });
+
+  // Re-evaluates item states after the data behind opts.state() changed and
+  // re-centers on a still-free combo (kept > preferred > first free > none).
+  function apply(preferred) {
+    const target = resolveSelection(preferred);
+    cols.forEach(col => {
+      col._items.forEach(item => item.classList.remove("is-active"));
+      col._items[0].classList.add("is-active");
+      col._index = 0;
+    });
+    if (target) {
+      centerTo(cols[0], cols[0]._values.indexOf(target[0]), "auto");
+      centerTo(cols[1], cols[1]._values.indexOf(target[1]), "auto");
+    }
+    refresh();
+    // Safety pass: covers engines that skip the scroll event for instant
+    // programmatic scrolls or unsupported scroll-snap.
+    setTimeout(sync, 130);
+  }
+
+  function setEnabled(enabled) {
+    root.classList.toggle("is-disabled", !enabled);
+  }
+
+  apply(opts.preferred);
+  return { apply: apply, setEnabled: setEnabled };
+};

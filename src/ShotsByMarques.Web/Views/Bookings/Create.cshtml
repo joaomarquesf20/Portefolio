@@ -29,6 +29,12 @@
         var endText = end is null || end.Value >= TimeSpan.FromHours(24) ? "00:00" : $"{end:hh\\:mm}";
         return $"{start:hh\\:mm} – {endText}";
     }
+
+    // Janela crua para o seletor de tempo (o fim 24h mantém-se "24:00" para
+    // o JS saber que os inícios chegam até 23:45).
+    string WindowStartAttr(TimeSpan? start) => start?.ToString(@"hh\:mm") ?? "09:00";
+    string WindowEndAttr(TimeSpan? end) =>
+        end is null || end.Value >= TimeSpan.FromHours(24) ? "24:00" : end.Value.ToString(@"hh\:mm");
 }
 
 <section class="booking-page">
@@ -93,6 +99,8 @@
                                 data-status="@((int?)day.Status ?? 0)"
                                 data-zone="@(day.Zone ?? "")"
                                 data-location="@(day.Location ?? "")"
+                                data-window-start="@WindowStartAttr(day.WindowStart)"
+                                data-window-end="@WindowEndAttr(day.WindowEnd)"
                                 class="@CalendarClass(day)"
                                 @if (!selectable) { <text>disabled</text> }>
                             <b>@day.Date.Day</b>
@@ -119,10 +127,20 @@
             <section id="time-section" class="booking-step hidden" data-step="2">
                 <div class="booking-step-heading">
                     <span class="booking-step-number">02</span>
-                    <div><h2>Escolhe o horário</h2><p>Seleciona uma hora disponível para a tua sessão.</p></div>
+                    <div><h2>Escolhe o horário</h2><p>Roda as colunas para a hora de início — qualquer quarto de hora dentro da disponibilidade do dia.</p></div>
                 </div>
                 <div id="selected-day-label" class="booking-selection-label"></div>
-                <div id="slots" class="booking-slot-panel" data-hint="Escolhe um horário"></div>
+                <div id="slots" class="booking-slot-panel time-wheel-box">
+                    <div id="wheel-window" class="time-wheel-window hidden">
+                        <span class="time-wheel-window-label">Disponibilidade</span>
+                        <strong id="wheel-window-text"></strong>
+                        <span id="wheel-night-badge" class="time-wheel-night-badge hidden">🌙 Sessão Noturna</span>
+                    </div>
+                    <div id="time-wheel" class="time-wheel" aria-label="Escolhe a hora de início"></div>
+                    <p id="wheel-status" class="time-wheel-status">Escolhe primeiro um dia no calendário.</p>
+                    <p id="wheel-night-note" class="time-wheel-note hidden">🌙 A partir das 20:00 podes começar uma sessão noturna (city lights, light painting).</p>
+                    <p class="time-wheel-note">Riscadas ou apagadas = já reservadas ou fora da disponibilidade.</p>
+                </div>
                 <p id="no-slots" class="hidden booking-empty-choice">Não há horários livres neste dia. Escolhe outro dia no calendário.</p>
                 <input type="hidden" asp-for="TimeSlot" id="TimeSlot" />
                 <span asp-validation-for="TimeSlot" class="booking-field-error"></span>
@@ -318,58 +336,144 @@
     .booking-submit:hover { background: #8a7034; box-shadow: 0 10px 24px -14px rgba(161,132,63,.6); }
     .booking-page .booking-secure-note { color: rgba(20,20,20,.4); }
 
-    /* Grelha de pills de horário (passo 02) — construída localmente em JS;
-       o admin e a MiniSession continuam a usar a barra partilhada do site.js */
-    .slot-pill {
+    /* ==== Seletor de tempo iOS/watchOS (passo 02) — rodas de horas/minutos ====
+       Construídas por SBM.buildTimeWheel (site.js); o admin e a MiniSession
+       continuam a usar a barra partilhada. */
+    .time-wheel-box {
+        border: 1px solid rgba(20,20,20,.1);
+        background: #ffffff;
+        border-radius: .9rem;
+        padding: .9rem .95rem .6rem;
+    }
+    .time-wheel-window {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .55rem;
+        margin: 0 0 .2rem .35rem;
+        color: rgba(20,20,20,.45);
+        font-size: .78rem;
+    }
+    .time-wheel-window strong {
+        color: #141414;
+        font-size: .88rem;
+        font-variant-numeric: tabular-nums;
+    }
+    .time-wheel-night-badge {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        border: 1px solid rgba(20,20,20,.16);
-        background: #ffffff;
-        color: rgba(20,20,20,.85);
+        gap: .3rem;
+        border: 1px solid rgba(161,132,63,.5);
+        background: rgba(161,132,63,.1);
+        color: #6d5420;
         border-radius: 9999px;
-        padding: .65rem .25rem;
-        font-size: .813rem;
+        padding: .15rem .6rem;
+        font-size: .72rem;
         font-weight: 600;
-        font-variant-numeric: tabular-nums;
+    }
+    .time-wheel {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .4rem;
+        --tw-row: 2.7rem;
+        --tw-rows: 5;
+    }
+    /* Esbatido durante o carregamento / sem dados */
+    .time-wheel-box.is-loading .time-wheel { opacity: .45; pointer-events: none; }
+    .time-wheel.is-disabled { opacity: .4; pointer-events: none; }
+    .time-wheel-col {
+        position: relative;
+        z-index: 2;
+        height: calc(var(--tw-rows) * var(--tw-row));
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        border-radius: .75rem;
+    }
+    .time-wheel-col::-webkit-scrollbar { display: none; }
+    .time-wheel-col:focus-visible {
+        outline: 2px solid rgba(161,132,63,.55);
+        outline-offset: 2px;
+    }
+    /* Duas meias-alturas acima/abaixo para qualquer linha poder centrar */
+    .time-wheel-spacer { height: calc((var(--tw-rows) - 1) * var(--tw-row) / 2); }
+    .time-wheel-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: var(--tw-row);
+        scroll-snap-align: center;
+        border: 0;
+        background: transparent;
         box-shadow: none;
+        cursor: pointer;
+        font-variant-numeric: tabular-nums;
+        font-size: 1rem;
+        font-weight: 600;
+        color: rgba(20,20,20,.3);
+        transition: color .15s ease, transform .15s ease, opacity .15s ease;
     }
-    /* Noite (a partir das 20:00): dourado subtil — .sel mantém o look de seleção */
-    .slot-pill.night {
-        border-color: rgba(161,132,63,.6);
-        color: #6d5420;
-        background: rgba(161,132,63,.08);
+    .time-wheel-item.is-active {
+        color: #141414;
+        transform: scale(1.09);
     }
-    .slot-pill.night:hover:not(:disabled):not(.sel) {
-        border-color: #a1843f;
-        color: #6d5420;
-        background: rgba(161,132,63,.16);
+    .time-wheel.night .time-wheel-item.is-active,
+    .time-wheel-item.is-night.is-active { color: #6d5420; }
+    /* Ocupado: riscado e apagado; fora da janela: quase invisível */
+    .time-wheel-item.is-taken {
+        color: rgba(20,20,20,.22);
+        text-decoration: line-through;
     }
-    .slot-pill.night.sel {
-        border-color: #a1843f;
-        background: #a1843f;
-        color: #faf9f7;
-        box-shadow: 0 10px 24px -14px rgba(161,132,63,.6);
+    .time-wheel-item.is-off { opacity: .22; }
+    /* Faixa de seleção fixa ao centro (o "cristal" do picker) */
+    .time-wheel::before {
+        content: "";
+        position: absolute;
+        z-index: 1;
+        left: .2rem;
+        right: .2rem;
+        top: 50%;
+        height: var(--tw-row);
+        transform: translateY(-50%);
+        border-top: 1px solid rgba(161,132,63,.35);
+        border-bottom: 1px solid rgba(161,132,63,.35);
+        background: linear-gradient(180deg, rgba(161,132,63,.05), rgba(161,132,63,.11), rgba(161,132,63,.05));
+        border-radius: .85rem;
+        pointer-events: none;
     }
-    .slot-pill:hover:not(:disabled):not(.sel) {
-        border-color: #a1843f;
-        color: #a1843f;
-        background: rgba(161,132,63,.08);
+    /* Desvanecer nas pontas, como o picker do iOS */
+    .time-wheel::after {
+        content: "";
+        position: absolute;
+        z-index: 3;
+        left: .2rem;
+        right: .2rem;
+        top: 0;
+        bottom: 0;
+        pointer-events: none;
+        background:
+            linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0) 26%),
+            linear-gradient(0deg, #ffffff 0%, rgba(255,255,255,0) 26%);
     }
-    .slot-pill.sel {
-        border-color: #a1843f;
-        background: #a1843f;
-        color: #faf9f7;
-        box-shadow: 0 10px 24px -14px rgba(161,132,63,.6);
+    .time-wheel.night::before {
+        border-color: rgba(161,132,63,.55);
+        background: linear-gradient(180deg, rgba(161,132,63,.08), rgba(161,132,63,.16), rgba(161,132,63,.08));
     }
-    /* Ocupado: sem interação — opacity-40, cursor-not-allowed, bg-neutral-800 */
-    .slot-pill:disabled,
-    .slot-pill[disabled] {
-        opacity: .4;
-        cursor: not-allowed;
-        background: #262626;
-        border-color: #262626;
-        color: #a3a3a3;
+    .time-wheel-status {
+        min-height: 1.1rem;
+        margin: .65rem .35rem 0;
+        font-size: .8rem;
+        color: rgba(20,20,20,.5);
+    }
+    .time-wheel-note {
+        margin: .2rem .35rem 0;
+        font-size: .7rem;
+        color: rgba(20,20,20,.4);
     }
 </style>
 
@@ -446,51 +550,71 @@
         const ready = !!dateInput.value && !!timeInput.value && !!locationInput.value.trim();
         document.getElementById('submit-btn').disabled = !ready;
     }
-    // Grelha de pills de horário (página de marcação do cliente). LOCAL a esta
-    // página — o admin e a MiniSession continuam a usar SBM.buildSlotBar.
-    function buildSlotGrid(options, opts) {
-        opts = opts || {};
-        const list = (options || [])
-            .map(s => ({ time: s.time || s.Time, taken: !!(s.taken || s.Taken) }))
-            .sort((a, b) => a.time.localeCompare(b.time));
-        let selected = opts.selected || '';
-        slots.className = 'grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6';
-        slots.innerHTML = '';
-        list.forEach(slot => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            const hour = Number((slot.time.split(':')[0] || '0'));
-            const night = hour >= 20;
-            btn.textContent = slot.time + (night ? ' 🌙' : '');
-            btn.className = 'slot-pill' + (night ? ' night' : '');
-            if (slot.taken) {
-                btn.disabled = true;
-                btn.title = 'Ocupado';
-                btn.setAttribute('aria-disabled', 'true');
+    // ==== Seletor de tempo iOS/watchOS (passo 02) ====
+    // Duas rodas (horas 07–23, minutos 00/15/30/45) partem da barra partilhada
+    // SBM.buildTimeWheel; esta página alimenta-a com a janela do dia (dataset)
+    // e com os horários ocupados do /Bookings/Available (agora de 15 em 15 min).
+    // O admin e a MiniSession continuam a usar SBM.buildSlotBar.
+    const wheelRoot = document.getElementById('time-wheel');
+    const wheelStatus = document.getElementById('wheel-status');
+    const wheelWindowBox = document.getElementById('wheel-window');
+    const windowTextEl = document.getElementById('wheel-window-text');
+    const nightBadge = document.getElementById('wheel-night-badge');
+    const nightNote = document.getElementById('wheel-night-note');
+    const slotsEl = document.getElementById('slots');
+    const HOURS = Array.from({ length: 17 }, (_, i) => 7 + i);
+    const MINUTES = [0, 15, 30, 45];
+    let dayFree = new Set();
+    let windowStartMin = 9 * 60;
+    let windowEndMin = 24 * 60;
+    let activeDayButton = null;
+    let step3Shown = false;
+    const pad2 = v => String(v).padStart(2, '0');
+    const toMinutes = value => {
+        const parts = String(value).split(':').map(Number);
+        return (parts[0] || 0) * 60 + (parts[1] || 0);
+    };
+    const displayEnd = minutes => minutes >= 24 * 60
+        ? '00:00'
+        : pad2(Math.floor(minutes / 60)) + ':' + pad2(minutes % 60);
+
+    const wheel = window.SBM.buildTimeWheel(wheelRoot, {
+        hours: HOURS,
+        minutes: MINUTES,
+        preferred: timeInput.value || null,
+        state: (h, m) => {
+            const t = h * 60 + m;
+            if (t < windowStartMin || t >= windowEndMin) return 'off';
+            return dayFree.has(pad2(h) + ':' + pad2(m)) ? 'free' : 'taken';
+        },
+        onChange: function (state) {
+            if (state.kind === 'free') {
+                timeInput.value = state.value;
+                summaryTime.textContent = state.value;
+                if (!step3Shown) {
+                    step3Shown = true;
+                    locationSection.classList.remove('hidden');
+                    if (activeDayButton) showZoneInfo(activeDayButton);
+                    markStep(3);
+                }
             } else {
-                btn.title = night ? slot.time + ' — Sessão Noturna' : 'Livre';
-                if (slot.time === selected) btn.classList.add('sel');
-                btn.addEventListener('click', () => {
-                    slots.querySelectorAll('.slot-pill.sel').forEach(item => item.classList.remove('sel'));
-                    btn.classList.add('sel');
-                    opts.onSelect && opts.onSelect(slot.time);
-                });
+                timeInput.value = '';
+                summaryTime.textContent = 'Por escolher';
             }
-            slots.appendChild(btn);
-        });
-        if (list.some(item => item.taken)) {
-            const note = document.createElement('p');
-            note.className = 'col-span-full pt-1.5 text-xs text-black/50';
-            note.textContent = 'As horas apagadas já estão ocupadas.';
-            slots.appendChild(note);
+            const night = state.h >= 20;
+            nightBadge.classList.toggle('hidden', !night);
+            wheelRoot.classList.toggle('night', night);
+            wheelStatus.textContent = !dayFree.size
+                ? 'Sem horários livres neste dia.'
+                : state.kind === 'free' ? 'Livre — confirma o local no passo 03.'
+                : state.kind === 'taken' ? 'Esse horário já está ocupado — roda para outra hora.'
+                : 'Fora da disponibilidade deste dia (' + windowTextEl.textContent + ').';
+            refreshSubmit();
         }
-        if (list.some(slot => Number((slot.time.split(':')[0] || '0')) >= 20)) {
-            const nightNote = document.createElement('p');
-            nightNote.className = 'col-span-full pt-0.5 text-xs text-black/50';
-            nightNote.textContent = '🌙 Últimas horas — sessões noturnas (city lights, light painting), também às 30 min.';
-            slots.appendChild(nightNote);
-        }
-    }
+    });
+    wheel.setEnabled(false);
+    wheelRoot.classList.add('is-disabled');
+
     async function loadSlots(button) {
         const date = button.dataset.date;
         dateInput.value = date;
@@ -504,27 +628,40 @@
         document.querySelectorAll('[data-cal-day]').forEach(item => item.classList.remove('selected'));
         button.classList.add('selected');
         markStep(2);
-        slots.innerHTML = '<p class="booking-loading">A verificar horários...</p>';
+        slotsEl.classList.remove('hidden');
         document.getElementById('no-slots').classList.add('hidden');
-        const response = await fetch('/Bookings/Available?sessionTypeId=' + typeId + '&date=' + date);
-        const options = await response.json();
-        const free = options.filter(item => !(item.taken || item.Taken));
-        if (!free.length) {
-            slots.innerHTML = '';
-            document.getElementById('no-slots').classList.remove('hidden');
-            return;
+        activeDayButton = button;
+        step3Shown = false;
+
+        // Janela do dia do dataset (00:00 como fim = 24:00 no crú).
+        const startText = button.dataset.windowStart || '09:00';
+        windowStartMin = toMinutes(startText);
+        windowEndMin = toMinutes(button.dataset.windowEnd || '24:00');
+        windowTextEl.textContent = startText + ' – ' + displayEnd(windowEndMin);
+        wheelWindowBox.classList.remove('hidden');
+        nightNote.classList.toggle('hidden', windowEndMin <= 20 * 60);
+
+        slotsEl.classList.add('is-loading');
+        wheelStatus.textContent = 'A verificar horários...';
+        let options = [];
+        try {
+            const response = await fetch('/Bookings/Available?sessionTypeId=' + typeId + '&date=' + date);
+            options = await response.json();
+        } catch (error) {
+            options = []; // rede em baixo: tratado como dia sem horários
         }
-        buildSlotGrid(options, {
-            selected: '',
-            onSelect: function (time) {
-                timeInput.value = time;
-                summaryTime.textContent = time;
-                locationSection.classList.remove('hidden');
-                showZoneInfo(button);
-                markStep(3);
-                refreshSubmit();
-            }
-        });
+        dayFree = new Set((options || [])
+            .filter(item => !(item.taken || item.Taken))
+            .map(item => item.time || item.Time));
+        slotsEl.classList.remove('is-loading');
+        wheelRoot.classList.remove('is-disabled');
+        wheel.setEnabled(true);
+        // Regera estados + centra na primeira combinação livre (prefere a
+        // combinação atual, depois a anterior, senão a primeira livre).
+        wheel.apply(null);
+        if (!dayFree.size) {
+            document.getElementById('no-slots').classList.remove('hidden');
+        }
     }
     document.querySelectorAll('[data-cal-day][data-available="true"]').forEach(button => button.addEventListener('click', () => loadSlots(button)));
     locationInput.addEventListener('input', () => { summaryLocation.textContent = locationInput.value.trim() || 'Por escolher'; updateTotals(); refreshSubmit(); });
