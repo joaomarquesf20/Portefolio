@@ -8,6 +8,7 @@
     var next = first.AddMonths(1);
     var timeOptions = Enumerable.Range(0, 48)
         .Select(i => TimeSpan.FromMinutes(i * 30))
+        .Append(TimeSpan.FromHours(24)) // meia-noite (fim do dia) — janela noturna
         .ToList();
     var localities = ShotsByMarques.Web.Services.PortugalCities.All
         .GroupBy(c => c.Region)
@@ -41,7 +42,9 @@
         };
     }
 
-    string TimeText(TimeSpan? time) => time?.ToString(@"hh\:mm") ?? "";
+    string TimeText(TimeSpan? time) => time is null
+        ? ""
+        : time.Value >= TimeSpan.FromHours(24) ? "00:00" : time.Value.ToString(@"hh\:mm");
 }
 
 <section class="admin-availability-page max-w-7xl mx-auto px-4 sm:px-6 py-10">
@@ -111,7 +114,7 @@
                         {
                             if (day.Status == DayStatus.Available || day.Status == DayStatus.Maybe)
                             {
-                                <span class="availability-day-detail">@(day.WindowStart is not null ? $"{TimeText(day.WindowStart)} – {TimeText(day.WindowEnd)}" : "09:00 – 20:00")</span>
+                                <span class="availability-day-detail">@(day.WindowStart is not null ? $"{TimeText(day.WindowStart)} – {TimeText(day.WindowEnd)}" : "09:00 – 00:00")</span>
                                 <span class="availability-day-place">@(day.Zone ?? "Qualquer zona")@(day.BookedCount > 0 ? $" · {day.BookedCount} reserva(s)" : "")</span>
                             }
                             else if (day.Status == DayStatus.Event)
@@ -187,7 +190,7 @@
                 <div class="time-select-row">
                     <label>Das<select name="dayStart" id="day-start"><option value="">Padrão (09:00)</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
                     <span>até</span>
-                    <label>Às<select name="dayEnd" id="day-end"><option value="">Padrão (20:00)</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
+                    <label>Às<select name="dayEnd" id="day-end"><option value="">Padrão (00:00)</option>@foreach (var time in timeOptions) { <option value="@TimeText(time)">@TimeText(time)</option> }</select></label>
                 </div>
                 <div>
                     <label class="field-label" for="day-zone">Zona onde estarás <span>(opcional)</span></label>
@@ -314,7 +317,7 @@
     document.getElementById('modal-cancel').addEventListener('click', () => modal.classList.add('hidden'));
     modal.addEventListener('click', event => { if (event.target === modal) modal.classList.add('hidden'); });
     document.querySelector('[data-bulk-status="1"]').classList.add('is-active');
-    document.getElementById('bulk-start').value = '09:00'; document.getElementById('bulk-end').value = '20:00';
+    document.getElementById('bulk-start').value = '09:00'; document.getElementById('bulk-end').value = '00:00';
 })();
 </script>
 }

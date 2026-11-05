@@ -267,7 +267,7 @@ window.SBM.buildSlotBar = function (container, slots, opts) {
     const night = h >= 20 || h < 6;
     seg.className = "slot-bar-seg" + (night ? " night" : "") + (slot.taken ? " taken" : "");
     seg.textContent = slot.time;
-    seg.title = slot.time;
+    seg.title = slot.time + (night ? " — Sessão Noturna" : "");
     seg.disabled = slot.taken;
     if (!slot.taken) {
       seg.addEventListener("click", () => {

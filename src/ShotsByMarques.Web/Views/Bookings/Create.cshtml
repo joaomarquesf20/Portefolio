@@ -21,6 +21,14 @@
             _ => "booking-day undefined"
         };
     }
+
+    // Janela do dia: um fim "00:00"/24h apresenta-se como meia-noite (00:00).
+    string WindowText(TimeSpan? start, TimeSpan? end)
+    {
+        if (start is null) return "09:00 – 00:00";
+        var endText = end is null || end.Value >= TimeSpan.FromHours(24) ? "00:00" : $"{end:hh\\:mm}";
+        return $"{start:hh\\:mm} – {endText}";
+    }
 }
 
 <section class="booking-page">
@@ -90,7 +98,7 @@
                             <b>@day.Date.Day</b>
                             @if (day.InMonth && day.Status == ShotsByMarques.Web.Models.DayStatus.Available)
                             {
-                                <small>@(day.WindowStart is not null ? $"{day.WindowStart:hh\\:mm}–{day.WindowEnd:hh\\:mm}" : "Disponível")</small>
+                                <small>@WindowText(day.WindowStart, day.WindowEnd)</small>
                             }
                             else if (day.InMonth && day.Status == ShotsByMarques.Web.Models.DayStatus.Event)
                             {
@@ -326,6 +334,23 @@
         font-variant-numeric: tabular-nums;
         box-shadow: none;
     }
+    /* Noite (a partir das 20:00): dourado subtil — .sel mantém o look de seleção */
+    .slot-pill.night {
+        border-color: rgba(161,132,63,.6);
+        color: #6d5420;
+        background: rgba(161,132,63,.08);
+    }
+    .slot-pill.night:hover:not(:disabled):not(.sel) {
+        border-color: #a1843f;
+        color: #6d5420;
+        background: rgba(161,132,63,.16);
+    }
+    .slot-pill.night.sel {
+        border-color: #a1843f;
+        background: #a1843f;
+        color: #faf9f7;
+        box-shadow: 0 10px 24px -14px rgba(161,132,63,.6);
+    }
     .slot-pill:hover:not(:disabled):not(.sel) {
         border-color: #a1843f;
         color: #a1843f;
@@ -429,19 +454,21 @@
             .map(s => ({ time: s.time || s.Time, taken: !!(s.taken || s.Taken) }))
             .sort((a, b) => a.time.localeCompare(b.time));
         let selected = opts.selected || '';
-        slots.className = 'grid grid-cols-3 gap-2.5 sm:grid-cols-4';
+        slots.className = 'grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6';
         slots.innerHTML = '';
         list.forEach(slot => {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.textContent = slot.time;
-            btn.className = 'slot-pill';
+            const hour = Number((slot.time.split(':')[0] || '0'));
+            const night = hour >= 20;
+            btn.textContent = slot.time + (night ? ' 🌙' : '');
+            btn.className = 'slot-pill' + (night ? ' night' : '');
             if (slot.taken) {
                 btn.disabled = true;
                 btn.title = 'Ocupado';
                 btn.setAttribute('aria-disabled', 'true');
             } else {
-                btn.title = 'Livre';
+                btn.title = night ? slot.time + ' — Sessão Noturna' : 'Livre';
                 if (slot.time === selected) btn.classList.add('sel');
                 btn.addEventListener('click', () => {
                     slots.querySelectorAll('.slot-pill.sel').forEach(item => item.classList.remove('sel'));
@@ -456,6 +483,12 @@
             note.className = 'col-span-full pt-1.5 text-xs text-black/50';
             note.textContent = 'As horas apagadas já estão ocupadas.';
             slots.appendChild(note);
+        }
+        if (list.some(slot => Number((slot.time.split(':')[0] || '0')) >= 20)) {
+            const nightNote = document.createElement('p');
+            nightNote.className = 'col-span-full pt-0.5 text-xs text-black/50';
+            nightNote.textContent = '🌙 Últimas horas — sessões noturnas (city lights, light painting), também às 30 min.';
+            slots.appendChild(nightNote);
         }
     }
     async function loadSlots(button) {

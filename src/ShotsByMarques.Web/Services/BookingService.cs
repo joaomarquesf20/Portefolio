@@ -15,6 +15,14 @@ public class BookingService
 
     public BookingService(ApplicationDbContext db) => _db = db;
 
+    /// <summary>
+    /// A window end typed as "00:00" in the admin selects means midnight (end of
+    /// day): TimeSpan.Zero normalizes to 24h so late-night windows ("Sessão
+    /// Noturna") survive the round-trip through the availability form.
+    /// </summary>
+    internal static TimeSpan NormalizeWindowEnd(TimeSpan end) =>
+        end == TimeSpan.Zero ? new TimeSpan(24, 0, 0) : end;
+
     public async Task<List<string>> GetAvailableSlotsAsync(int sessionTypeId, DateTime date)
     {
         return (await GetSlotOptionsAsync(sessionTypeId, date))
@@ -34,8 +42,10 @@ public class BookingService
         if (day?.Status != DayStatus.Available)
             return new List<SlotOption>();
 
+        // The window bounds the START times; a night session may finish past the
+        // window end (23:30 start -> ends by 00:30) and is capped by midnight.
         var startLocal = date.Date.Add(day.WindowStart ?? new TimeSpan(9, 0, 0));
-        var endLocal = date.Date.Add(day.WindowEnd ?? new TimeSpan(20, 0, 0));
+        var endLocal = date.Date.Add(NormalizeWindowEnd(day.WindowEnd ?? new TimeSpan(24, 0, 0)));
         if (startLocal >= endLocal)
             return new List<SlotOption>();
 
@@ -44,9 +54,11 @@ public class BookingService
         var bookings = await ActiveBookingsNearAsync(startUtc, endUtc);
         var slots = new List<SlotOption>();
 
+        // Hourly steps through the day; from 20:00 onwards the cadence drops to
+        // 30 minutes so the night tail reaches 23:30 (night rolls, city lights).
         for (var current = startLocal;
-             current.AddMinutes(type.DurationMinutes) <= endLocal;
-             current = current.AddHours(1))
+             current < endLocal;
+             current = current.AddMinutes(current.TimeOfDay >= new TimeSpan(20, 0, 0) ? 30 : 60))
         {
             var slotStartUtc = ToUtc(current);
             var slotEndUtc = ToUtc(current.AddMinutes(type.DurationMinutes));
@@ -74,9 +86,10 @@ public class BookingService
             return false;
 
         var windowStart = day.WindowStart ?? new TimeSpan(9, 0, 0);
-        var windowEnd = day.WindowEnd ?? new TimeSpan(20, 0, 0);
-        var endLocal = startLocal.TimeOfDay.Add(TimeSpan.FromMinutes(type.DurationMinutes));
-        if (startLocal.TimeOfDay < windowStart || endLocal > windowEnd)
+        var windowEnd = NormalizeWindowEnd(day.WindowEnd ?? new TimeSpan(24, 0, 0));
+        // Night slots may start up to (and including) 23:30 and finish past the
+        // window end — the overlap checks below use the real UTC session spans.
+        if (startLocal.TimeOfDay < windowStart || startLocal.TimeOfDay >= windowEnd)
             return false;
 
         var startUtc = ToUtc(startLocal);
@@ -107,11 +120,16 @@ public class BookingService
         var miniType = await _db.SessionTypes.FirstOrDefaultAsync(s => s.IsMiniSessionType);
         if (day?.Status != DayStatus.Event || day.MiniStart is null || day.MiniEnd is null || miniType is null)
             return new List<SlotOption>();
-        if (date.Date < PortugalTime.Today || day.MiniStart >= day.MiniEnd)
+        if (date.Date < PortugalTime.Today)
             return new List<SlotOption>();
 
-        var windowStart = date.Date.Add(day.MiniStart.Value);
-        var windowEnd = date.Date.Add(day.MiniEnd.Value);
+        var miniStart = day.MiniStart.Value;
+        var miniEnd = NormalizeWindowEnd(day.MiniEnd.Value);
+        if (miniStart >= miniEnd)
+            return new List<SlotOption>();
+
+        var windowStart = date.Date.Add(miniStart);
+        var windowEnd = date.Date.Add(miniEnd);
         var startUtc = ToUtc(windowStart);
         var endUtc = ToUtc(windowEnd);
         var bookings = await ActiveBookingsNearAsync(startUtc, endUtc, miniOnly: true);

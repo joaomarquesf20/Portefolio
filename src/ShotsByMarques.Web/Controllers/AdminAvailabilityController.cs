@@ -96,10 +96,23 @@ public class AdminAvailabilityController : Controller
             var hasDayHours = !string.IsNullOrWhiteSpace(dayStart) || !string.IsNullOrWhiteSpace(dayEnd);
             if (isHoursDay &&
                 TimeSpan.TryParse(dayStart, out var ds) &&
-                TimeSpan.TryParse(dayEnd, out var de) && ds < de)
+                TimeSpan.TryParse(dayEnd, out var deDay))
             {
-                row.WindowStart = ds;
-                row.WindowEnd = de;
+                // A "00:00" end means midnight (end of day) — supports nights up to 00:00.
+                if (deDay == TimeSpan.Zero)
+                    deDay = new TimeSpan(24, 0, 0);
+                if (ds < deDay)
+                {
+                    row.WindowStart = ds;
+                    row.WindowEnd = deDay;
+                }
+                else
+                {
+                    if (hasDayHours)
+                        TempData["Warning"] = "Horas do dia não guardadas: escolhe a hora de início e de fim (a de fim tem de ser depois).";
+                    row.WindowStart = null;
+                    row.WindowEnd = null;
+                }
             }
             else
             {
@@ -125,10 +138,16 @@ public class AdminAvailabilityController : Controller
         int? statusValue = string.IsNullOrWhiteSpace(status) ? null : (int?)int.Parse(status);
 
         TimeSpan? ws = null, we = null;
-        if (TimeSpan.TryParse(dayStart, out var ds) && TimeSpan.TryParse(dayEnd, out var de) && ds < de)
+        if (TimeSpan.TryParse(dayStart, out var dsBulk) && TimeSpan.TryParse(dayEnd, out var deBulk))
         {
-            ws = ds;
-            we = de;
+            // A "00:00" end means midnight (end of day) — supports nights up to 00:00.
+            if (deBulk == TimeSpan.Zero)
+                deBulk = new TimeSpan(24, 0, 0);
+            if (dsBulk < deBulk)
+            {
+                ws = dsBulk;
+                we = deBulk;
+            }
         }
 
         var changed = 0;
@@ -174,7 +193,7 @@ public class AdminAvailabilityController : Controller
 
             if (dayStatus is DayStatus.Available or DayStatus.Maybe)
             {
-                // Shared hours (or 09:00–20:00 default); the day's zone, if any, is kept.
+                // Shared hours (or the 09:00–00:00 default window); the day's zone, if any, is kept.
                 row.WindowStart = ws;
                 row.WindowEnd = we;
             }
