@@ -220,8 +220,10 @@ public class BookingsController : Controller
 
         if (!User.Identity!.IsAuthenticated)
         {
+            // Smooth handoff to login: nothing is persisted yet; the return URL
+            // brings the client back to this booking page with the chosen month.
             return RedirectToAction("Login", "Account",
-                new { returnUrl = Url.Action("Create", "Bookings", new { id }) });
+                new { returnUrl = Url.Action("Create", "Bookings", new { id, year = model.Year, month = model.Month }) });
         }
 
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;

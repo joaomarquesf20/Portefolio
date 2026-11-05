@@ -44,7 +44,7 @@
         <div class="booking-login-note">
             <span>Para finalizar a marcação precisas de iniciar sessão.</span>
             <a asp-controller="Account" asp-action="Login"
-               asp-route-returnUrl="@Url.Action("Create", "Bookings", new { id = Model.SessionTypeId })">Iniciar sessão →</a>
+               asp-route-returnUrl="@Url.Action("Create", "Bookings", new { id = Model.SessionTypeId, year = Model.Year, month = Model.Month })">Iniciar sessão →</a>
         </div>
     }
 
@@ -352,6 +352,18 @@
 <script>
 (function () {
     const form = document.getElementById('booking-form');
+    // Visitantes sem sessão não perdem tempo com o POST: o clique em
+    // "Confirmar marcação" vai direto ao login; ao voltar da sessão,
+    // regressam a esta página exata (mês escolhido incluído). O servidor
+    // continua a defender o fluxo (302 para o login) para quem tem JS desligado.
+    const authed = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(User.Identity?.IsAuthenticated ?? false));
+    if (!authed) {
+        const loginUrl = '/Account/Login?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search);
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            window.location.href = loginUrl;
+        });
+    }
     const typeId = form.dataset.sessionTypeId;
     const dateInput = document.getElementById('Date');
     const timeInput = document.getElementById('TimeSlot');
